@@ -343,15 +343,28 @@ const Editor = (function () {
   }
 
   function getCategoryClass(mark) {
+    var ruleId = mark.ruleId;
+
+    // Fine-grained colours per issue type
+    if (ruleId === 'spelling' || ruleId === 'missing-letter') return 'underline-spelling';
+    if (ruleId === 'passive-voice') return 'underline-passive';
+    if (ruleId === 'sentence-length') return 'underline-sentence-length';
+    if (ruleId === 'tone' || ruleId === 'email-tone') return 'underline-tone';
+    if (ruleId === 'repeated-word' || ruleId === 'confused-words') return 'underline-grammar';
+    if (ruleId === 'capitalisation' || ruleId === 'common-grammar') {
+      // Check if it's a plain English suggestion
+      if (mark.category === 'Plain English') return 'underline-plain-english';
+      if (mark.category === 'GOV.UK style') return 'underline-style';
+      return 'underline-grammar';
+    }
+
+    // Fall back to group-level colours
     var group = mark.group;
     if (group === 'correctness') return 'underline-correctness';
     if (group === 'clarity') return 'underline-clarity';
     if (group === 'style') return 'underline-style';
-    // Fallback: try to infer from ruleId
-    var styleRules = ['contractions', 'numbers', 'date-format', 'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'];
-    var clarityRules = ['sentence-length', 'passive-voice'];
-    if (styleRules.indexOf(mark.ruleId) !== -1) return 'underline-style';
-    if (clarityRules.indexOf(mark.ruleId) !== -1) return 'underline-clarity';
+
+    // Default
     return 'underline-correctness';
   }
 

@@ -1,7 +1,7 @@
 /**
  * Stats module
  * Computes word count, sentence count, paragraph count, reading time,
- * and Flesch-Kincaid readability score. Updates live as user types.
+ * and Hemingway-style readability grade level. Updates live as user types.
  */
 const Stats = (function () {
   'use strict';
@@ -44,10 +44,11 @@ const Stats = (function () {
     els.readingTime.textContent = minutes + ' min';
 
     if (words >= 10 && sentences >= 1) {
-      var score = fleschReadingEase(trimmed, words, sentences);
-      setReadability(score);
+      var grade = fleschKincaidGrade(trimmed, words, sentences);
+      var ease = fleschReadingEase(trimmed, words, sentences);
+      setReadability(grade, ease);
     } else {
-      setReadability(null);
+      setReadability(null, null);
     }
   }
 
@@ -82,66 +83,100 @@ const Stats = (function () {
     return Math.max(1, count);
   }
 
+  function getTotalSyllables(text) {
+    var words = text.match(/\b[a-zA-Z']+\b/g) || [];
+    var total = 0;
+    words.forEach(function (w) {
+      total += countSyllables(w);
+    });
+    return total;
+  }
+
   /**
-   * Flesch Reading Ease score.
-   * 90-100 = Very easy, 60-70 = Standard, 30-50 = Difficult, 0-30 = Very difficult
+   * Flesch-Kincaid Grade Level.
+   * Returns a US school grade level (e.g. 5 = 5th grade, 10 = 10th grade).
+   * Lower = simpler. GOV.UK recommends Grade 6-8 (age 11-14).
+   */
+  function fleschKincaidGrade(text, wordCount, sentenceCount) {
+    var totalSyllables = getTotalSyllables(text);
+    var grade = (0.39 * (wordCount / sentenceCount)) +
+      (11.8 * (totalSyllables / wordCount)) - 15.59;
+    return Math.round(Math.max(1, Math.min(18, grade)));
+  }
+
+  /**
+   * Flesch Reading Ease (kept for internal use / sidebar readability display).
    */
   function fleschReadingEase(text, wordCount, sentenceCount) {
-    var words = text.match(/\b[a-zA-Z']+\b/g) || [];
-    var totalSyllables = 0;
-    words.forEach(function (w) {
-      totalSyllables += countSyllables(w);
-    });
-
+    var totalSyllables = getTotalSyllables(text);
     var score = 206.835 -
       (1.015 * (wordCount / sentenceCount)) -
       (84.6 * (totalSyllables / wordCount));
-
     return Math.round(Math.max(0, Math.min(100, score)));
   }
 
-  function setReadability(score) {
-    lastReadabilityScore = score;
-    if (score === null) {
+  /**
+   * Set readability display using Hemingway-style grade levels.
+   * Grade 1-6: Good (green) - most people can read this easily
+   * Grade 7-9: OK (amber) - fairly readable
+   * Grade 10-12: Hard (orange) - complex
+   * Grade 13+: Very hard (red) - postgraduate level
+   */
+  function setReadability(grade, ease) {
+    lastReadabilityScore = ease;
+    lastGradeLevel = grade;
+
+    if (grade === null) {
       els.readability.textContent = '--';
       els.readability.className = 'stat-value';
-      if (els.readabilityBar) els.readabilityBar.style.width = '0%';
+      if (els.readabilityBar) {
+        els.readabilityBar.style.width = '0%';
+        els.readabilityBar.className = 'readability-bar-fill';
+      }
       return;
     }
 
     var label, cls;
-    if (score >= 70) {
-      label = score + ' Easy';
+    if (grade <= 6) {
+      label = 'Grade ' + grade + ' \u00b7 Good';
       cls = 'readability-easy';
-    } else if (score >= 50) {
-      label = score + ' OK';
+    } else if (grade <= 9) {
+      label = 'Grade ' + grade + ' \u00b7 OK';
       cls = 'readability-ok';
-    } else if (score >= 30) {
-      label = score + ' Hard';
+    } else if (grade <= 12) {
+      label = 'Grade ' + grade + ' \u00b7 Hard';
       cls = 'readability-hard';
     } else {
-      label = score + ' Very hard';
+      label = 'Grade ' + grade + ' \u00b7 Very hard';
       cls = 'readability-vhard';
     }
 
     els.readability.textContent = label;
     els.readability.className = 'stat-value ' + cls;
     if (els.readabilityBar) {
-      els.readabilityBar.style.width = score + '%';
+      // Invert: lower grade = fuller bar (better)
+      var barPercent = Math.max(5, Math.min(100, ((18 - grade) / 17) * 100));
+      els.readabilityBar.style.width = barPercent + '%';
       els.readabilityBar.className = 'readability-bar-fill ' + cls;
     }
   }
 
   var lastReadabilityScore = null;
+  var lastGradeLevel = null;
 
   function getReadabilityScore() {
     return lastReadabilityScore;
+  }
+
+  function getGradeLevel() {
+    return lastGradeLevel;
   }
 
   return {
     init: init,
     update: update,
     countWords: countWords,
-    getReadabilityScore: getReadabilityScore
+    getReadabilityScore: getReadabilityScore,
+    getGradeLevel: getGradeLevel
   };
 })();

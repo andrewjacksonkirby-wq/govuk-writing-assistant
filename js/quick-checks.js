@@ -908,8 +908,8 @@ const QuickChecks = (function () {
           category: 'Sentence length',
           start: match.index,
           end: match.index + match[0].length,
-          message: 'This sentence has ' + words.length + ' words. Try to keep sentences under 25 words.',
-          title: 'Long sentence',
+          message: 'This sentence has ' + words.length + ' words. Try splitting at a natural break \u2014 look for "and", "but", "which", or commas where you could start a new sentence.',
+          title: 'Long sentence (' + words.length + ' words)',
           original: sentence
         });
       }
@@ -964,6 +964,12 @@ const QuickChecks = (function () {
     while ((match = regex.exec(text)) !== null) {
       var participle = match[2].toLowerCase();
       if (PAST_PARTICIPLES.has(participle)) {
+        var beVerb = match[1].toLowerCase();
+        var passivePhrase = match[0];
+
+        // Build educational guidance based on what was detected
+        var tip = buildPassiveVoiceTip(beVerb, participle, passivePhrase, text, match.index);
+
         results.push({
           id: makeId(),
           ruleId: 'passive-voice',
@@ -972,13 +978,36 @@ const QuickChecks = (function () {
           category: 'Passive voice',
           start: match.index,
           end: match.index + match[0].length,
-          message: 'Consider using active voice for clearer writing. Who is doing the action?',
+          message: tip,
           title: 'Passive voice',
           original: match[0]
         });
       }
     }
     return results;
+  }
+
+  /**
+   * Build an educational tip for passive voice.
+   * Helps the user figure out how to rewrite, rather than doing it for them.
+   */
+  function buildPassiveVoiceTip(beVerb, participle, fullMatch, text, matchIndex) {
+    // Check if there's a "by ..." agent after the passive phrase
+    var after = text.substring(matchIndex + fullMatch.length, matchIndex + fullMatch.length + 60);
+    var byAgent = after.match(/^\s+by\s+(\w+(?:\s+\w+)?)/i);
+
+    if (byAgent) {
+      // "was approved by the manager" -> tip: put "the manager" first
+      return 'This is passive voice. The doer ("' + byAgent[1] + '") is hidden at the end. ' +
+        'Try flipping: put "' + byAgent[1] + '" at the start as the subject, then use an active verb. ' +
+        'Pattern: [who did it] + [active verb] + [what was done].';
+    }
+
+    // No "by" agent — the doer is missing entirely
+    return 'This is passive voice \u2014 the sentence hides who is doing the action. ' +
+      'Ask yourself: who or what "' + participle + '"? ' +
+      'Put that person or thing at the start of the sentence as the subject, ' +
+      'then follow with the action. Pattern: [who did it] + [active verb] + [what].';
   }
 
   /**

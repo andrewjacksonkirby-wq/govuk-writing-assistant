@@ -214,16 +214,16 @@ const Suggestions = (function () {
   function updateReadabilityDisplay() {
     if (!scoreReadability) return;
     try {
-      var score = Stats.getReadabilityScore();
-      if (score === null) {
+      var grade = Stats.getGradeLevel();
+      if (grade === null) {
         scoreReadability.textContent = '';
         return;
       }
       var label, cls;
-      if (score >= 70) { label = 'Readability: Easy (' + score + ')'; cls = 'readability-easy'; }
-      else if (score >= 50) { label = 'Readability: OK (' + score + ')'; cls = 'readability-ok'; }
-      else if (score >= 30) { label = 'Readability: Hard (' + score + ')'; cls = 'readability-hard'; }
-      else { label = 'Readability: Very hard (' + score + ')'; cls = 'readability-vhard'; }
+      if (grade <= 6) { label = 'Grade ' + grade + ' \u00b7 Good'; cls = 'readability-easy'; }
+      else if (grade <= 9) { label = 'Grade ' + grade + ' \u00b7 OK'; cls = 'readability-ok'; }
+      else if (grade <= 12) { label = 'Grade ' + grade + ' \u00b7 Hard to read'; cls = 'readability-hard'; }
+      else { label = 'Grade ' + grade + ' \u00b7 Very hard to read'; cls = 'readability-vhard'; }
       scoreReadability.textContent = label;
       scoreReadability.className = 'score-readability ' + cls;
     } catch (e) {
