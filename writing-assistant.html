@@ -1,0 +1,2800 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GOV.UK Writing Assistant</title>
+  <style>
+/* ===== Reset & base ===== */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --font-main: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-border: #d4d4d4;
+  --color-border-light: #e8e8e8;
+  --color-text: #1a1a1a;
+  --color-text-secondary: #555555;
+  --color-text-muted: #888888;
+
+  --color-primary: #1d70b8;
+  --color-primary-hover: #144e81;
+  --color-primary-light: #e8f0f8;
+
+  --color-correctness: #d4351c;
+  --color-correctness-bg: #fef3f0;
+  --color-correctness-border: #f4c1b8;
+
+  --color-clarity: #f47738;
+  --color-clarity-bg: #fef6f0;
+  --color-clarity-border: #f4c89e;
+
+  --color-success: #00703c;
+  --color-success-bg: #e6f3ec;
+
+  --color-warning: #f47738;
+  --color-warning-bg: #fef6f0;
+
+  --color-sensitive: #d4351c;
+  --color-safe: #00703c;
+
+  --color-active-suggestion: #f0f4f9;
+
+  --radius: 4px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 2px 8px rgba(0,0,0,0.1);
+
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+}
+
+body {
+  font-family: var(--font-main);
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--color-text);
+  background: var(--color-bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ===== Header ===== */
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  min-height: 52px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.app-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.save-status {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.save-status.saving {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.save-status.unsaved {
+  background: var(--color-correctness-bg);
+  color: var(--color-correctness);
+}
+
+/* ===== Buttons ===== */
+.btn {
+  font-family: var(--font-main);
+  font-size: 14px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: var(--color-primary);
+  color: #ffffff;
+  border-color: var(--color-primary);
+}
+
+.btn-primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.btn-primary:disabled {
+  background: var(--color-border);
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg);
+  border-color: var(--color-text-secondary);
+}
+
+.btn-close {
+  background: none;
+  color: var(--color-text-secondary);
+  border: none;
+  padding: 4px 8px;
+}
+
+.btn-close:hover {
+  color: var(--color-text);
+}
+
+.btn-sm {
+  font-size: 13px;
+  padding: 3px 10px;
+}
+
+/* ===== Main layout ===== */
+.app-main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ===== Editor pane ===== */
+.editor-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.editor-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  flex-shrink: 0;
+}
+
+.sensitivity-control {
+  display: flex;
+  align-items: center;
+}
+
+.sensitivity-label {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.sensitivity-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-safe);
+}
+
+.sensitivity-text {
+  color: var(--color-safe);
+  font-weight: 500;
+}
+
+.sensitivity-text.sensitive {
+  color: var(--color-sensitive);
+}
+
+.editor-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+.ai-status {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin-right: var(--spacing-sm);
+}
+
+.ai-status.available {
+  color: var(--color-safe);
+}
+
+.ai-status.unavailable {
+  color: var(--color-sensitive);
+}
+
+.editor {
+  flex: 1;
+  padding: var(--spacing-lg);
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--color-text);
+  background: var(--color-surface);
+  overflow-y: auto;
+  outline: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  min-height: 200px;
+}
+
+.editor:focus {
+  box-shadow: inset 0 0 0 2px var(--color-primary-light);
+}
+
+.editor .highlight {
+  background: #fff3cd;
+  border-radius: 2px;
+  outline: 2px solid #ffc107;
+}
+
+.editor .highlight-correctness {
+  background: var(--color-correctness-bg);
+  border-bottom: 2px solid var(--color-correctness);
+}
+
+.editor .highlight-clarity {
+  background: var(--color-clarity-bg);
+  border-bottom: 2px solid var(--color-clarity);
+}
+
+/* ===== Sidebar ===== */
+.sidebar {
+  width: 360px;
+  border-left: 1px solid var(--color-border);
+  background: var(--color-surface);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.sidebar-header {
+  padding: var(--spacing-md) var(--spacing-md) var(--spacing-sm);
+}
+
+.sidebar-title {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.sidebar-filters {
+  display: flex;
+  gap: var(--spacing-xs);
+  padding: 0 var(--spacing-md) var(--spacing-sm);
+}
+
+.filter-btn {
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 4px 12px;
+  border-radius: 100px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.filter-btn:hover {
+  border-color: var(--color-text-secondary);
+}
+
+.filter-btn.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #ffffff;
+}
+
+.sidebar-summary {
+  display: flex;
+  gap: var(--spacing-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-bottom: 1px solid var(--color-border-light);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.suggestions-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--spacing-sm) 0;
+}
+
+/* ===== Suggestion groups ===== */
+.suggestion-group {
+  margin-bottom: var(--spacing-xs);
+}
+
+.suggestion-group.hidden {
+  display: none;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-align: left;
+}
+
+.group-header:hover {
+  background: var(--color-bg);
+}
+
+.group-header[aria-expanded="false"] + .group-body {
+  display: none;
+}
+
+.group-count {
+  background: var(--color-bg);
+  padding: 1px 8px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.group-body {
+  padding: 0 var(--spacing-sm);
+}
+
+/* ===== Category sub-groups ===== */
+.category-group {
+  margin-bottom: var(--spacing-xs);
+}
+
+.category-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-family: var(--font-main);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text-secondary);
+  text-align: left;
+  border-radius: var(--radius);
+}
+
+.category-header:hover {
+  background: var(--color-bg);
+}
+
+.category-header[aria-expanded="false"] + .category-body {
+  display: none;
+}
+
+.category-count {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/* ===== Suggestion cards ===== */
+.suggestion-card {
+  padding: var(--spacing-sm) var(--spacing-md);
+  margin: var(--spacing-xs) var(--spacing-sm);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.suggestion-card:hover {
+  border-color: var(--color-border);
+  background: var(--color-bg);
+}
+
+.suggestion-card.active {
+  background: var(--color-active-suggestion);
+  border-color: var(--color-primary);
+}
+
+.suggestion-card.correctness {
+  border-left: 3px solid var(--color-correctness);
+}
+
+.suggestion-card.clarity {
+  border-left: 3px solid var(--color-clarity);
+}
+
+.suggestion-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 2px;
+  color: var(--color-text);
+}
+
+.suggestion-message {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.5;
+}
+
+.suggestion-preview {
+  font-size: 13px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  margin-bottom: var(--spacing-sm);
+  font-family: var(--font-mono);
+  line-height: 1.5;
+}
+
+.suggestion-preview .original {
+  text-decoration: line-through;
+  color: var(--color-correctness);
+}
+
+.suggestion-preview .replacement {
+  color: var(--color-success);
+  font-weight: 500;
+}
+
+.suggestion-preview .arrow {
+  color: var(--color-text-muted);
+  margin: 0 4px;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: var(--spacing-sm);
+}
+
+.empty-state {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  padding: var(--spacing-md);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ===== Modals ===== */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal {
+  background: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: var(--shadow-md);
+  width: 90%;
+  max-width: 520px;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-small {
+  max-width: 400px;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.modal-header h2 {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: var(--spacing-md) var(--spacing-lg);
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-body p {
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+}
+
+/* ===== Draft list items ===== */
+.draft-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  margin-bottom: var(--spacing-sm);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.draft-item:hover {
+  background: var(--color-bg);
+}
+
+.draft-item.current {
+  border-color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.draft-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.draft-meta {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.draft-actions {
+  display: flex;
+  gap: var(--spacing-xs);
+}
+
+/* ===== Version history items ===== */
+.version-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  margin-bottom: var(--spacing-sm);
+}
+
+.version-meta {
+  font-size: 13px;
+  color: var(--color-text-secondary);
+}
+
+.version-preview {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Loading state ===== */
+.checking-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-md);
+  font-size: 13px;
+  color: var(--color-text-muted);
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--color-border);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== Accessibility ===== */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Reduce motion if preferred */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+  </style>
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <h1 class="app-title">Writing assistant</h1>
+      <span class="save-status" id="saveStatus">Saved</span>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn btn-secondary" id="draftsBtn">Recent drafts</button>
+      <button type="button" class="btn btn-secondary" id="historyBtn">Version history</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="editor-pane">
+      <div class="editor-toolbar">
+        <div class="sensitivity-control">
+          <label class="sensitivity-label" for="sensitivityToggle">
+            <input type="checkbox" id="sensitivityToggle">
+            <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
+          </label>
+        </div>
+        <div class="editor-actions">
+          <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
+        </div>
+      </div>
+      <div
+        class="editor"
+        id="editor"
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Writing editor"
+        spellcheck="false"
+      ></div>
+    </section>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Suggestions</h2>
+      </div>
+
+      <div class="sidebar-filters">
+        <button type="button" class="filter-btn active" data-filter="all">All</button>
+        <button type="button" class="filter-btn" data-filter="correctness">Correctness</button>
+        <button type="button" class="filter-btn" data-filter="clarity">Clarity and style</button>
+      </div>
+
+      <div class="sidebar-summary" id="sidebarSummary">
+        <span class="summary-item" id="summaryTotal">0 suggestions</span>
+        <span class="summary-item" id="summaryCorrectness">0 correctness</span>
+        <span class="summary-item" id="summaryClarity">0 clarity</span>
+      </div>
+
+      <div class="suggestions-list" id="suggestionsList">
+        <div class="suggestion-group" id="correctnessGroup">
+          <button type="button" class="group-header" data-group="correctness" aria-expanded="true">
+            <span class="group-label">Correctness</span>
+            <span class="group-count" id="correctnessCount">0</span>
+          </button>
+          <div class="group-body" id="correctnessBody">
+            <p class="empty-state">No issues found</p>
+          </div>
+        </div>
+
+        <div class="suggestion-group" id="clarityGroup">
+          <button type="button" class="group-header" data-group="clarity" aria-expanded="true">
+            <span class="group-label">Clarity and style</span>
+            <span class="group-count" id="clarityCount">0</span>
+          </button>
+          <div class="group-body" id="clarityBody">
+            <p class="empty-state" id="clarityEmpty">Run "Check now" to see AI suggestions</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Drafts modal -->
+  <div class="modal-overlay" id="draftsModal" hidden>
+    <div class="modal" role="dialog" aria-label="Recent drafts">
+      <div class="modal-header">
+        <h2>Recent drafts</h2>
+        <button type="button" class="btn btn-close" id="closeDraftsModal">Close</button>
+      </div>
+      <div class="modal-body" id="draftsList">
+        <p class="empty-state">No saved drafts</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Version history modal -->
+  <div class="modal-overlay" id="historyModal" hidden>
+    <div class="modal" role="dialog" aria-label="Version history">
+      <div class="modal-header">
+        <h2>Version history</h2>
+        <button type="button" class="btn btn-close" id="closeHistoryModal">Close</button>
+      </div>
+      <div class="modal-body" id="historyList">
+        <p class="empty-state">No versions saved</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm restore dialog -->
+  <div class="modal-overlay" id="restoreConfirmModal" hidden>
+    <div class="modal modal-small" role="alertdialog" aria-label="Confirm restore">
+      <div class="modal-header">
+        <h2>Restore this version?</h2>
+      </div>
+      <div class="modal-body">
+        <p>This will replace your current draft. Your current draft will be saved as a version first.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelRestore">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmRestore">Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+// ===== editor.js =====
+/**
+ * Editor module
+ * Manages the contentEditable editor, text model, and document versioning.
+ */
+const Editor = (function () {
+  let editorEl = null;
+  let documentVersion = 0;
+  let onChangeCallbacks = [];
+
+  function init(elementId) {
+    editorEl = document.getElementById(elementId);
+    if (!editorEl) throw new Error('Editor element not found: ' + elementId);
+
+    editorEl.addEventListener('input', handleInput);
+    editorEl.addEventListener('paste', handlePaste);
+  }
+
+  function handleInput() {
+    clearHighlights();
+    documentVersion++;
+    notifyChange();
+  }
+
+  function handlePaste(e) {
+    // Force plain text paste to keep the editor clean
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, text);
+  }
+
+  function notifyChange() {
+    const text = getText();
+    const version = documentVersion;
+    onChangeCallbacks.forEach(function (cb) {
+      cb(text, version);
+    });
+  }
+
+  function getText() {
+    if (!editorEl) return '';
+    return editorEl.innerText || '';
+  }
+
+  function setText(text) {
+    if (!editorEl) return;
+    editorEl.textContent = text;
+    documentVersion++;
+  }
+
+  function getVersion() {
+    return documentVersion;
+  }
+
+  /**
+   * Register a callback for content changes.
+   * Callback receives (text, version).
+   */
+  function onChange(cb) {
+    onChangeCallbacks.push(cb);
+  }
+
+  /**
+   * Get the editor DOM element.
+   */
+  function getElement() {
+    return editorEl;
+  }
+
+  /**
+   * Apply a text replacement at a specific offset range.
+   * Uses Selection API + execCommand to preserve browser undo.
+   * Returns true if successful.
+   */
+  function applyReplacement(startOffset, endOffset, replacement) {
+    clearHighlights();
+    const text = getText();
+    if (startOffset < 0 || endOffset > text.length || startOffset > endOffset) {
+      return false;
+    }
+
+    // Use Selection API to select the range, then execCommand to replace
+    // This preserves the browser undo stack
+    editorEl.focus();
+    const textNode = findTextNodeAtOffset(editorEl, startOffset);
+    if (!textNode) {
+      // Fallback: direct replacement (loses undo)
+      const newText = text.substring(0, startOffset) + replacement + text.substring(endOffset);
+      editorEl.textContent = newText;
+      documentVersion++;
+      notifyChange();
+      return true;
+    }
+
+    const sel = window.getSelection();
+    const range = document.createRange();
+
+    const startInfo = getNodeOffset(editorEl, startOffset);
+    const endInfo = getNodeOffset(editorEl, endOffset);
+
+    if (startInfo && endInfo) {
+      range.setStart(startInfo.node, startInfo.offset);
+      range.setEnd(endInfo.node, endInfo.offset);
+      sel.removeAllRanges();
+      sel.addRange(range);
+      document.execCommand('insertText', false, replacement);
+      return true;
+    }
+
+    // Fallback
+    const newText = text.substring(0, startOffset) + replacement + text.substring(endOffset);
+    editorEl.textContent = newText;
+    documentVersion++;
+    notifyChange();
+    return true;
+  }
+
+  /**
+   * Find the text node and local offset for a given global character offset.
+   */
+  function getNodeOffset(root, globalOffset) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    let remaining = globalOffset;
+    let node;
+    while ((node = walker.nextNode())) {
+      if (remaining <= node.textContent.length) {
+        return { node: node, offset: remaining };
+      }
+      remaining -= node.textContent.length;
+    }
+    return null;
+  }
+
+  /**
+   * Find the text node at a given offset (used as a quick check).
+   */
+  function findTextNodeAtOffset(root, offset) {
+    const result = getNodeOffset(root, offset);
+    return result ? result.node : null;
+  }
+
+  /**
+   * Scroll to and highlight a text range in the editor.
+   * Uses a temporary mark element for visual highlighting.
+   */
+  function highlightRange(startOffset, endOffset, groupClass) {
+    clearHighlights();
+    const text = getText();
+    if (startOffset < 0 || endOffset > text.length) return;
+
+    const before = text.substring(0, startOffset);
+    const target = text.substring(startOffset, endOffset);
+    const after = text.substring(endOffset);
+
+    // Build highlighted content
+    const frag = document.createDocumentFragment();
+    if (before) frag.appendChild(document.createTextNode(before));
+
+    const mark = document.createElement('mark');
+    mark.className = 'highlight ' + (groupClass || '');
+    mark.textContent = target;
+    frag.appendChild(mark);
+
+    if (after) frag.appendChild(document.createTextNode(after));
+
+    editorEl.innerHTML = '';
+    editorEl.appendChild(frag);
+
+    // Scroll to the highlight
+    mark.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  function clearHighlights() {
+    if (!editorEl) return;
+    // Restore plain text content if highlights are present
+    const marks = editorEl.querySelectorAll('mark');
+    if (marks.length > 0) {
+      // Get text before clearing to avoid losing content
+      const text = editorEl.innerText || '';
+      editorEl.textContent = text;
+    }
+  }
+
+  return {
+    init: init,
+    getText: getText,
+    setText: setText,
+    getVersion: getVersion,
+    onChange: onChange,
+    getElement: getElement,
+    applyReplacement: applyReplacement,
+    highlightRange: highlightRange,
+    clearHighlights: clearHighlights
+  };
+})();
+
+// ===== documents.js =====
+/**
+ * Documents module
+ * Handles saving, loading, autosave, recent drafts, and version history.
+ * Uses localStorage for persistence.
+ */
+const Documents = (function () {
+  const STORAGE_KEY = 'govuk-wa-documents';
+  const CURRENT_KEY = 'govuk-wa-current-doc';
+  const AUTOSAVE_INTERVAL = 5000; // 5 seconds
+
+  let currentDocId = null;
+  let autosaveTimer = null;
+  let lastSavedText = '';
+  let onStatusChange = null;
+
+  /**
+   * Get all documents from storage.
+   */
+  function getAllDocs() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  function saveDocs(docs) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+  }
+
+  /**
+   * Initialise with callbacks.
+   */
+  function init(statusCallback) {
+    onStatusChange = statusCallback;
+    currentDocId = localStorage.getItem(CURRENT_KEY);
+    if (!currentDocId) {
+      currentDocId = createNewDoc();
+    }
+  }
+
+  /**
+   * Create a new document, return its id.
+   */
+  function createNewDoc(initialText) {
+    var id = 'doc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    var docs = getAllDocs();
+    docs[id] = {
+      id: id,
+      text: initialText || '',
+      title: 'Untitled draft',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      sensitivity: 'sensitive', // 'sensitive' or 'safe'
+      versions: []
+    };
+    saveDocs(docs);
+    localStorage.setItem(CURRENT_KEY, id);
+    currentDocId = id;
+    return id;
+  }
+
+  /**
+   * Load the current document. Returns { id, text, title, sensitivity, ... } or null.
+   */
+  function loadCurrent() {
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    if (!doc) {
+      currentDocId = createNewDoc();
+      docs = getAllDocs();
+      doc = docs[currentDocId];
+    }
+    lastSavedText = doc.text || '';
+    return doc;
+  }
+
+  /**
+   * Save current text (called by autosave and manual save).
+   */
+  function saveText(text) {
+    if (!currentDocId) return;
+    setStatus('saving');
+    var docs = getAllDocs();
+    if (!docs[currentDocId]) return;
+
+    docs[currentDocId].text = text;
+    docs[currentDocId].updatedAt = new Date().toISOString();
+
+    // Auto-title from first line
+    var firstLine = text.trim().split('\n')[0] || '';
+    if (firstLine.length > 0) {
+      docs[currentDocId].title = firstLine.substring(0, 60) + (firstLine.length > 60 ? '...' : '');
+    } else {
+      docs[currentDocId].title = 'Untitled draft';
+    }
+
+    saveDocs(docs);
+    lastSavedText = text;
+    setStatus('saved');
+  }
+
+  /**
+   * Start autosave loop.
+   */
+  function startAutosave(getTextFn) {
+    stopAutosave();
+    autosaveTimer = setInterval(function () {
+      var text = getTextFn();
+      if (text !== lastSavedText) {
+        saveText(text);
+      }
+    }, AUTOSAVE_INTERVAL);
+  }
+
+  function stopAutosave() {
+    if (autosaveTimer) {
+      clearInterval(autosaveTimer);
+      autosaveTimer = null;
+    }
+  }
+
+  /**
+   * Save a version snapshot.
+   */
+  function saveVersion(text) {
+    if (!currentDocId) return;
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    if (!doc) return;
+
+    doc.versions.push({
+      timestamp: new Date().toISOString(),
+      text: text
+    });
+
+    // Keep max 50 versions
+    if (doc.versions.length > 50) {
+      doc.versions = doc.versions.slice(-50);
+    }
+
+    saveDocs(docs);
+  }
+
+  /**
+   * Get version history for the current document.
+   */
+  function getVersions() {
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    if (!doc) return [];
+    return (doc.versions || []).slice().reverse();
+  }
+
+  /**
+   * Restore a version by index (in reversed array).
+   * Saves current text as a version first.
+   */
+  function restoreVersion(reversedIndex, currentText) {
+    var versions = getVersions();
+    if (reversedIndex < 0 || reversedIndex >= versions.length) return null;
+
+    // Save current state as a version first
+    saveVersion(currentText);
+
+    var version = versions[reversedIndex];
+    saveText(version.text);
+    return version.text;
+  }
+
+  /**
+   * Get recent drafts (all documents, sorted by last updated).
+   */
+  function getRecentDrafts() {
+    var docs = getAllDocs();
+    return Object.values(docs)
+      .sort(function (a, b) {
+        return new Date(b.updatedAt) - new Date(a.updatedAt);
+      });
+  }
+
+  /**
+   * Switch to a different document.
+   */
+  function switchDoc(docId) {
+    var docs = getAllDocs();
+    if (!docs[docId]) return null;
+    currentDocId = docId;
+    localStorage.setItem(CURRENT_KEY, docId);
+    lastSavedText = docs[docId].text || '';
+    return docs[docId];
+  }
+
+  /**
+   * Get/set the sensitivity classification of the current document.
+   */
+  function getSensitivity() {
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    return doc ? doc.sensitivity : 'safe';
+  }
+
+  function setSensitivity(value) {
+    var docs = getAllDocs();
+    if (!docs[currentDocId]) return;
+    docs[currentDocId].sensitivity = value;
+    saveDocs(docs);
+  }
+
+  function getCurrentId() {
+    return currentDocId;
+  }
+
+  function setStatus(status) {
+    if (onStatusChange) onStatusChange(status);
+  }
+
+  /**
+   * Delete a document.
+   */
+  function deleteDoc(docId) {
+    var docs = getAllDocs();
+    delete docs[docId];
+    saveDocs(docs);
+    if (currentDocId === docId) {
+      var remaining = Object.keys(docs);
+      if (remaining.length > 0) {
+        switchDoc(remaining[0]);
+      } else {
+        currentDocId = createNewDoc();
+      }
+    }
+  }
+
+  /**
+   * Create a new draft (for "New draft" button).
+   */
+  function newDraft(currentText) {
+    // Save current first
+    if (currentText && currentText.trim().length > 0) {
+      saveText(currentText);
+      saveVersion(currentText);
+    }
+    var id = createNewDoc();
+    return getAllDocs()[id];
+  }
+
+  return {
+    init: init,
+    loadCurrent: loadCurrent,
+    saveText: saveText,
+    startAutosave: startAutosave,
+    stopAutosave: stopAutosave,
+    saveVersion: saveVersion,
+    getVersions: getVersions,
+    restoreVersion: restoreVersion,
+    getRecentDrafts: getRecentDrafts,
+    switchDoc: switchDoc,
+    getSensitivity: getSensitivity,
+    setSensitivity: setSensitivity,
+    getCurrentId: getCurrentId,
+    deleteDoc: deleteDoc,
+    newDraft: newDraft
+  };
+})();
+
+// ===== quick-checks.js =====
+/**
+ * QuickChecks module
+ * Regex-based, local-only mechanical checks.
+ * Covers: spelling, grammar, repeated words, double spaces, punctuation.
+ * Never calls external APIs.
+ */
+const QuickChecks = (function () {
+  var debounceTimer = null;
+  var DEBOUNCE_MS = 1000; // 1 second, within 800-1500ms range
+  var pendingVersion = -1;
+
+  /**
+   * Common misspellings dictionary (UK English / GOV.UK focus).
+   * Each key is a misspelling, value is the correct spelling.
+   */
+  var COMMON_MISSPELLINGS = {
+    'accomodation': 'accommodation',
+    'accross': 'across',
+    'acheive': 'achieve',
+    'aknowledge': 'acknowledge',
+    'adress': 'address',
+    'agrement': 'agreement',
+    'alot': 'a lot',
+    'amend-ment': 'amendment',
+    'amoung': 'among',
+    'apparantly': 'apparently',
+    'applicaiton': 'application',
+    'assesment': 'assessment',
+    'basicly': 'basically',
+    'becuase': 'because',
+    'begining': 'beginning',
+    'beleive': 'believe',
+    'buisness': 'business',
+    'calender': 'calendar',
+    'catagory': 'category',
+    'comittee': 'committee',
+    'commision': 'commission',
+    'completly': 'completely',
+    'concious': 'conscious',
+    'consistant': 'consistent',
+    'correspondance': 'correspondence',
+    'criterias': 'criteria',
+    'decison': 'decision',
+    'definately': 'definitely',
+    'dependant': 'dependent',
+    'develope': 'develop',
+    'diffrence': 'difference',
+    'dissapoint': 'disappoint',
+    'embarass': 'embarrass',
+    'enviroment': 'environment',
+    'equiptment': 'equipment',
+    'excellant': 'excellent',
+    'existance': 'existence',
+    'experiance': 'experience',
+    'foriegn': 'foreign',
+    'fourty': 'forty',
+    'fulfil': 'fulfil',
+    'goverment': 'government',
+    'governemnt': 'government',
+    'guidence': 'guidance',
+    'happend': 'happened',
+    'harrass': 'harass',
+    'immediatly': 'immediately',
+    'independant': 'independent',
+    'indipendent': 'independent',
+    'infomation': 'information',
+    'knowlege': 'knowledge',
+    'liaise': 'liaise',
+    'liason': 'liaison',
+    'maintainance': 'maintenance',
+    'managment': 'management',
+    'millenium': 'millennium',
+    'miniscule': 'minuscule',
+    'mispell': 'misspell',
+    'neccessary': 'necessary',
+    'necessery': 'necessary',
+    'noticable': 'noticeable',
+    'occassion': 'occasion',
+    'occured': 'occurred',
+    'occurence': 'occurrence',
+    'offical': 'official',
+    'oportunity': 'opportunity',
+    'parliment': 'parliament',
+    'particually': 'particularly',
+    'peice': 'piece',
+    'persistant': 'persistent',
+    'posession': 'possession',
+    'practise': 'practise',
+    'preceeding': 'preceding',
+    'privelege': 'privilege',
+    'proffesional': 'professional',
+    'profesional': 'professional',
+    'publically': 'publicly',
+    'recomend': 'recommend',
+    'recieve': 'receive',
+    'refered': 'referred',
+    'relevent': 'relevant',
+    'reoccur': 'recur',
+    'reponsible': 'responsible',
+    'resourse': 'resource',
+    'responsibilty': 'responsibility',
+    'seize': 'seize',
+    'seperate': 'separate',
+    'sincerely': 'sincerely',
+    'sucessful': 'successful',
+    'supercede': 'supersede',
+    'supress': 'suppress',
+    'surprize': 'surprise',
+    'tendancy': 'tendency',
+    'thier': 'their',
+    'threshhold': 'threshold',
+    'tommorow': 'tomorrow',
+    'tounge': 'tongue',
+    'transfered': 'transferred',
+    'truely': 'truly',
+    'unfortunatly': 'unfortunately',
+    'untill': 'until',
+    'usefull': 'useful',
+    'vegatable': 'vegetable',
+    'wether': 'whether',
+    'wich': 'which',
+    'wierd': 'weird',
+    'withold': 'withhold',
+    'writting': 'writing',
+    'teh': 'the',
+    'adn': 'and',
+    'hte': 'the',
+    'taht': 'that',
+    'ahve': 'have',
+    'nto': 'not',
+    'waht': 'what',
+    'yuo': 'you',
+    'coudl': 'could',
+    'shoudl': 'should',
+    'woudl': 'would',
+    'dont': "don't",
+    'doesnt': "doesn't",
+    'cant': "can't",
+    'wont': "won't",
+    'didnt': "didn't",
+    'isnt': "isn't",
+    'wasnt': "wasn't",
+    'hasnt': "hasn't",
+    'hadnt': "hadn't",
+    'wouldnt': "wouldn't",
+    'shouldnt': "shouldn't",
+    'couldnt': "couldn't"
+  };
+
+  /**
+   * All check rules. Each returns an array of suggestion objects.
+   */
+  var rules = [
+    {
+      id: 'spelling',
+      category: 'Spelling',
+      run: checkSpelling
+    },
+    {
+      id: 'repeated-word',
+      category: 'Grammar',
+      run: checkRepeatedWords
+    },
+    {
+      id: 'double-space',
+      category: 'Punctuation',
+      run: checkDoubleSpaces
+    },
+    {
+      id: 'punctuation-spacing',
+      category: 'Punctuation',
+      run: checkPunctuationSpacing
+    },
+    {
+      id: 'capitalisation',
+      category: 'Grammar',
+      run: checkCapitalisation
+    },
+    {
+      id: 'common-grammar',
+      category: 'Grammar',
+      run: checkCommonGrammar
+    }
+  ];
+
+  var idCounter = 0;
+
+  function makeId() {
+    return 'qc-' + (++idCounter);
+  }
+
+  /**
+   * Check for common misspellings.
+   */
+  function checkSpelling(text) {
+    var results = [];
+    var wordRegex = /\b[a-zA-Z']+\b/g;
+    var match;
+    while ((match = wordRegex.exec(text)) !== null) {
+      var word = match[0];
+      var lower = word.toLowerCase();
+      if (COMMON_MISSPELLINGS[lower]) {
+        var replacement = COMMON_MISSPELLINGS[lower];
+        // Preserve original case for first letter
+        if (word[0] === word[0].toUpperCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'spelling',
+          source: 'regex',
+          group: 'correctness',
+          category: 'Spelling',
+          start: match.index,
+          end: match.index + word.length,
+          message: '"' + word + '" may be misspelt',
+          title: 'Possible misspelling',
+          replacement: replacement,
+          original: word
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Check for repeated words (e.g., "the the").
+   */
+  function checkRepeatedWords(text) {
+    var results = [];
+    var regex = /\b(\w+)\s+\1\b/gi;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'repeated-word',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Grammar',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: '"' + match[1] + '" is repeated',
+        title: 'Repeated word',
+        replacement: match[1],
+        original: match[0]
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Check for double spaces.
+   */
+  function checkDoubleSpaces(text) {
+    var results = [];
+    var regex = /[^\n] {2,}/g;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      // Only flag the extra spaces (keep the first char)
+      var spacesStart = match.index + 1;
+      var spacesEnd = match.index + match[0].length;
+      results.push({
+        id: makeId(),
+        ruleId: 'double-space',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Punctuation',
+        start: spacesStart,
+        end: spacesEnd,
+        message: 'Multiple spaces found',
+        title: 'Extra spaces',
+        replacement: ' ',
+        original: match[0].substring(1)
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Check for punctuation spacing issues.
+   * - Space before comma, period, semicolon, colon
+   * - Missing space after comma, period, semicolon, colon
+   */
+  function checkPunctuationSpacing(text) {
+    var results = [];
+
+    // Space before punctuation (but not before decimal points like 3.5)
+    var spaceBefore = / +([,;:])/g;
+    var match;
+    while ((match = spaceBefore.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'punctuation-spacing',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Punctuation',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'Remove space before "' + match[1] + '"',
+        title: 'Space before punctuation',
+        replacement: match[1],
+        original: match[0]
+      });
+    }
+
+    // Missing space after punctuation (not URLs, not decimal numbers, not end of text)
+    var missingSpace = /([,;:])([a-zA-Z])/g;
+    while ((match = missingSpace.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'punctuation-spacing',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Punctuation',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'Add a space after "' + match[1] + '"',
+        title: 'Missing space after punctuation',
+        replacement: match[1] + ' ' + match[2],
+        original: match[0]
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * Check for missing capitalisation at start of sentences.
+   */
+  function checkCapitalisation(text) {
+    var results = [];
+    // Match sentence starters: beginning of text, or after ". " / "? " / "! "
+    var regex = /(?:^|[.!?]\s+)([a-z])/gm;
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      var charIndex = match.index + match[0].length - 1;
+      var theChar = text[charIndex];
+      results.push({
+        id: makeId(),
+        ruleId: 'capitalisation',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Grammar',
+        start: charIndex,
+        end: charIndex + 1,
+        message: 'Sentences should start with a capital letter',
+        title: 'Missing capital letter',
+        replacement: theChar.toUpperCase(),
+        original: theChar
+      });
+    }
+    return results;
+  }
+
+  /**
+   * Check for common grammar issues.
+   */
+  function checkCommonGrammar(text) {
+    var results = [];
+    var patterns = [
+      { regex: /\b(could of)\b/gi, fix: 'could have', msg: 'Use "could have" instead of "could of"' },
+      { regex: /\b(should of)\b/gi, fix: 'should have', msg: 'Use "should have" instead of "should of"' },
+      { regex: /\b(would of)\b/gi, fix: 'would have', msg: 'Use "would have" instead of "would of"' },
+      { regex: /\b(must of)\b/gi, fix: 'must have', msg: 'Use "must have" instead of "must of"' },
+      { regex: /\b(alright)\b/gi, fix: 'all right', msg: 'GOV.UK style uses "all right" not "alright"' },
+      { regex: /\b(utilise)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilise" for plain English' },
+      { regex: /\b(utilisation)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilisation" for plain English' },
+      { regex: /\b(commence)\b/gi, fix: 'start', msg: 'Prefer "start" over "commence" for plain English' },
+      { regex: /\b(purchase)\b/gi, fix: 'buy', msg: 'Prefer "buy" over "purchase" for plain English' },
+      { regex: /\b(regarding)\b/gi, fix: 'about', msg: 'Prefer "about" over "regarding" for plain English' },
+      { regex: /\b(in order to)\b/gi, fix: 'to', msg: 'Prefer "to" over "in order to" for brevity' },
+      { regex: /\b(prior to)\b/gi, fix: 'before', msg: 'Prefer "before" over "prior to" for plain English' }
+    ];
+
+    patterns.forEach(function (pat) {
+      var match;
+      while ((match = pat.regex.exec(text)) !== null) {
+        var replacement = pat.fix;
+        // Preserve capitalisation
+        if (match[1][0] === match[1][0].toUpperCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'common-grammar',
+          source: 'regex',
+          group: 'correctness',
+          category: 'Grammar',
+          start: match.index,
+          end: match.index + match[1].length,
+          message: pat.msg,
+          title: 'Grammar',
+          replacement: replacement,
+          original: match[1]
+        });
+      }
+    });
+    return results;
+  }
+
+  /**
+   * Run all quick checks on the given text.
+   * Returns an array of suggestion objects.
+   */
+  function runAll(text) {
+    var allResults = [];
+    rules.forEach(function (rule) {
+      var results = rule.run(text);
+      allResults = allResults.concat(results);
+    });
+    // Sort by document order
+    allResults.sort(function (a, b) { return a.start - b.start; });
+    return allResults;
+  }
+
+  /**
+   * Schedule a debounced check.
+   * Cancels any in-flight check if typing resumes.
+   * Calls callback(results, version) when done.
+   */
+  function scheduleCheck(text, version, callback) {
+    cancelPending();
+    pendingVersion = version;
+
+    debounceTimer = setTimeout(function () {
+      // Check version hasn't changed
+      if (version !== pendingVersion) return;
+
+      var results = runAll(text);
+      callback(results, version);
+    }, DEBOUNCE_MS);
+  }
+
+  /**
+   * Cancel any pending debounced check.
+   */
+  function cancelPending() {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer);
+      debounceTimer = null;
+    }
+  }
+
+  return {
+    runAll: runAll,
+    scheduleCheck: scheduleCheck,
+    cancelPending: cancelPending
+  };
+})();
+
+// ===== full-check.js =====
+/**
+ * FullCheck module
+ * AI-based full check with sensitivity gate.
+ * Only runs when user clicks "Check now" AND content is marked safe.
+ * Results go under "Clarity and style".
+ */
+const FullCheck = (function () {
+  var isRunning = false;
+  var idCounter = 0;
+
+  // Default API config - user can configure this
+  var config = {
+    apiEndpoint: '', // Set to a real endpoint to enable AI checks
+    apiKey: '',
+    model: 'claude-sonnet-4-20250514',
+    useSimulation: true // If true, uses local simulation instead of API
+  };
+
+  function makeId() {
+    return 'fc-' + (++idCounter);
+  }
+
+  /**
+   * Check whether AI check is allowed for the current sensitivity setting.
+   */
+  function isAllowed(sensitivity) {
+    return sensitivity === 'safe';
+  }
+
+  /**
+   * Run the full check.
+   * @param {string} text - The editor text
+   * @param {string} sensitivity - 'safe' or 'sensitive'
+   * @param {function} callback - callback(results, error)
+   */
+  function run(text, sensitivity, callback) {
+    if (!isAllowed(sensitivity)) {
+      callback(null, 'blocked');
+      return;
+    }
+
+    if (isRunning) {
+      callback(null, 'already-running');
+      return;
+    }
+
+    if (!text || text.trim().length === 0) {
+      callback([], null);
+      return;
+    }
+
+    isRunning = true;
+
+    if (config.useSimulation || !config.apiEndpoint) {
+      runSimulation(text, callback);
+    } else {
+      runAPI(text, callback);
+    }
+  }
+
+  /**
+   * Local simulation of AI checks for GOV.UK style issues.
+   * This provides useful checks without needing an API.
+   */
+  function runSimulation(text, callback) {
+    setTimeout(function () {
+      var results = [];
+
+      // Check sentence length
+      var sentences = text.split(/[.!?]+/).filter(function (s) { return s.trim().length > 0; });
+      sentences.forEach(function (sentence) {
+        var words = sentence.trim().split(/\s+/);
+        if (words.length > 25) {
+          var start = text.indexOf(sentence.trim());
+          if (start >= 0) {
+            results.push({
+              id: makeId(),
+              ruleId: 'sentence-length',
+              source: 'ai',
+              group: 'clarity',
+              category: 'Sentence length',
+              start: start,
+              end: start + sentence.trim().length,
+              message: 'This sentence has ' + words.length + ' words. GOV.UK recommends keeping sentences under 25 words.',
+              title: 'Long sentence',
+              original: sentence.trim()
+            });
+          }
+        }
+      });
+
+      // Check for passive voice patterns
+      var passivePatterns = [
+        /\b(was|were|is|are|been|being|be)\s+(being\s+)?\w+ed\b/gi,
+        /\b(has|have|had)\s+been\s+\w+ed\b/gi
+      ];
+      passivePatterns.forEach(function (pat) {
+        var match;
+        while ((match = pat.exec(text)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'passive-voice',
+            source: 'ai',
+            group: 'clarity',
+            category: 'Tone',
+            start: match.index,
+            end: match.index + match[0].length,
+            message: 'Consider using active voice for clearer writing.',
+            title: 'Passive voice',
+            original: match[0]
+          });
+        }
+      });
+
+      // Check for GOV.UK date format issues
+      var datePatterns = [
+        { regex: /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, msg: 'GOV.UK style: use "1 January 2024" format instead of numeric dates' },
+        { regex: /\b(\d{1,2})(?:st|nd|rd|th)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi, msg: 'GOV.UK style: do not use ordinals with dates. Write "1 January" not "1st January"' }
+      ];
+      datePatterns.forEach(function (pat) {
+        var match;
+        while ((match = pat.regex.exec(text)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'date-format',
+            source: 'ai',
+            group: 'clarity',
+            category: 'Dates',
+            start: match.index,
+            end: match.index + match[0].length,
+            message: pat.msg,
+            title: 'Date format',
+            original: match[0]
+          });
+        }
+      });
+
+      // Check for "click here" and poor link text
+      var linkPatterns = [
+        { regex: /\bclick here\b/gi, msg: 'Avoid "click here" - use descriptive link text instead' },
+        { regex: /\bhere\b(?=\s*<|\s*\(http)/gi, msg: 'Avoid using "here" as link text - describe the destination' }
+      ];
+      linkPatterns.forEach(function (pat) {
+        var match;
+        while ((match = pat.regex.exec(text)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'link-text',
+            source: 'ai',
+            group: 'clarity',
+            category: 'Links',
+            start: match.index,
+            end: match.index + match[0].length,
+            message: pat.msg,
+            title: 'Link text',
+            original: match[0]
+          });
+        }
+      });
+
+      // Check for GOV.UK style issues
+      var stylePatterns = [
+        { regex: /\bplease\b/gi, msg: 'GOV.UK style: avoid using "please" - be direct' },
+        { regex: /\bkindly\b/gi, msg: 'GOV.UK style: avoid "kindly" - be direct' },
+        { regex: /\bgoing forward\b/gi, msg: 'Avoid "going forward" - be specific about timing' },
+        { regex: /\bat this point in time\b/gi, msg: 'Use "now" or "currently" instead' },
+        { regex: /\bin the event that\b/gi, msg: 'Use "if" instead of "in the event that"' },
+        { regex: /\bwith regards to\b/gi, msg: 'Use "about" instead of "with regards to"' },
+        { regex: /\ba number of\b/gi, msg: 'Be specific - say how many instead of "a number of"' },
+        { regex: /\bin respect of\b/gi, msg: 'Use "about" or "for" instead of "in respect of"' },
+        { regex: /\bI\b/g, msg: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure the sentence.' },
+        { regex: /\betc\.?\b/gi, msg: 'GOV.UK style: avoid "etc" - list the items or say "for example"' },
+        { regex: /\bie\b/gi, msg: 'Write "that is" or rephrase instead of "ie"' },
+        { regex: /\beg\b/gi, msg: 'Write "for example" instead of "eg"' }
+      ];
+      stylePatterns.forEach(function (pat) {
+        var match;
+        while ((match = pat.regex.exec(text)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'govuk-style',
+            source: 'ai',
+            group: 'clarity',
+            category: 'GOV.UK style',
+            start: match.index,
+            end: match.index + match[0].length,
+            message: pat.msg,
+            title: 'Style',
+            original: match[0]
+          });
+        }
+      });
+
+      // Sort by document order
+      results.sort(function (a, b) { return a.start - b.start; });
+
+      isRunning = false;
+      callback(results, null);
+    }, 800); // Simulate slight delay
+  }
+
+  /**
+   * Run via external API.
+   * This function is only called when config.useSimulation is false
+   * and an API endpoint is configured.
+   */
+  function runAPI(text, callback) {
+    var prompt = 'You are a GOV.UK content style checker. Analyse the following text and return a JSON array of issues.\n\n' +
+      'Check for:\n' +
+      '- GOV.UK style violations\n' +
+      '- Sentence length over 25 words\n' +
+      '- Poor link text like "click here"\n' +
+      '- Incorrect date formats (should be "1 January 2024")\n' +
+      '- Unclear phrasing\n' +
+      '- Passive voice\n' +
+      '- Tone issues\n\n' +
+      'Return a JSON array where each item has:\n' +
+      '- category: one of "GOV.UK style", "Sentence length", "Links", "Dates", "Tone"\n' +
+      '- start: character offset start\n' +
+      '- end: character offset end\n' +
+      '- message: short explanation\n' +
+      '- title: short title\n' +
+      '- original: the problematic text\n' +
+      '- replacement: suggested fix (optional)\n\n' +
+      'Text to check:\n\n' + text;
+
+    fetch(config.apiEndpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': config.apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: config.model,
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    })
+    .then(function (response) {
+      if (!response.ok) throw new Error('API error: ' + response.status);
+      return response.json();
+    })
+    .then(function (data) {
+      var content = data.content && data.content[0] && data.content[0].text;
+      if (!content) {
+        isRunning = false;
+        callback([], null);
+        return;
+      }
+
+      // Parse the JSON from the response
+      var jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (!jsonMatch) {
+        isRunning = false;
+        callback([], null);
+        return;
+      }
+
+      var issues = JSON.parse(jsonMatch[0]);
+      var results = issues.map(function (issue) {
+        return {
+          id: makeId(),
+          ruleId: 'ai-' + (issue.category || 'general').toLowerCase().replace(/\s+/g, '-'),
+          source: 'ai',
+          group: 'clarity',
+          category: issue.category || 'Style',
+          start: issue.start || 0,
+          end: issue.end || 0,
+          message: issue.message || '',
+          title: issue.title || 'Style issue',
+          original: issue.original || '',
+          replacement: issue.replacement
+        };
+      });
+
+      results.sort(function (a, b) { return a.start - b.start; });
+      isRunning = false;
+      callback(results, null);
+    })
+    .catch(function (err) {
+      isRunning = false;
+      callback(null, err.message);
+    });
+  }
+
+  /**
+   * Configure the API endpoint.
+   */
+  function configure(options) {
+    Object.assign(config, options);
+  }
+
+  function getIsRunning() {
+    return isRunning;
+  }
+
+  return {
+    run: run,
+    isAllowed: isAllowed,
+    configure: configure,
+    getIsRunning: getIsRunning
+  };
+})();
+
+// ===== suggestions.js =====
+/**
+ * Suggestions module
+ * Manages the sidebar: rendering, filtering, grouping, apply/dismiss actions.
+ */
+const Suggestions = (function () {
+  var correctnessSuggestions = [];
+  var claritySuggestions = [];
+  var dismissedIds = new Set();
+  var activeFilter = 'all'; // 'all', 'correctness', 'clarity'
+  var activeSuggestionId = null;
+  var hasRunFullCheck = false;
+
+  // Callbacks
+  var onApply = null;
+  var onSelect = null;
+
+  // DOM refs (set during init)
+  var listEl, correctnessBody, clarityBody;
+  var correctnessCount, clarityCount;
+  var summaryTotal, summaryCorrectness, summaryClarity;
+  var clarityGroup, clarityEmpty;
+  var correctnessGroup;
+
+  // Dismissed storage key
+  var DISMISSED_KEY = 'govuk-wa-dismissed';
+
+  function init(callbacks) {
+    onApply = callbacks.onApply;
+    onSelect = callbacks.onSelect;
+
+    listEl = document.getElementById('suggestionsList');
+    correctnessBody = document.getElementById('correctnessBody');
+    clarityBody = document.getElementById('clarityBody');
+    correctnessCount = document.getElementById('correctnessCount');
+    clarityCount = document.getElementById('clarityCount');
+    summaryTotal = document.getElementById('summaryTotal');
+    summaryCorrectness = document.getElementById('summaryCorrectness');
+    summaryClarity = document.getElementById('summaryClarity');
+    clarityGroup = document.getElementById('clarityGroup');
+    clarityEmpty = document.getElementById('clarityEmpty');
+    correctnessGroup = document.getElementById('correctnessGroup');
+
+    // Load dismissed
+    loadDismissed();
+
+    // Set up filter buttons
+    var filterBtns = document.querySelectorAll('.filter-btn');
+    filterBtns.forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        filterBtns.forEach(function (b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        render();
+      });
+    });
+
+    // Set up group collapse toggles
+    var groupHeaders = document.querySelectorAll('.group-header');
+    groupHeaders.forEach(function (header) {
+      header.addEventListener('click', function () {
+        var expanded = header.getAttribute('aria-expanded') === 'true';
+        header.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      });
+    });
+  }
+
+  function loadDismissed() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(DISMISSED_KEY)) || [];
+      dismissedIds = new Set(stored);
+    } catch (e) {
+      dismissedIds = new Set();
+    }
+  }
+
+  function saveDismissed() {
+    localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
+  }
+
+  /**
+   * Update correctness suggestions (from quick checks).
+   */
+  function setCorrectness(suggestions) {
+    correctnessSuggestions = suggestions.filter(function (s) {
+      return !dismissedIds.has(s.ruleId + ':' + s.start + ':' + s.original);
+    });
+    render();
+  }
+
+  /**
+   * Update clarity suggestions (from full check).
+   */
+  function setClarity(suggestions) {
+    hasRunFullCheck = true;
+    claritySuggestions = suggestions.filter(function (s) {
+      return !dismissedIds.has(s.ruleId + ':' + s.start + ':' + (s.original || ''));
+    });
+    render();
+  }
+
+  /**
+   * Mark full check as run (even if no results yet).
+   */
+  function markFullCheckRun() {
+    hasRunFullCheck = true;
+    render();
+  }
+
+  /**
+   * Dismiss a suggestion.
+   */
+  function dismiss(suggestion) {
+    var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
+    dismissedIds.add(key);
+    saveDismissed();
+
+    // Remove from arrays
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
+    claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
+
+    if (activeSuggestionId === suggestion.id) {
+      activeSuggestionId = null;
+    }
+
+    render();
+  }
+
+  /**
+   * Get all current suggestions.
+   */
+  function getAll() {
+    return correctnessSuggestions.concat(claritySuggestions);
+  }
+
+  /**
+   * Render the full sidebar.
+   */
+  function render() {
+    var corr = correctnessSuggestions;
+    var clar = claritySuggestions;
+
+    // Update counts
+    correctnessCount.textContent = corr.length;
+    clarityCount.textContent = clar.length;
+    summaryTotal.textContent = (corr.length + clar.length) + ' suggestions';
+    summaryCorrectness.textContent = corr.length + ' correctness';
+    summaryClarity.textContent = clar.length + ' clarity';
+
+    // Filter visibility
+    correctnessGroup.classList.toggle('hidden', activeFilter === 'clarity');
+    clarityGroup.classList.toggle('hidden', activeFilter === 'correctness');
+
+    // Render correctness
+    renderGroup(correctnessBody, corr, 'correctness');
+
+    // Render clarity
+    renderClarityGroup(clarityBody, clar);
+  }
+
+  function renderGroup(container, suggestions, groupClass) {
+    container.innerHTML = '';
+
+    if (suggestions.length === 0) {
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'No issues found';
+      container.appendChild(emptyP);
+      return;
+    }
+
+    // Group by category
+    var categories = {};
+    suggestions.forEach(function (s) {
+      var cat = s.category || 'Other';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(s);
+    });
+
+    Object.keys(categories).forEach(function (cat) {
+      var items = categories[cat];
+      var catGroup = document.createElement('div');
+      catGroup.className = 'category-group';
+
+      var catHeader = document.createElement('button');
+      catHeader.type = 'button';
+      catHeader.className = 'category-header';
+      catHeader.setAttribute('aria-expanded', 'true');
+      catHeader.innerHTML =
+        '<span>' + escapeHtml(cat) + '</span>' +
+        '<span class="category-count">' + items.length + '</span>';
+      catHeader.addEventListener('click', function () {
+        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
+        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      });
+      catGroup.appendChild(catHeader);
+
+      var catBody = document.createElement('div');
+      catBody.className = 'category-body';
+
+      items.forEach(function (s) {
+        catBody.appendChild(createCard(s, groupClass));
+      });
+
+      catGroup.appendChild(catBody);
+      container.appendChild(catGroup);
+    });
+  }
+
+  function renderClarityGroup(container, suggestions) {
+    container.innerHTML = '';
+
+    if (!hasRunFullCheck) {
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'Run "Check now" to see AI suggestions';
+      container.appendChild(emptyP);
+      return;
+    }
+
+    if (suggestions.length === 0) {
+      var emptyP2 = document.createElement('p');
+      emptyP2.className = 'empty-state';
+      emptyP2.textContent = 'No issues found';
+      container.appendChild(emptyP2);
+      return;
+    }
+
+    // Group by category
+    var categories = {};
+    suggestions.forEach(function (s) {
+      var cat = s.category || 'Other';
+      if (!categories[cat]) categories[cat] = [];
+      categories[cat].push(s);
+    });
+
+    Object.keys(categories).forEach(function (cat) {
+      var items = categories[cat];
+      var catGroup = document.createElement('div');
+      catGroup.className = 'category-group';
+
+      var catHeader = document.createElement('button');
+      catHeader.type = 'button';
+      catHeader.className = 'category-header';
+      catHeader.setAttribute('aria-expanded', 'true');
+      catHeader.innerHTML =
+        '<span>' + escapeHtml(cat) + '</span>' +
+        '<span class="category-count">' + items.length + '</span>';
+      catHeader.addEventListener('click', function () {
+        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
+        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+      });
+      catGroup.appendChild(catHeader);
+
+      var catBody = document.createElement('div');
+      catBody.className = 'category-body';
+
+      items.forEach(function (s) {
+        catBody.appendChild(createCard(s, 'clarity'));
+      });
+
+      catGroup.appendChild(catBody);
+      container.appendChild(catGroup);
+    });
+  }
+
+  function createCard(suggestion, groupClass) {
+    var card = document.createElement('div');
+    card.className = 'suggestion-card ' + groupClass;
+    card.dataset.id = suggestion.id;
+
+    if (suggestion.id === activeSuggestionId) {
+      card.classList.add('active');
+    }
+
+    // Click card to select suggestion
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('.suggestion-actions')) return;
+      activeSuggestionId = suggestion.id;
+      render();
+      if (onSelect) onSelect(suggestion);
+    });
+
+    var titleEl = document.createElement('div');
+    titleEl.className = 'suggestion-title';
+    titleEl.textContent = suggestion.title;
+    card.appendChild(titleEl);
+
+    var msgEl = document.createElement('div');
+    msgEl.className = 'suggestion-message';
+    msgEl.textContent = suggestion.message;
+    card.appendChild(msgEl);
+
+    // Preview (if replacement exists)
+    if (suggestion.replacement !== undefined && suggestion.original) {
+      var preview = document.createElement('div');
+      preview.className = 'suggestion-preview';
+      preview.innerHTML =
+        '<span class="original">' + escapeHtml(suggestion.original) + '</span>' +
+        '<span class="arrow"> → </span>' +
+        '<span class="replacement">' + escapeHtml(suggestion.replacement) + '</span>';
+      card.appendChild(preview);
+    }
+
+    // Actions
+    var actions = document.createElement('div');
+    actions.className = 'suggestion-actions';
+
+    if (suggestion.replacement !== undefined) {
+      var applyBtn = document.createElement('button');
+      applyBtn.type = 'button';
+      applyBtn.className = 'btn btn-primary btn-sm';
+      applyBtn.textContent = 'Apply';
+      applyBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (onApply) onApply(suggestion);
+        dismiss(suggestion);
+      });
+      actions.appendChild(applyBtn);
+    } else {
+      var reviewBtn = document.createElement('button');
+      reviewBtn.type = 'button';
+      reviewBtn.className = 'btn btn-secondary btn-sm';
+      reviewBtn.textContent = 'Review';
+      reviewBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        activeSuggestionId = suggestion.id;
+        render();
+        if (onSelect) onSelect(suggestion);
+      });
+      actions.appendChild(reviewBtn);
+    }
+
+    var dismissBtn = document.createElement('button');
+    dismissBtn.type = 'button';
+    dismissBtn.className = 'btn btn-secondary btn-sm';
+    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dismiss(suggestion);
+    });
+    actions.appendChild(dismissBtn);
+
+    card.appendChild(actions);
+    return card;
+  }
+
+  function escapeHtml(str) {
+    var div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  /**
+   * Clear all suggestions (e.g., when switching documents).
+   */
+  function clearAll() {
+    correctnessSuggestions = [];
+    claritySuggestions = [];
+    activeSuggestionId = null;
+    hasRunFullCheck = false;
+    render();
+  }
+
+  return {
+    init: init,
+    setCorrectness: setCorrectness,
+    setClarity: setClarity,
+    markFullCheckRun: markFullCheckRun,
+    dismiss: dismiss,
+    getAll: getAll,
+    clearAll: clearAll,
+    render: render
+  };
+})();
+
+// ===== app.js =====
+/**
+ * App module
+ * Wires together editor, documents, quick checks, full check, and suggestions.
+ */
+(function () {
+  'use strict';
+
+  // DOM elements
+  var saveStatusEl = document.getElementById('saveStatus');
+  var sensitivityToggle = document.getElementById('sensitivityToggle');
+  var sensitivityText = document.getElementById('sensitivityText');
+  var checkNowBtn = document.getElementById('checkNowBtn');
+  var draftsBtn = document.getElementById('draftsBtn');
+  var historyBtn = document.getElementById('historyBtn');
+  var draftsModal = document.getElementById('draftsModal');
+  var historyModal = document.getElementById('historyModal');
+  var restoreConfirmModal = document.getElementById('restoreConfirmModal');
+  var closeDraftsModal = document.getElementById('closeDraftsModal');
+  var closeHistoryModal = document.getElementById('closeHistoryModal');
+  var cancelRestore = document.getElementById('cancelRestore');
+  var confirmRestore = document.getElementById('confirmRestore');
+  var draftsList = document.getElementById('draftsList');
+  var historyList = document.getElementById('historyList');
+
+  var lastCheckVersion = -1;
+  var pendingRestore = null;
+
+  // ========== Init ==========
+
+  function init() {
+    // Init editor
+    Editor.init('editor');
+
+    // Init documents
+    Documents.init(updateSaveStatus);
+
+    // Init suggestions
+    Suggestions.init({
+      onApply: handleApply,
+      onSelect: handleSelect
+    });
+
+    // Load current document
+    var doc = Documents.loadCurrent();
+    if (doc && doc.text) {
+      Editor.setText(doc.text);
+    }
+
+    // Set sensitivity state
+    var sensitivity = Documents.getSensitivity();
+    updateSensitivityUI(sensitivity);
+    sensitivityToggle.checked = sensitivity === 'safe';
+
+    // Start autosave
+    Documents.startAutosave(function () {
+      return Editor.getText();
+    });
+
+    // ========== Event listeners ==========
+
+    // Editor changes -> trigger quick checks
+    Editor.onChange(function (text, version) {
+      updateSaveStatus('unsaved');
+      QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
+        if (checkedVersion >= lastCheckVersion) {
+          lastCheckVersion = checkedVersion;
+          Suggestions.setCorrectness(results);
+        }
+      });
+    });
+
+    // Sensitivity toggle
+    sensitivityToggle.addEventListener('change', function () {
+      var isSafe = sensitivityToggle.checked;
+      var value = isSafe ? 'safe' : 'sensitive';
+      Documents.setSensitivity(value);
+      updateSensitivityUI(value);
+    });
+
+    // Check now button
+    checkNowBtn.addEventListener('click', handleCheckNow);
+
+    // Drafts modal
+    draftsBtn.addEventListener('click', openDraftsModal);
+    closeDraftsModal.addEventListener('click', function () { draftsModal.hidden = true; });
+    draftsModal.addEventListener('click', function (e) {
+      if (e.target === draftsModal) draftsModal.hidden = true;
+    });
+
+    // History modal
+    historyBtn.addEventListener('click', openHistoryModal);
+    closeHistoryModal.addEventListener('click', function () { historyModal.hidden = true; });
+    historyModal.addEventListener('click', function (e) {
+      if (e.target === historyModal) historyModal.hidden = true;
+    });
+
+    // Restore confirm
+    cancelRestore.addEventListener('click', function () {
+      restoreConfirmModal.hidden = true;
+      pendingRestore = null;
+    });
+    confirmRestore.addEventListener('click', function () {
+      if (pendingRestore !== null) {
+        var restoredText = Documents.restoreVersion(pendingRestore, Editor.getText());
+        if (restoredText !== null) {
+          Editor.setText(restoredText);
+          Suggestions.clearAll();
+          // Trigger quick checks on restored text
+          QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
+            lastCheckVersion = v;
+            Suggestions.setCorrectness(results);
+          });
+        }
+        pendingRestore = null;
+      }
+      restoreConfirmModal.hidden = true;
+      historyModal.hidden = true;
+    });
+
+    // Save version on significant actions (before closing, switching docs)
+    window.addEventListener('beforeunload', function () {
+      var text = Editor.getText();
+      if (text.trim().length > 0) {
+        Documents.saveText(text);
+      }
+    });
+
+    // Run initial quick check if there's text
+    var initialText = Editor.getText();
+    if (initialText.trim().length > 0) {
+      QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
+        lastCheckVersion = v;
+        Suggestions.setCorrectness(results);
+      });
+    }
+  }
+
+  // ========== Handlers ==========
+
+  function handleCheckNow() {
+    var sensitivity = Documents.getSensitivity();
+
+    if (!FullCheck.isAllowed(sensitivity)) {
+      alert('AI check is not available for this draft.\n\nThis draft is marked as "Do not send to external AI". Change the classification to use AI checks.');
+      return;
+    }
+
+    if (FullCheck.getIsRunning()) return;
+
+    var text = Editor.getText();
+    if (!text || text.trim().length === 0) return;
+
+    // Save a version snapshot before running full check
+    Documents.saveVersion(text);
+
+    // Show loading state
+    checkNowBtn.disabled = true;
+    checkNowBtn.textContent = 'Checking...';
+    Suggestions.markFullCheckRun();
+
+    FullCheck.run(text, sensitivity, function (results, error) {
+      checkNowBtn.disabled = false;
+      checkNowBtn.textContent = 'Check now';
+
+      if (error === 'blocked') {
+        alert('AI check blocked: this draft is marked as sensitive.');
+        return;
+      }
+
+      if (error) {
+        alert('AI check failed: ' + error);
+        return;
+      }
+
+      Suggestions.setClarity(results || []);
+    });
+  }
+
+  function handleApply(suggestion) {
+    if (suggestion.replacement !== undefined) {
+      Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement);
+    }
+  }
+
+  function handleSelect(suggestion) {
+    var groupClass = suggestion.group === 'correctness' ? 'highlight-correctness' : 'highlight-clarity';
+    Editor.highlightRange(suggestion.start, suggestion.end, groupClass);
+  }
+
+  // ========== UI Updates ==========
+
+  function updateSaveStatus(status) {
+    if (!saveStatusEl) return;
+    saveStatusEl.className = 'save-status';
+    switch (status) {
+      case 'saved':
+        saveStatusEl.textContent = 'Saved';
+        saveStatusEl.classList.add('saved');
+        break;
+      case 'saving':
+        saveStatusEl.textContent = 'Saving...';
+        saveStatusEl.classList.add('saving');
+        break;
+      case 'unsaved':
+        saveStatusEl.textContent = 'Not saved';
+        saveStatusEl.classList.add('unsaved');
+        break;
+    }
+  }
+
+  function updateSensitivityUI(sensitivity) {
+    var isSafe = sensitivity === 'safe';
+    sensitivityToggle.checked = isSafe;
+
+    if (isSafe) {
+      sensitivityText.textContent = 'Safe to send to AI';
+      sensitivityText.className = 'sensitivity-text';
+      checkNowBtn.disabled = false;
+      checkNowBtn.title = '';
+    } else {
+      sensitivityText.textContent = 'Do not send to external AI';
+      sensitivityText.className = 'sensitivity-text sensitive';
+      checkNowBtn.disabled = true;
+      checkNowBtn.title = 'AI check unavailable — draft marked as sensitive';
+    }
+
+    // Update AI status indicator
+    var toolbar = document.querySelector('.editor-actions');
+    var existingStatus = toolbar.querySelector('.ai-status');
+    if (existingStatus) existingStatus.remove();
+
+    var statusEl = document.createElement('span');
+    statusEl.className = 'ai-status ' + (isSafe ? 'available' : 'unavailable');
+    statusEl.textContent = isSafe ? 'AI check available' : 'AI check unavailable';
+    toolbar.insertBefore(statusEl, checkNowBtn);
+  }
+
+  // ========== Modals ==========
+
+  function openDraftsModal() {
+    // Save current first
+    Documents.saveText(Editor.getText());
+
+    var drafts = Documents.getRecentDrafts();
+    draftsList.innerHTML = '';
+
+    if (drafts.length === 0) {
+      draftsList.innerHTML = '<p class="empty-state">No saved drafts</p>';
+      draftsModal.hidden = false;
+      return;
+    }
+
+    // New draft button
+    var newBtn = document.createElement('button');
+    newBtn.type = 'button';
+    newBtn.className = 'btn btn-secondary';
+    newBtn.textContent = 'New draft';
+    newBtn.style.marginBottom = '16px';
+    newBtn.addEventListener('click', function () {
+      var doc = Documents.newDraft(Editor.getText());
+      Editor.setText('');
+      Suggestions.clearAll();
+      updateSensitivityUI(Documents.getSensitivity());
+      draftsModal.hidden = true;
+    });
+    draftsList.appendChild(newBtn);
+
+    var currentId = Documents.getCurrentId();
+
+    drafts.forEach(function (doc) {
+      var item = document.createElement('div');
+      item.className = 'draft-item' + (doc.id === currentId ? ' current' : '');
+
+      var info = document.createElement('div');
+      var titleEl = document.createElement('div');
+      titleEl.className = 'draft-title';
+      titleEl.textContent = doc.title || 'Untitled draft';
+      info.appendChild(titleEl);
+
+      var metaEl = document.createElement('div');
+      metaEl.className = 'draft-meta';
+      metaEl.textContent = formatDate(doc.updatedAt);
+      info.appendChild(metaEl);
+
+      item.appendChild(info);
+
+      if (doc.id !== currentId) {
+        var openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.className = 'btn btn-secondary btn-sm';
+        openBtn.textContent = 'Open';
+        openBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          // Save current before switching
+          Documents.saveText(Editor.getText());
+          var switched = Documents.switchDoc(doc.id);
+          if (switched) {
+            Editor.setText(switched.text || '');
+            Suggestions.clearAll();
+            updateSensitivityUI(switched.sensitivity || 'safe');
+            // Run quick checks
+            QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
+              lastCheckVersion = v;
+              Suggestions.setCorrectness(results);
+            });
+          }
+          draftsModal.hidden = true;
+        });
+
+        var actions = document.createElement('div');
+        actions.className = 'draft-actions';
+        actions.appendChild(openBtn);
+        item.appendChild(actions);
+      }
+
+      draftsList.appendChild(item);
+    });
+
+    draftsModal.hidden = false;
+  }
+
+  function openHistoryModal() {
+    var versions = Documents.getVersions();
+    historyList.innerHTML = '';
+
+    if (versions.length === 0) {
+      historyList.innerHTML = '<p class="empty-state">No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.</p>';
+      historyModal.hidden = false;
+      return;
+    }
+
+    versions.forEach(function (version, index) {
+      var item = document.createElement('div');
+      item.className = 'version-item';
+
+      var info = document.createElement('div');
+      var metaEl = document.createElement('div');
+      metaEl.className = 'version-meta';
+      metaEl.textContent = formatDate(version.timestamp);
+      info.appendChild(metaEl);
+
+      var previewEl = document.createElement('div');
+      previewEl.className = 'version-preview';
+      previewEl.textContent = (version.text || '').substring(0, 80) + ((version.text || '').length > 80 ? '...' : '');
+      info.appendChild(previewEl);
+
+      item.appendChild(info);
+
+      var restoreBtn = document.createElement('button');
+      restoreBtn.type = 'button';
+      restoreBtn.className = 'btn btn-secondary btn-sm';
+      restoreBtn.textContent = 'Restore';
+      restoreBtn.addEventListener('click', function () {
+        pendingRestore = index;
+        restoreConfirmModal.hidden = false;
+      });
+      item.appendChild(restoreBtn);
+
+      historyList.appendChild(item);
+    });
+
+    historyModal.hidden = false;
+  }
+
+  // ========== Helpers ==========
+
+  function formatDate(isoString) {
+    if (!isoString) return '';
+    try {
+      var d = new Date(isoString);
+      var now = new Date();
+      var diffMs = now - d;
+      var diffMins = Math.floor(diffMs / 60000);
+      var diffHours = Math.floor(diffMs / 3600000);
+
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return diffMins + ' minutes ago';
+      if (diffHours < 24) return diffHours + ' hours ago';
+
+      return d.toLocaleDateString('en-GB', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (e) {
+      return isoString;
+    }
+  }
+
+  // ========== Start ==========
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    init();
+  }
+})();
+
+  </script>
+</body>
+</html>

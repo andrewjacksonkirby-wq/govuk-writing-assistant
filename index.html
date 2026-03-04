@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GOV.UK Writing Assistant</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header">
+    <div class="header-left">
+      <h1 class="app-title">Writing assistant</h1>
+      <span class="save-status" id="saveStatus">Saved</span>
+    </div>
+    <div class="header-right">
+      <button type="button" class="btn btn-secondary" id="draftsBtn">Recent drafts</button>
+      <button type="button" class="btn btn-secondary" id="historyBtn">Version history</button>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <section class="editor-pane">
+      <div class="editor-toolbar">
+        <div class="sensitivity-control">
+          <label class="sensitivity-label" for="sensitivityToggle">
+            <input type="checkbox" id="sensitivityToggle">
+            <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
+          </label>
+        </div>
+        <div class="editor-actions">
+          <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
+        </div>
+      </div>
+      <div
+        class="editor"
+        id="editor"
+        contenteditable="true"
+        role="textbox"
+        aria-multiline="true"
+        aria-label="Writing editor"
+        spellcheck="false"
+      ></div>
+    </section>
+
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <h2 class="sidebar-title">Suggestions</h2>
+      </div>
+
+      <div class="sidebar-filters">
+        <button type="button" class="filter-btn active" data-filter="all">All</button>
+        <button type="button" class="filter-btn" data-filter="correctness">Correctness</button>
+        <button type="button" class="filter-btn" data-filter="clarity">Clarity and style</button>
+      </div>
+
+      <div class="sidebar-summary" id="sidebarSummary">
+        <span class="summary-item" id="summaryTotal">0 suggestions</span>
+        <span class="summary-item" id="summaryCorrectness">0 correctness</span>
+        <span class="summary-item" id="summaryClarity">0 clarity</span>
+      </div>
+
+      <div class="suggestions-list" id="suggestionsList">
+        <div class="suggestion-group" id="correctnessGroup">
+          <button type="button" class="group-header" data-group="correctness" aria-expanded="true">
+            <span class="group-label">Correctness</span>
+            <span class="group-count" id="correctnessCount">0</span>
+          </button>
+          <div class="group-body" id="correctnessBody">
+            <p class="empty-state">No issues found</p>
+          </div>
+        </div>
+
+        <div class="suggestion-group" id="clarityGroup">
+          <button type="button" class="group-header" data-group="clarity" aria-expanded="true">
+            <span class="group-label">Clarity and style</span>
+            <span class="group-count" id="clarityCount">0</span>
+          </button>
+          <div class="group-body" id="clarityBody">
+            <p class="empty-state" id="clarityEmpty">Run "Check now" to see AI suggestions</p>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Drafts modal -->
+  <div class="modal-overlay" id="draftsModal" hidden>
+    <div class="modal" role="dialog" aria-label="Recent drafts">
+      <div class="modal-header">
+        <h2>Recent drafts</h2>
+        <button type="button" class="btn btn-close" id="closeDraftsModal">Close</button>
+      </div>
+      <div class="modal-body" id="draftsList">
+        <p class="empty-state">No saved drafts</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Version history modal -->
+  <div class="modal-overlay" id="historyModal" hidden>
+    <div class="modal" role="dialog" aria-label="Version history">
+      <div class="modal-header">
+        <h2>Version history</h2>
+        <button type="button" class="btn btn-close" id="closeHistoryModal">Close</button>
+      </div>
+      <div class="modal-body" id="historyList">
+        <p class="empty-state">No versions saved</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirm restore dialog -->
+  <div class="modal-overlay" id="restoreConfirmModal" hidden>
+    <div class="modal modal-small" role="alertdialog" aria-label="Confirm restore">
+      <div class="modal-header">
+        <h2>Restore this version?</h2>
+      </div>
+      <div class="modal-body">
+        <p>This will replace your current draft. Your current draft will be saved as a version first.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelRestore">Cancel</button>
+        <button type="button" class="btn btn-primary" id="confirmRestore">Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/editor.js"></script>
+  <script src="js/documents.js"></script>
+  <script src="js/quick-checks.js"></script>
+  <script src="js/full-check.js"></script>
+  <script src="js/suggestions.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
