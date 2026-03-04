@@ -669,6 +669,107 @@ body {
   outline-offset: 2px;
 }
 
+/* ===== Stats bar ===== */
+.stats-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-lg);
+  padding: var(--spacing-xs) var(--spacing-lg);
+  border-top: 1px solid var(--color-border-light);
+  background: var(--color-surface);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.stat-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-label {
+  color: var(--color-text-muted);
+}
+
+.stat-value {
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+.stat-readability {
+  margin-left: auto;
+  gap: var(--spacing-sm);
+}
+
+.readability-bar {
+  width: 60px;
+  height: 6px;
+  background: var(--color-border-light);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.readability-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s, background 0.3s;
+  width: 0%;
+}
+
+.readability-bar-fill.readability-easy { background: var(--color-success); }
+.readability-bar-fill.readability-ok { background: #b8860b; }
+.readability-bar-fill.readability-hard { background: var(--color-warning); }
+.readability-bar-fill.readability-vhard { background: var(--color-correctness); }
+
+.readability-easy { color: var(--color-success); }
+.readability-ok { color: #b8860b; }
+.readability-hard { color: var(--color-warning); }
+.readability-vhard { color: var(--color-correctness); }
+
+/* ===== Mode selector ===== */
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.mode-selector {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+}
+
+.mode-label {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.mode-select {
+  font-family: var(--font-main);
+  font-size: 13px;
+  padding: 3px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.mode-select:focus {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+/* ===== Upload button ===== */
+.upload-btn {
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
 /* Reduce motion if preferred */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -694,13 +795,28 @@ body {
   <main class="app-main">
     <section class="editor-pane">
       <div class="editor-toolbar">
-        <div class="sensitivity-control">
-          <label class="sensitivity-label" for="sensitivityToggle">
-            <input type="checkbox" id="sensitivityToggle">
-            <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
-          </label>
+        <div class="toolbar-left">
+          <div class="mode-selector">
+            <label class="mode-label" for="modeSelect">Mode:</label>
+            <select id="modeSelect" class="mode-select">
+              <option value="govuk">GOV.UK content</option>
+              <option value="email">Email</option>
+              <option value="chat">Teams / Slack</option>
+            </select>
+          </div>
+          <div class="sensitivity-control">
+            <label class="sensitivity-label" for="sensitivityToggle">
+              <input type="checkbox" id="sensitivityToggle">
+              <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
+            </label>
+          </div>
         </div>
         <div class="editor-actions">
+          <label class="btn btn-secondary btn-sm upload-btn" id="uploadLabel" title="Upload .docx or .txt">
+            Upload
+            <input type="file" id="uploadFile" accept=".docx,.txt,.doc" hidden>
+          </label>
+          <button type="button" class="btn btn-secondary btn-sm" id="exportBtn" title="Download as text file">Export</button>
           <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
         </div>
       </div>
@@ -713,6 +829,17 @@ body {
         aria-label="Writing editor"
         spellcheck="false"
       ></div>
+      <div class="stats-bar" id="statsBar">
+        <span class="stat-item"><span class="stat-label">Words</span> <span class="stat-value" id="statWords">0</span></span>
+        <span class="stat-item"><span class="stat-label">Sentences</span> <span class="stat-value" id="statSentences">0</span></span>
+        <span class="stat-item"><span class="stat-label">Paragraphs</span> <span class="stat-value" id="statParagraphs">0</span></span>
+        <span class="stat-item"><span class="stat-label">Reading time</span> <span class="stat-value" id="statReadingTime">0 min</span></span>
+        <span class="stat-item stat-readability">
+          <span class="stat-label">Readability</span>
+          <span class="stat-value" id="statReadability">--</span>
+          <span class="readability-bar"><span class="readability-bar-fill" id="readabilityBar"></span></span>
+        </span>
+      </div>
     </section>
 
     <aside class="sidebar" id="sidebar">
@@ -798,6 +925,7 @@ body {
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
   <script>
 // ===== editor.js =====
 /**
@@ -1205,6 +1333,23 @@ const Documents = (function () {
     saveDocs(docs);
   }
 
+  /**
+   * Get/set the writing mode of the current document.
+   * Modes: 'govuk', 'email', 'chat'
+   */
+  function getMode() {
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    return doc && doc.mode ? doc.mode : 'govuk';
+  }
+
+  function setMode(value) {
+    var docs = getAllDocs();
+    if (!docs[currentDocId]) return;
+    docs[currentDocId].mode = value;
+    saveDocs(docs);
+  }
+
   function getCurrentId() {
     return currentDocId;
   }
@@ -1256,6 +1401,8 @@ const Documents = (function () {
     switchDoc: switchDoc,
     getSensitivity: getSensitivity,
     setSensitivity: setSensitivity,
+    getMode: getMode,
+    setMode: setMode,
     getCurrentId: getCurrentId,
     deleteDoc: deleteDoc,
     newDraft: newDraft
@@ -1273,6 +1420,7 @@ const QuickChecks = (function () {
   var debounceTimer = null;
   var DEBOUNCE_MS = 1000; // 1 second, within 800-1500ms range
   var pendingVersion = -1;
+  var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
 
   /**
    * Common misspellings dictionary (UK English / GOV.UK focus).
@@ -1415,6 +1563,49 @@ const QuickChecks = (function () {
   /**
    * All check rules. Each returns an array of suggestion objects.
    */
+  /**
+   * Commonly confused words.
+   * Each entry: regex, the wrong usage context hint, suggestion.
+   */
+  var CONFUSED_WORDS = [
+    { regex: /\b(your)\s+(welcome|right|wrong|correct|the best|amazing|brilliant)\b/gi, msg: 'Did you mean "you\'re" (you are)?', fix: "you're", matchGroup: 1 },
+    { regex: /\b(its)\s+(a|the|been|not|going|very|really|quite|also|important)\b/gi, msg: 'Did you mean "it\'s" (it is)?', fix: "it's", matchGroup: 1 },
+    { regex: /\b(there)\s+(is|are|was|were|will|has|have|would|could|should|might|may|must)\s+(?:be\s+)?(?:a\s+|an\s+|the\s+)?(?:\w+\s+){0,3}(that|who|which)\s+(they|he|she|we|I)\b/gi, msg: 'Check: did you mean "their" (belonging to them)?', fix: null, matchGroup: 0 },
+    { regex: /\b(then)\s+(I|you|we|they|he|she|it)\b/gi, msg: 'Check: did you mean "than" (comparison)?', fix: null, matchGroup: 0 },
+    { regex: /\b(affect|effect)\b/gi, msg: '"Affect" is usually a verb (to influence), "effect" is usually a noun (a result). Check which you need.', fix: null, matchGroup: 0 },
+    { regex: /\b(practise|practice)\b/gi, msg: 'UK English: "practise" is the verb, "practice" is the noun.', fix: null, matchGroup: 0, modes: ['govuk'] },
+    { regex: /\b(licence|license)\b/gi, msg: 'UK English: "licence" is the noun, "license" is the verb.', fix: null, matchGroup: 0, modes: ['govuk'] },
+    { regex: /\b(bare)\s+(in mind)\b/gi, msg: 'Did you mean "bear in mind"?', fix: 'bear', matchGroup: 1 },
+    { regex: /\b(could|should|would)\s+of\b/gi, msg: 'Use "have" not "of" — "could have", "should have", "would have".', fix: null, matchGroup: 0 },
+    { regex: /\b(loose)\b(?=\s+(?:my|your|his|her|their|our|the|a|an|it|this|that|track|sight|control|interest))/gi, msg: 'Did you mean "lose" (to misplace)? "Loose" means not tight.', fix: 'lose', matchGroup: 1 },
+    { regex: /\b(defiantly)\b/gi, msg: 'Did you mean "definitely"? "Defiantly" means in a rebellious way.', fix: 'definitely', matchGroup: 1 },
+    { regex: /\b(weather)\s+(or not|we|they|you|he|she|it|to|the)\b/gi, msg: 'Did you mean "whether"? "Weather" refers to climate.', fix: 'whether', matchGroup: 1 },
+    { regex: /\b(aloud)\s+(to)\b/gi, msg: 'Did you mean "allowed to"? "Aloud" means out loud.', fix: 'allowed', matchGroup: 1 },
+    { regex: /\b(accept)\s+(for|from)\b/gi, msg: 'Check: did you mean "except" (excluding)?', fix: null, matchGroup: 0 },
+    { regex: /\b(pacific)\s+(reason|example|issue|case|time|date|detail|requirement)/gi, msg: 'Did you mean "specific"?', fix: 'specific', matchGroup: 1 }
+  ];
+
+  /**
+   * Email/chat tone patterns — only active in email/chat modes.
+   */
+  var TONE_PATTERNS = [
+    { regex: /\b(I just wanted to)\b/gi, msg: 'Drop the hedge — just say what you need', fix: null, category: 'Tone', title: 'Hedging language', modes: ['email', 'chat'] },
+    { regex: /\b(sorry to bother you)\b/gi, msg: 'No need to apologise — state your request directly', fix: null, category: 'Tone', title: 'Unnecessary apology', modes: ['email', 'chat'] },
+    { regex: /\b(sorry for the delay)\b/gi, msg: 'Try "thanks for your patience" — it\'s more positive', fix: 'thanks for your patience', category: 'Tone', title: 'Negative framing', modes: ['email', 'chat'] },
+    { regex: /\b(as per my last email)\b/gi, msg: 'This can sound passive-aggressive. Try "as I mentioned" or restate the point.', fix: 'as I mentioned', category: 'Tone', title: 'Passive-aggressive', modes: ['email', 'chat'] },
+    { regex: /\b(as previously stated)\b/gi, msg: 'This can sound curt. Try restating the point directly.', fix: null, category: 'Tone', title: 'Passive-aggressive', modes: ['email', 'chat'] },
+    { regex: /\b(I think maybe)\b/gi, msg: 'Pick one: "I think" or "maybe" — both together sounds unsure', fix: 'I think', category: 'Tone', title: 'Over-hedging', modes: ['email', 'chat'] },
+    { regex: /\b(I was wondering if you could)\b/gi, msg: 'Be direct: "Could you" or "Please" works better', fix: 'Could you', category: 'Tone', title: 'Indirect request', modes: ['email', 'chat'] },
+    { regex: /\b(does that make sense)\b/gi, msg: 'This can undermine your point. Try "let me know if you have questions"', fix: 'let me know if you have questions', category: 'Tone', title: 'Self-undermining', modes: ['email', 'chat'] },
+    { regex: /\b(per se)\b/gi, msg: 'Consider simpler phrasing — "per se" can sound overly formal', fix: null, category: 'Tone', title: 'Overly formal', modes: ['email', 'chat'] },
+    { regex: /\b(please advise)\b/gi, msg: 'Try "let me know" or ask a specific question instead', fix: 'let me know', category: 'Tone', title: 'Stiff phrasing', modes: ['email', 'chat'] },
+    { regex: /\b(please do not hesitate to)\b/gi, msg: 'Simpler: "feel free to" or just ask directly', fix: 'feel free to', category: 'Tone', title: 'Overly formal', modes: ['email', 'chat'] },
+    { regex: /\b(I hope this email finds you well)\b/gi, msg: 'This is filler — jump straight to the point', fix: null, category: 'Tone', title: 'Filler phrase', modes: ['email'] },
+    { regex: /\b(kind regards|warm regards|best regards)\b/gi, msg: null, fix: null, category: null, modes: [] }, // skip — these are fine
+    { regex: /\b(ASAP)\b/g, msg: 'Give a specific deadline instead of "ASAP" — it creates urgency without clarity', fix: null, category: 'Tone', title: 'Vague urgency', modes: ['email', 'chat'] },
+    { regex: /\b(FYI)\b/g, msg: 'In formal emails, write "for your information" or just provide the context', fix: null, category: 'Tone', title: 'Too casual', modes: ['email'] }
+  ];
+
   var rules = [
     {
       id: 'spelling',
@@ -1445,6 +1636,16 @@ const QuickChecks = (function () {
       id: 'common-grammar',
       category: 'Grammar',
       run: checkCommonGrammar
+    },
+    {
+      id: 'confused-words',
+      category: 'Spelling',
+      run: checkConfusedWords
+    },
+    {
+      id: 'tone',
+      category: 'Tone',
+      run: checkTonePatterns
     }
   ];
 
@@ -1627,7 +1828,7 @@ const QuickChecks = (function () {
       { regex: /\b(should of)\b/gi, fix: 'should have', msg: 'Use "should have" instead of "should of"' },
       { regex: /\b(would of)\b/gi, fix: 'would have', msg: 'Use "would have" instead of "would of"' },
       { regex: /\b(must of)\b/gi, fix: 'must have', msg: 'Use "must have" instead of "must of"' },
-      { regex: /\b(alright)\b/gi, fix: 'all right', msg: 'GOV.UK style uses "all right" not "alright"' },
+      { regex: /\b(alright)\b/gi, fix: 'all right', msg: 'GOV.UK style uses "all right" not "alright"', modes: ['govuk'] },
       { regex: /\b(utilise)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilise" for plain English' },
       { regex: /\b(utilisation)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilisation" for plain English' },
       { regex: /\b(commence)\b/gi, fix: 'start', msg: 'Prefer "start" over "commence" for plain English' },
@@ -1638,6 +1839,9 @@ const QuickChecks = (function () {
     ];
 
     patterns.forEach(function (pat) {
+      // Skip mode-restricted patterns
+      if (pat.modes && pat.modes.indexOf(currentMode) === -1) return;
+
       var match;
       while ((match = pat.regex.exec(text)) !== null) {
         var replacement = pat.fix;
@@ -1658,6 +1862,77 @@ const QuickChecks = (function () {
           replacement: replacement,
           original: match[1]
         });
+      }
+    });
+    return results;
+  }
+
+  /**
+   * Check for commonly confused words.
+   */
+  function checkConfusedWords(text) {
+    var results = [];
+    CONFUSED_WORDS.forEach(function (entry) {
+      // Skip if mode-restricted and doesn't match current mode
+      if (entry.modes && entry.modes.length > 0 && entry.modes.indexOf(currentMode) === -1) return;
+
+      var match;
+      while ((match = entry.regex.exec(text)) !== null) {
+        var target = match[entry.matchGroup];
+        var start = match.index + match[0].indexOf(target);
+        var suggestion = {
+          id: makeId(),
+          ruleId: 'confused-words',
+          source: 'regex',
+          group: 'correctness',
+          category: 'Confused words',
+          start: start,
+          end: start + target.length,
+          message: entry.msg,
+          title: 'Confused word',
+          original: target
+        };
+        if (entry.fix) {
+          // Preserve case
+          var fix = entry.fix;
+          if (target[0] === target[0].toUpperCase()) {
+            fix = fix.charAt(0).toUpperCase() + fix.slice(1);
+          }
+          suggestion.replacement = fix;
+        }
+        results.push(suggestion);
+      }
+    });
+    return results;
+  }
+
+  /**
+   * Check for tone issues (active in email/chat modes).
+   */
+  function checkTonePatterns(text) {
+    var results = [];
+    TONE_PATTERNS.forEach(function (entry) {
+      if (!entry.msg || !entry.category) return; // skip null entries
+      if (entry.modes && entry.modes.length > 0 && entry.modes.indexOf(currentMode) === -1) return;
+
+      var match;
+      while ((match = entry.regex.exec(text)) !== null) {
+        var suggestion = {
+          id: makeId(),
+          ruleId: 'tone',
+          source: 'regex',
+          group: 'correctness',
+          category: entry.category,
+          start: match.index,
+          end: match.index + match[0].length,
+          message: entry.msg,
+          title: entry.title,
+          original: match[0]
+        };
+        if (entry.fix) {
+          suggestion.replacement = entry.fix;
+        }
+        results.push(suggestion);
       }
     });
     return results;
@@ -1706,10 +1981,24 @@ const QuickChecks = (function () {
     }
   }
 
+  /**
+   * Set the writing mode. Affects which rules are active.
+   * @param {string} mode - 'govuk', 'email', or 'chat'
+   */
+  function setMode(mode) {
+    currentMode = mode;
+  }
+
+  function getMode() {
+    return currentMode;
+  }
+
   return {
     runAll: runAll,
     scheduleCheck: scheduleCheck,
-    cancelPending: cancelPending
+    cancelPending: cancelPending,
+    setMode: setMode,
+    getMode: getMode
   };
 })();
 
@@ -1723,6 +2012,7 @@ const QuickChecks = (function () {
 const FullCheck = (function () {
   var isRunning = false;
   var idCounter = 0;
+  var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
 
   // Default API config - user can configure this
   var config = {
@@ -1772,6 +2062,68 @@ const FullCheck = (function () {
     } else {
       runAPI(text, callback);
     }
+  }
+
+  /**
+   * Common words to ignore for overuse detection.
+   */
+  var STOP_WORDS = new Set([
+    'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+    'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
+    'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would',
+    'could', 'should', 'may', 'might', 'shall', 'can', 'it', 'its', 'this',
+    'that', 'these', 'those', 'i', 'you', 'he', 'she', 'we', 'they', 'me',
+    'him', 'her', 'us', 'them', 'my', 'your', 'his', 'our', 'their',
+    'what', 'which', 'who', 'when', 'where', 'how', 'not', 'no', 'if',
+    'then', 'than', 'so', 'as', 'up', 'out', 'about', 'into', 'all',
+    'also', 'just', 'more', 'some', 'any', 'each', 'very', 'there', 'here',
+    'both', 'own', 'other', 'such', 'only', 'same', 'too', 'still', 'now'
+  ]);
+
+  /**
+   * Detect words used 3+ times (excluding stop words).
+   * Groups by word and flags each occurrence.
+   */
+  function checkOverusedWords(text) {
+    var results = [];
+    var wordRegex = /\b([a-zA-Z]{4,})\b/g;
+    var wordCounts = {};
+    var wordPositions = {};
+    var match;
+
+    while ((match = wordRegex.exec(text)) !== null) {
+      var word = match[1].toLowerCase();
+      if (STOP_WORDS.has(word)) continue;
+      if (!wordCounts[word]) {
+        wordCounts[word] = 0;
+        wordPositions[word] = [];
+      }
+      wordCounts[word]++;
+      wordPositions[word].push({ start: match.index, end: match.index + match[1].length, original: match[1] });
+    }
+
+    Object.keys(wordCounts).forEach(function (word) {
+      if (wordCounts[word] >= 3) {
+        // Only flag the 2nd+ occurrences
+        var positions = wordPositions[word];
+        for (var i = 1; i < positions.length; i++) {
+          results.push({
+            id: makeId(),
+            ruleId: 'overused-word',
+            source: 'ai',
+            group: 'clarity',
+            category: 'Word choice',
+            start: positions[i].start,
+            end: positions[i].end,
+            message: '"' + word + '" appears ' + positions.length + ' times. Consider using a synonym or restructuring.',
+            title: 'Overused word',
+            original: positions[i].original
+          });
+        }
+      }
+    });
+
+    return results;
   }
 
   /**
@@ -1874,38 +2226,92 @@ const FullCheck = (function () {
         }
       });
 
-      // Check for GOV.UK style issues
-      var stylePatterns = [
-        { regex: /\bplease\b/gi, msg: 'GOV.UK style: avoid using "please" - be direct' },
-        { regex: /\bkindly\b/gi, msg: 'GOV.UK style: avoid "kindly" - be direct' },
-        { regex: /\bgoing forward\b/gi, msg: 'Avoid "going forward" - be specific about timing' },
-        { regex: /\bat this point in time\b/gi, msg: 'Use "now" or "currently" instead' },
-        { regex: /\bin the event that\b/gi, msg: 'Use "if" instead of "in the event that"' },
-        { regex: /\bwith regards to\b/gi, msg: 'Use "about" instead of "with regards to"' },
-        { regex: /\ba number of\b/gi, msg: 'Be specific - say how many instead of "a number of"' },
-        { regex: /\bin respect of\b/gi, msg: 'Use "about" or "for" instead of "in respect of"' },
-        { regex: /\bI\b/g, msg: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure the sentence.' },
-        { regex: /\betc\.?\b/gi, msg: 'GOV.UK style: avoid "etc" - list the items or say "for example"' },
-        { regex: /\bie\b/gi, msg: 'Write "that is" or rephrase instead of "ie"' },
-        { regex: /\beg\b/gi, msg: 'Write "for example" instead of "eg"' }
-      ];
-      stylePatterns.forEach(function (pat) {
-        var match;
-        while ((match = pat.regex.exec(text)) !== null) {
-          results.push({
-            id: makeId(),
-            ruleId: 'govuk-style',
-            source: 'ai',
-            group: 'clarity',
-            category: 'GOV.UK style',
-            start: match.index,
-            end: match.index + match[0].length,
-            message: pat.msg,
-            title: 'Style',
-            original: match[0]
-          });
+      // GOV.UK style checks (only in govuk mode)
+      if (currentMode === 'govuk') {
+        var stylePatterns = [
+          { regex: /\bplease\b/gi, msg: 'GOV.UK style: avoid using "please" - be direct' },
+          { regex: /\bkindly\b/gi, msg: 'GOV.UK style: avoid "kindly" - be direct' },
+          { regex: /\bgoing forward\b/gi, msg: 'Avoid "going forward" - be specific about timing' },
+          { regex: /\bat this point in time\b/gi, msg: 'Use "now" or "currently" instead' },
+          { regex: /\bin the event that\b/gi, msg: 'Use "if" instead of "in the event that"' },
+          { regex: /\bwith regards to\b/gi, msg: 'Use "about" instead of "with regards to"' },
+          { regex: /\ba number of\b/gi, msg: 'Be specific - say how many instead of "a number of"' },
+          { regex: /\bin respect of\b/gi, msg: 'Use "about" or "for" instead of "in respect of"' },
+          { regex: /\bI\b/g, msg: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure the sentence.' },
+          { regex: /\betc\.?\b/gi, msg: 'GOV.UK style: avoid "etc" - list the items or say "for example"' },
+          { regex: /\bie\b/gi, msg: 'Write "that is" or rephrase instead of "ie"' },
+          { regex: /\beg\b/gi, msg: 'Write "for example" instead of "eg"' }
+        ];
+        stylePatterns.forEach(function (pat) {
+          var match;
+          while ((match = pat.regex.exec(text)) !== null) {
+            results.push({
+              id: makeId(),
+              ruleId: 'govuk-style',
+              source: 'ai',
+              group: 'clarity',
+              category: 'GOV.UK style',
+              start: match.index,
+              end: match.index + match[0].length,
+              message: pat.msg,
+              title: 'Style',
+              original: match[0]
+            });
+          }
+        });
+      }
+
+      // Email/chat tone checks (only in email/chat modes)
+      if (currentMode === 'email' || currentMode === 'chat') {
+        var emailTonePatterns = [
+          { regex: /\b(pursuant to|hereunder|herewith|aforementioned|hereinafter)\b/gi, msg: 'This sounds overly formal for ' + (currentMode === 'chat' ? 'a message' : 'an email') + '. Use simpler language.', title: 'Overly formal' },
+          { regex: /\b(I would like to take this opportunity to)\b/gi, msg: 'Get to the point — just say what you want to say', title: 'Filler phrase' },
+          { regex: /\b(it has come to my attention that)\b/gi, msg: 'Sounds bureaucratic. Just state what you noticed.', title: 'Stiff phrasing' },
+          { regex: /\b(I regret to inform you that)\b/gi, msg: 'Be direct but kind. Try "Unfortunately" or just state the situation.', title: 'Overly formal' },
+          { regex: /\b(at your earliest convenience)\b/gi, msg: 'Give a specific timeframe instead', title: 'Vague timing' },
+          { regex: /\b(to whom it may concern)\b/gi, msg: 'Use the person\'s name if possible', title: 'Impersonal' }
+        ];
+        emailTonePatterns.forEach(function (pat) {
+          var match;
+          while ((match = pat.regex.exec(text)) !== null) {
+            results.push({
+              id: makeId(),
+              ruleId: 'email-tone',
+              source: 'ai',
+              group: 'clarity',
+              category: 'Tone',
+              start: match.index,
+              end: match.index + match[0].length,
+              message: pat.msg,
+              title: pat.title,
+              original: match[0]
+            });
+          }
+        });
+
+        // Chat-specific: flag overly long messages
+        if (currentMode === 'chat') {
+          var wordCount = (text.match(/\b\w+\b/g) || []).length;
+          if (wordCount > 150) {
+            results.push({
+              id: makeId(),
+              ruleId: 'chat-length',
+              source: 'ai',
+              group: 'clarity',
+              category: 'Length',
+              start: 0,
+              end: Math.min(text.length, 50),
+              message: 'This is ' + wordCount + ' words. Teams/Slack messages work best under 150 words. Consider breaking it up or sending as an email.',
+              title: 'Message too long',
+              original: text.substring(0, 40) + '...'
+            });
+          }
         }
-      });
+      }
+
+      // Check for overused words (3+ occurrences, excluding common words)
+      var overusedResults = checkOverusedWords(text);
+      results = results.concat(overusedResults);
 
       // Sort by document order
       results.sort(function (a, b) { return a.start - b.start; });
@@ -2011,11 +2417,157 @@ const FullCheck = (function () {
     return isRunning;
   }
 
+  function setMode(mode) {
+    currentMode = mode;
+  }
+
   return {
     run: run,
     isAllowed: isAllowed,
     configure: configure,
-    getIsRunning: getIsRunning
+    getIsRunning: getIsRunning,
+    setMode: setMode
+  };
+})();
+
+// ===== stats.js =====
+/**
+ * Stats module
+ * Computes word count, sentence count, paragraph count, reading time,
+ * and Flesch-Kincaid readability score. Updates live as user types.
+ */
+const Stats = (function () {
+  'use strict';
+
+  var els = {};
+
+  function init() {
+    els.words = document.getElementById('statWords');
+    els.sentences = document.getElementById('statSentences');
+    els.paragraphs = document.getElementById('statParagraphs');
+    els.readingTime = document.getElementById('statReadingTime');
+    els.readability = document.getElementById('statReadability');
+    els.readabilityBar = document.getElementById('readabilityBar');
+  }
+
+  /**
+   * Update all stats from the given text.
+   */
+  function update(text) {
+    if (!els.words) return;
+
+    var trimmed = text.trim();
+    if (trimmed.length === 0) {
+      els.words.textContent = '0';
+      els.sentences.textContent = '0';
+      els.paragraphs.textContent = '0';
+      els.readingTime.textContent = '0 min';
+      setReadability(null);
+      return;
+    }
+
+    var words = countWords(trimmed);
+    var sentences = countSentences(trimmed);
+    var paragraphs = countParagraphs(trimmed);
+    var minutes = Math.max(1, Math.ceil(words / 200));
+
+    els.words.textContent = words;
+    els.sentences.textContent = sentences;
+    els.paragraphs.textContent = paragraphs;
+    els.readingTime.textContent = minutes + ' min';
+
+    if (words >= 10 && sentences >= 1) {
+      var score = fleschReadingEase(trimmed, words, sentences);
+      setReadability(score);
+    } else {
+      setReadability(null);
+    }
+  }
+
+  function countWords(text) {
+    var matches = text.match(/\b[a-zA-Z0-9']+\b/g);
+    return matches ? matches.length : 0;
+  }
+
+  function countSentences(text) {
+    var matches = text.match(/[.!?]+(\s|$)/g);
+    return matches ? matches.length : (text.length > 0 ? 1 : 0);
+  }
+
+  function countParagraphs(text) {
+    var paras = text.split(/\n\s*\n/).filter(function (p) { return p.trim().length > 0; });
+    return Math.max(1, paras.length);
+  }
+
+  /**
+   * Count syllables in a word (approximation).
+   */
+  function countSyllables(word) {
+    word = word.toLowerCase().replace(/[^a-z]/g, '');
+    if (word.length <= 2) return 1;
+
+    // Remove trailing silent e
+    word = word.replace(/e$/, '');
+
+    // Count vowel groups
+    var matches = word.match(/[aeiouy]+/g);
+    var count = matches ? matches.length : 1;
+    return Math.max(1, count);
+  }
+
+  /**
+   * Flesch Reading Ease score.
+   * 90-100 = Very easy, 60-70 = Standard, 30-50 = Difficult, 0-30 = Very difficult
+   */
+  function fleschReadingEase(text, wordCount, sentenceCount) {
+    var words = text.match(/\b[a-zA-Z']+\b/g) || [];
+    var totalSyllables = 0;
+    words.forEach(function (w) {
+      totalSyllables += countSyllables(w);
+    });
+
+    var score = 206.835 -
+      (1.015 * (wordCount / sentenceCount)) -
+      (84.6 * (totalSyllables / wordCount));
+
+    return Math.round(Math.max(0, Math.min(100, score)));
+  }
+
+  function setReadability(score) {
+    if (score === null) {
+      els.readability.textContent = '--';
+      els.readability.className = 'stat-value';
+      if (els.readabilityBar) els.readabilityBar.style.width = '0%';
+      return;
+    }
+
+    var label, cls;
+    if (score >= 70) {
+      label = score + ' Easy';
+      cls = 'readability-easy';
+    } else if (score >= 50) {
+      label = score + ' OK';
+      cls = 'readability-ok';
+    } else if (score >= 30) {
+      label = score + ' Hard';
+      cls = 'readability-hard';
+    } else {
+      label = score + ' V.Hard';
+      cls = 'readability-vhard';
+    }
+
+    els.readability.textContent = label;
+    els.readability.className = 'stat-value ' + cls;
+    if (els.readabilityBar) {
+      els.readabilityBar.style.width = score + '%';
+      els.readabilityBar.className = 'readability-bar-fill ' + cls;
+    }
+  }
+
+  return {
+    init: init,
+    update: update,
+    countWords: countWords
   };
 })();
 
@@ -2034,6 +2586,7 @@ const Suggestions = (function () {
 
   // Callbacks
   var onApply = null;
+  var onApplyAll = null;
   var onSelect = null;
 
   // DOM refs (set during init)
@@ -2048,6 +2601,7 @@ const Suggestions = (function () {
 
   function init(callbacks) {
     onApply = callbacks.onApply;
+    onApplyAll = callbacks.onApplyAll;
     onSelect = callbacks.onSelect;
 
     listEl = document.getElementById('suggestionsList');
@@ -2144,6 +2698,76 @@ const Suggestions = (function () {
       activeSuggestionId = null;
     }
 
+    render();
+  }
+
+  /**
+   * Get the grouping key for a suggestion (same rule + same original text).
+   */
+  function getSiblingKey(suggestion) {
+    return suggestion.ruleId + ':' + (suggestion.original || '').toLowerCase();
+  }
+
+  /**
+   * Find all suggestions that match the same rule and original text.
+   */
+  function getSiblings(suggestion) {
+    var key = getSiblingKey(suggestion);
+    var all = correctnessSuggestions.concat(claritySuggestions);
+    return all.filter(function (s) {
+      return getSiblingKey(s) === key;
+    });
+  }
+
+  /**
+   * Apply fix to all matching suggestions (same rule + original text).
+   * Applies in reverse document order so offsets stay valid.
+   */
+  function applyAll(suggestion) {
+    var siblings = getSiblings(suggestion);
+    // Sort by position descending for safe replacement
+    siblings.sort(function (a, b) { return b.start - a.start; });
+
+    if (onApplyAll) {
+      onApplyAll(siblings);
+    }
+
+    // Dismiss all siblings
+    var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
+    siblings.forEach(function (s) {
+      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+      dismissedIds.add(key);
+    });
+    saveDismissed();
+
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+    claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+
+    if (siblingIds.has(activeSuggestionId)) {
+      activeSuggestionId = null;
+    }
+    render();
+  }
+
+  /**
+   * Dismiss all matching suggestions (same rule + original text).
+   */
+  function dismissAll(suggestion) {
+    var siblings = getSiblings(suggestion);
+    var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
+
+    siblings.forEach(function (s) {
+      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+      dismissedIds.add(key);
+    });
+    saveDismissed();
+
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+    claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+
+    if (siblingIds.has(activeSuggestionId)) {
+      activeSuggestionId = null;
+    }
     render();
   }
 
@@ -2327,6 +2951,9 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
+    var siblings = getSiblings(suggestion);
+    var hasSiblings = siblings.length > 1;
+
     if (suggestion.replacement !== undefined) {
       var applyBtn = document.createElement('button');
       applyBtn.type = 'button';
@@ -2338,6 +2965,18 @@ const Suggestions = (function () {
         dismiss(suggestion);
       });
       actions.appendChild(applyBtn);
+
+      if (hasSiblings) {
+        var applyAllBtn = document.createElement('button');
+        applyAllBtn.type = 'button';
+        applyAllBtn.className = 'btn btn-primary btn-sm btn-batch';
+        applyAllBtn.textContent = 'Apply all (' + siblings.length + ')';
+        applyAllBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          applyAll(suggestion);
+        });
+        actions.appendChild(applyAllBtn);
+      }
     } else {
       var reviewBtn = document.createElement('button');
       reviewBtn.type = 'button';
@@ -2361,6 +3000,18 @@ const Suggestions = (function () {
       dismiss(suggestion);
     });
     actions.appendChild(dismissBtn);
+
+    if (hasSiblings) {
+      var ignoreAllBtn = document.createElement('button');
+      ignoreAllBtn.type = 'button';
+      ignoreAllBtn.className = 'btn btn-secondary btn-sm btn-batch';
+      ignoreAllBtn.textContent = 'Ignore all (' + siblings.length + ')';
+      ignoreAllBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dismissAll(suggestion);
+      });
+      actions.appendChild(ignoreAllBtn);
+    }
 
     card.appendChild(actions);
     return card;
@@ -2398,7 +3049,8 @@ const Suggestions = (function () {
 // ===== app.js =====
 /**
  * App module
- * Wires together editor, documents, quick checks, full check, and suggestions.
+ * Wires together editor, documents, quick checks, full check, suggestions,
+ * stats, mode selector, upload, export, and keyboard shortcuts.
  */
 (function () {
   'use strict';
@@ -2419,6 +3071,9 @@ const Suggestions = (function () {
   var confirmRestore = document.getElementById('confirmRestore');
   var draftsList = document.getElementById('draftsList');
   var historyList = document.getElementById('historyList');
+  var modeSelect = document.getElementById('modeSelect');
+  var uploadFile = document.getElementById('uploadFile');
+  var exportBtn = document.getElementById('exportBtn');
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
@@ -2432,9 +3087,13 @@ const Suggestions = (function () {
     // Init documents
     Documents.init(updateSaveStatus);
 
+    // Init stats
+    Stats.init();
+
     // Init suggestions
     Suggestions.init({
       onApply: handleApply,
+      onApplyAll: handleApplyAll,
       onSelect: handleSelect
     });
 
@@ -2449,6 +3108,10 @@ const Suggestions = (function () {
     updateSensitivityUI(sensitivity);
     sensitivityToggle.checked = sensitivity === 'safe';
 
+    // Set writing mode
+    var mode = Documents.getMode();
+    updateModeUI(mode);
+
     // Start autosave
     Documents.startAutosave(function () {
       return Editor.getText();
@@ -2456,9 +3119,10 @@ const Suggestions = (function () {
 
     // ========== Event listeners ==========
 
-    // Editor changes -> trigger quick checks
+    // Editor changes -> trigger quick checks + update stats
     Editor.onChange(function (text, version) {
       updateSaveStatus('unsaved');
+      Stats.update(text);
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
@@ -2475,8 +3139,42 @@ const Suggestions = (function () {
       updateSensitivityUI(value);
     });
 
+    // Mode selector
+    modeSelect.addEventListener('change', function () {
+      var mode = modeSelect.value;
+      Documents.setMode(mode);
+      QuickChecks.setMode(mode);
+      FullCheck.setMode(mode);
+      // Re-run quick checks with new mode
+      var text = Editor.getText();
+      QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
+        lastCheckVersion = v;
+        Suggestions.setCorrectness(results);
+      });
+    });
+
     // Check now button
     checkNowBtn.addEventListener('click', handleCheckNow);
+
+    // Upload handler
+    uploadFile.addEventListener('change', handleUpload);
+
+    // Export handler
+    exportBtn.addEventListener('click', handleExport);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+      // Ctrl+S / Cmd+S = save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        Documents.saveText(Editor.getText());
+      }
+      // Ctrl+Shift+C / Cmd+Shift+C = check now
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        handleCheckNow();
+      }
+    });
 
     // Drafts modal
     draftsBtn.addEventListener('click', openDraftsModal);
@@ -2503,6 +3201,7 @@ const Suggestions = (function () {
         if (restoredText !== null) {
           Editor.setText(restoredText);
           Suggestions.clearAll();
+          Stats.update(restoredText);
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
             lastCheckVersion = v;
@@ -2523,9 +3222,10 @@ const Suggestions = (function () {
       }
     });
 
-    // Run initial quick check if there's text
+    // Run initial quick check + stats if there's text
     var initialText = Editor.getText();
     if (initialText.trim().length > 0) {
+      Stats.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
         Suggestions.setCorrectness(results);
@@ -2580,9 +3280,92 @@ const Suggestions = (function () {
     }
   }
 
+  function handleApplyAll(suggestions) {
+    // Already sorted descending by position in Suggestions.applyAll
+    // so later replacements don't shift earlier offsets
+    suggestions.forEach(function (s) {
+      if (s.replacement !== undefined) {
+        Editor.applyReplacement(s.start, s.end, s.replacement);
+      }
+    });
+  }
+
   function handleSelect(suggestion) {
     var groupClass = suggestion.group === 'correctness' ? 'highlight-correctness' : 'highlight-clarity';
     Editor.highlightRange(suggestion.start, suggestion.end, groupClass);
+  }
+
+  /**
+   * Handle file upload (.docx or .txt).
+   */
+  function handleUpload(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    var name = file.name.toLowerCase();
+
+    if (name.endsWith('.txt')) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        loadUploadedText(ev.target.result);
+      };
+      reader.readAsText(file);
+    } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
+      if (typeof mammoth === 'undefined') {
+        alert('Word document support is loading. Please try again in a moment.');
+        return;
+      }
+      var reader2 = new FileReader();
+      reader2.onload = function (ev) {
+        mammoth.extractRawText({ arrayBuffer: ev.target.result })
+          .then(function (result) {
+            loadUploadedText(result.value);
+          })
+          .catch(function (err) {
+            alert('Could not read document: ' + err.message);
+          });
+      };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      alert('Unsupported file type. Please upload a .docx or .txt file.');
+    }
+
+    // Reset the input so the same file can be re-uploaded
+    uploadFile.value = '';
+  }
+
+  function loadUploadedText(text) {
+    Editor.setText(text);
+    Stats.update(text);
+    Suggestions.clearAll();
+    updateSaveStatus('unsaved');
+    QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
+      lastCheckVersion = v;
+      Suggestions.setCorrectness(results);
+    });
+  }
+
+  /**
+   * Export the current text as a .txt file download.
+   */
+  function handleExport() {
+    var text = Editor.getText();
+    if (!text || text.trim().length === 0) {
+      alert('Nothing to export.');
+      return;
+    }
+    var blob = new Blob([text], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    // Use the document title for the filename
+    var docs = Documents.loadCurrent();
+    var title = (docs && docs.title) || 'draft';
+    a.download = title.replace(/[^a-zA-Z0-9 _-]/g, '').substring(0, 50) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // ========== UI Updates ==========
@@ -2633,6 +3416,12 @@ const Suggestions = (function () {
     toolbar.insertBefore(statusEl, checkNowBtn);
   }
 
+  function updateModeUI(mode) {
+    modeSelect.value = mode;
+    QuickChecks.setMode(mode);
+    FullCheck.setMode(mode);
+  }
+
   // ========== Modals ==========
 
   function openDraftsModal() {
@@ -2658,7 +3447,9 @@ const Suggestions = (function () {
       var doc = Documents.newDraft(Editor.getText());
       Editor.setText('');
       Suggestions.clearAll();
+      Stats.update('');
       updateSensitivityUI(Documents.getSensitivity());
+      updateModeUI(Documents.getMode());
       draftsModal.hidden = true;
     });
     draftsList.appendChild(newBtn);
@@ -2677,7 +3468,8 @@ const Suggestions = (function () {
 
       var metaEl = document.createElement('div');
       metaEl.className = 'draft-meta';
-      metaEl.textContent = formatDate(doc.updatedAt);
+      var modeLabels = { govuk: 'GOV.UK', email: 'Email', chat: 'Teams/Slack' };
+      metaEl.textContent = formatDate(doc.updatedAt) + (doc.mode ? ' · ' + (modeLabels[doc.mode] || doc.mode) : '');
       info.appendChild(metaEl);
 
       item.appendChild(info);
@@ -2695,7 +3487,9 @@ const Suggestions = (function () {
           if (switched) {
             Editor.setText(switched.text || '');
             Suggestions.clearAll();
+            Stats.update(switched.text || '');
             updateSensitivityUI(switched.sensitivity || 'safe');
+            updateModeUI(switched.mode || 'govuk');
             // Run quick checks
             QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
               lastCheckVersion = v;

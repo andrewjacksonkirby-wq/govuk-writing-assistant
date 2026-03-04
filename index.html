@@ -21,13 +21,28 @@
   <main class="app-main">
     <section class="editor-pane">
       <div class="editor-toolbar">
-        <div class="sensitivity-control">
-          <label class="sensitivity-label" for="sensitivityToggle">
-            <input type="checkbox" id="sensitivityToggle">
-            <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
-          </label>
+        <div class="toolbar-left">
+          <div class="mode-selector">
+            <label class="mode-label" for="modeSelect">Mode:</label>
+            <select id="modeSelect" class="mode-select">
+              <option value="govuk">GOV.UK content</option>
+              <option value="email">Email</option>
+              <option value="chat">Teams / Slack</option>
+            </select>
+          </div>
+          <div class="sensitivity-control">
+            <label class="sensitivity-label" for="sensitivityToggle">
+              <input type="checkbox" id="sensitivityToggle">
+              <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
+            </label>
+          </div>
         </div>
         <div class="editor-actions">
+          <label class="btn btn-secondary btn-sm upload-btn" id="uploadLabel" title="Upload .docx or .txt">
+            Upload
+            <input type="file" id="uploadFile" accept=".docx,.txt,.doc" hidden>
+          </label>
+          <button type="button" class="btn btn-secondary btn-sm" id="exportBtn" title="Download as text file">Export</button>
           <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
         </div>
       </div>
@@ -40,6 +55,17 @@
         aria-label="Writing editor"
         spellcheck="false"
       ></div>
+      <div class="stats-bar" id="statsBar">
+        <span class="stat-item"><span class="stat-label">Words</span> <span class="stat-value" id="statWords">0</span></span>
+        <span class="stat-item"><span class="stat-label">Sentences</span> <span class="stat-value" id="statSentences">0</span></span>
+        <span class="stat-item"><span class="stat-label">Paragraphs</span> <span class="stat-value" id="statParagraphs">0</span></span>
+        <span class="stat-item"><span class="stat-label">Reading time</span> <span class="stat-value" id="statReadingTime">0 min</span></span>
+        <span class="stat-item stat-readability">
+          <span class="stat-label">Readability</span>
+          <span class="stat-value" id="statReadability">--</span>
+          <span class="readability-bar"><span class="readability-bar-fill" id="readabilityBar"></span></span>
+        </span>
+      </div>
     </section>
 
     <aside class="sidebar" id="sidebar">
@@ -125,10 +151,12 @@
     </div>
   </div>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
   <script src="js/editor.js"></script>
   <script src="js/documents.js"></script>
   <script src="js/quick-checks.js"></script>
   <script src="js/full-check.js"></script>
+  <script src="js/stats.js"></script>
   <script src="js/suggestions.js"></script>
   <script src="js/app.js"></script>
 </body>

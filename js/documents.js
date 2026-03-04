@@ -207,6 +207,23 @@ const Documents = (function () {
     saveDocs(docs);
   }
 
+  /**
+   * Get/set the writing mode of the current document.
+   * Modes: 'govuk', 'email', 'chat'
+   */
+  function getMode() {
+    var docs = getAllDocs();
+    var doc = docs[currentDocId];
+    return doc && doc.mode ? doc.mode : 'govuk';
+  }
+
+  function setMode(value) {
+    var docs = getAllDocs();
+    if (!docs[currentDocId]) return;
+    docs[currentDocId].mode = value;
+    saveDocs(docs);
+  }
+
   function getCurrentId() {
     return currentDocId;
   }
@@ -258,6 +275,8 @@ const Documents = (function () {
     switchDoc: switchDoc,
     getSensitivity: getSensitivity,
     setSensitivity: setSensitivity,
+    getMode: getMode,
+    setMode: setMode,
     getCurrentId: getCurrentId,
     deleteDoc: deleteDoc,
     newDraft: newDraft

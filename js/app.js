@@ -1,6 +1,7 @@
 /**
  * App module
- * Wires together editor, documents, quick checks, full check, and suggestions.
+ * Wires together editor, documents, quick checks, full check, suggestions,
+ * stats, mode selector, upload, export, and keyboard shortcuts.
  */
 (function () {
   'use strict';
@@ -21,6 +22,9 @@
   var confirmRestore = document.getElementById('confirmRestore');
   var draftsList = document.getElementById('draftsList');
   var historyList = document.getElementById('historyList');
+  var modeSelect = document.getElementById('modeSelect');
+  var uploadFile = document.getElementById('uploadFile');
+  var exportBtn = document.getElementById('exportBtn');
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
@@ -33,6 +37,9 @@
 
     // Init documents
     Documents.init(updateSaveStatus);
+
+    // Init stats
+    Stats.init();
 
     // Init suggestions
     Suggestions.init({
@@ -52,6 +59,10 @@
     updateSensitivityUI(sensitivity);
     sensitivityToggle.checked = sensitivity === 'safe';
 
+    // Set writing mode
+    var mode = Documents.getMode();
+    updateModeUI(mode);
+
     // Start autosave
     Documents.startAutosave(function () {
       return Editor.getText();
@@ -59,9 +70,10 @@
 
     // ========== Event listeners ==========
 
-    // Editor changes -> trigger quick checks
+    // Editor changes -> trigger quick checks + update stats
     Editor.onChange(function (text, version) {
       updateSaveStatus('unsaved');
+      Stats.update(text);
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
@@ -78,8 +90,42 @@
       updateSensitivityUI(value);
     });
 
+    // Mode selector
+    modeSelect.addEventListener('change', function () {
+      var mode = modeSelect.value;
+      Documents.setMode(mode);
+      QuickChecks.setMode(mode);
+      FullCheck.setMode(mode);
+      // Re-run quick checks with new mode
+      var text = Editor.getText();
+      QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
+        lastCheckVersion = v;
+        Suggestions.setCorrectness(results);
+      });
+    });
+
     // Check now button
     checkNowBtn.addEventListener('click', handleCheckNow);
+
+    // Upload handler
+    uploadFile.addEventListener('change', handleUpload);
+
+    // Export handler
+    exportBtn.addEventListener('click', handleExport);
+
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function (e) {
+      // Ctrl+S / Cmd+S = save
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        Documents.saveText(Editor.getText());
+      }
+      // Ctrl+Shift+C / Cmd+Shift+C = check now
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        handleCheckNow();
+      }
+    });
 
     // Drafts modal
     draftsBtn.addEventListener('click', openDraftsModal);
@@ -106,6 +152,7 @@
         if (restoredText !== null) {
           Editor.setText(restoredText);
           Suggestions.clearAll();
+          Stats.update(restoredText);
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
             lastCheckVersion = v;
@@ -126,9 +173,10 @@
       }
     });
 
-    // Run initial quick check if there's text
+    // Run initial quick check + stats if there's text
     var initialText = Editor.getText();
     if (initialText.trim().length > 0) {
+      Stats.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
         Suggestions.setCorrectness(results);
@@ -198,6 +246,79 @@
     Editor.highlightRange(suggestion.start, suggestion.end, groupClass);
   }
 
+  /**
+   * Handle file upload (.docx or .txt).
+   */
+  function handleUpload(e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    var name = file.name.toLowerCase();
+
+    if (name.endsWith('.txt')) {
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        loadUploadedText(ev.target.result);
+      };
+      reader.readAsText(file);
+    } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
+      if (typeof mammoth === 'undefined') {
+        alert('Word document support is loading. Please try again in a moment.');
+        return;
+      }
+      var reader2 = new FileReader();
+      reader2.onload = function (ev) {
+        mammoth.extractRawText({ arrayBuffer: ev.target.result })
+          .then(function (result) {
+            loadUploadedText(result.value);
+          })
+          .catch(function (err) {
+            alert('Could not read document: ' + err.message);
+          });
+      };
+      reader2.readAsArrayBuffer(file);
+    } else {
+      alert('Unsupported file type. Please upload a .docx or .txt file.');
+    }
+
+    // Reset the input so the same file can be re-uploaded
+    uploadFile.value = '';
+  }
+
+  function loadUploadedText(text) {
+    Editor.setText(text);
+    Stats.update(text);
+    Suggestions.clearAll();
+    updateSaveStatus('unsaved');
+    QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
+      lastCheckVersion = v;
+      Suggestions.setCorrectness(results);
+    });
+  }
+
+  /**
+   * Export the current text as a .txt file download.
+   */
+  function handleExport() {
+    var text = Editor.getText();
+    if (!text || text.trim().length === 0) {
+      alert('Nothing to export.');
+      return;
+    }
+    var blob = new Blob([text], { type: 'text/plain' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    // Use the document title for the filename
+    var docs = Documents.loadCurrent();
+    var title = (docs && docs.title) || 'draft';
+    a.download = title.replace(/[^a-zA-Z0-9 _-]/g, '').substring(0, 50) + '.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
   // ========== UI Updates ==========
 
   function updateSaveStatus(status) {
@@ -246,6 +367,12 @@
     toolbar.insertBefore(statusEl, checkNowBtn);
   }
 
+  function updateModeUI(mode) {
+    modeSelect.value = mode;
+    QuickChecks.setMode(mode);
+    FullCheck.setMode(mode);
+  }
+
   // ========== Modals ==========
 
   function openDraftsModal() {
@@ -271,7 +398,9 @@
       var doc = Documents.newDraft(Editor.getText());
       Editor.setText('');
       Suggestions.clearAll();
+      Stats.update('');
       updateSensitivityUI(Documents.getSensitivity());
+      updateModeUI(Documents.getMode());
       draftsModal.hidden = true;
     });
     draftsList.appendChild(newBtn);
@@ -290,7 +419,8 @@
 
       var metaEl = document.createElement('div');
       metaEl.className = 'draft-meta';
-      metaEl.textContent = formatDate(doc.updatedAt);
+      var modeLabels = { govuk: 'GOV.UK', email: 'Email', chat: 'Teams/Slack' };
+      metaEl.textContent = formatDate(doc.updatedAt) + (doc.mode ? ' · ' + (modeLabels[doc.mode] || doc.mode) : '');
       info.appendChild(metaEl);
 
       item.appendChild(info);
@@ -308,7 +438,9 @@
           if (switched) {
             Editor.setText(switched.text || '');
             Suggestions.clearAll();
+            Stats.update(switched.text || '');
             updateSensitivityUI(switched.sensitivity || 'safe');
+            updateModeUI(switched.mode || 'govuk');
             // Run quick checks
             QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
               lastCheckVersion = v;
