@@ -752,7 +752,7 @@ const QuickChecks = (function () {
           id: makeId(),
           ruleId: 'tone',
           source: 'regex',
-          group: 'correctness',
+          group: 'clarity',
           category: entry.category,
           start: match.index,
           end: match.index + match[0].length,
