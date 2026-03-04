@@ -31,6 +31,7 @@
               <option value="chat">Teams / Slack</option>
             </select>
           </div>
+          <button type="button" class="btn btn-secondary btn-sm" id="dictBtn" title="Custom dictionary">Dictionary</button>
           <div class="sensitivity-control">
             <label class="sensitivity-label" for="sensitivityToggle">
               <input type="checkbox" id="sensitivityToggle">
@@ -39,6 +40,9 @@
           </div>
         </div>
         <div class="editor-actions">
+          <button type="button" class="btn btn-secondary btn-sm" id="ttsBtn" title="Read text aloud (text-to-speech)">
+            <span id="ttsIcon">&#9654;</span> Read aloud
+          </button>
           <label class="btn btn-secondary btn-sm upload-btn" id="uploadLabel" title="Upload .docx or .txt">
             Upload
             <input type="file" id="uploadFile" accept=".docx,.txt,.doc" hidden>
@@ -66,6 +70,11 @@
           <span class="stat-label">Readability</span>
           <span class="stat-value" id="statReadability">--</span>
           <span class="readability-bar"><span class="readability-bar-fill" id="readabilityBar"></span></span>
+        </span>
+        <span class="stat-item stat-reading-age">
+          <span class="stat-label">Reading age</span>
+          <span class="stat-value" id="statReadingAge">--</span>
+          <span class="reading-age-target" id="readingAgeTarget">Target: age 9</span>
         </span>
       </div>
     </section>
@@ -152,6 +161,24 @@
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" id="cancelRestore">Cancel</button>
         <button type="button" class="btn btn-primary" id="confirmRestore">Restore</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom dictionary modal -->
+  <div class="modal-overlay" id="dictionaryModal" hidden>
+    <div class="modal" role="dialog" aria-label="Custom dictionary">
+      <div class="modal-header">
+        <h2>Custom dictionary</h2>
+        <button type="button" class="btn btn-close" id="closeDictModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <p>Words you add here will not be flagged as spelling mistakes.</p>
+        <div class="dict-add-row">
+          <input type="text" class="dict-input" id="dictInput" placeholder="Add a word..." autocomplete="off">
+          <button type="button" class="btn btn-primary btn-sm" id="dictAddBtn">Add</button>
+        </div>
+        <div class="dict-word-list" id="dictWordList"></div>
       </div>
     </div>
   </div>

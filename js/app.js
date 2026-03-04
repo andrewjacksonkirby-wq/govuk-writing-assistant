@@ -31,6 +31,15 @@
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
+  var ttsBtn = document.getElementById('ttsBtn');
+  var ttsIcon = document.getElementById('ttsIcon');
+  var dictBtn = document.getElementById('dictBtn');
+  var dictionaryModal = document.getElementById('dictionaryModal');
+  var closeDictModal = document.getElementById('closeDictModal');
+  var dictInput = document.getElementById('dictInput');
+  var dictAddBtn = document.getElementById('dictAddBtn');
+  var dictWordList = document.getElementById('dictWordList');
+  var ttsUtterance = null;
 
   // ========== Init ==========
 
@@ -173,6 +182,27 @@
         Documents.saveText(text);
       }
     });
+
+    // ========== Text-to-speech ==========
+    ttsBtn.addEventListener('click', handleTTS);
+
+    // ========== Custom dictionary ==========
+    dictBtn.addEventListener('click', function () {
+      dictionaryModal.hidden = false;
+      renderDictionary();
+      dictInput.focus();
+    });
+    closeDictModal.addEventListener('click', function () { dictionaryModal.hidden = true; });
+    dictionaryModal.addEventListener('click', function (e) {
+      if (e.target === dictionaryModal) dictionaryModal.hidden = true;
+    });
+    dictAddBtn.addEventListener('click', addDictWord);
+    dictInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addDictWord(); }
+    });
+
+    // Load custom dictionary into QuickChecks
+    loadCustomDictionary();
 
     // Run initial quick check + stats if there's text
     var initialText = Editor.getText();
@@ -639,6 +669,121 @@
     } catch (e) {
       return isoString;
     }
+  }
+
+  // ========== Text-to-speech ==========
+
+  function handleTTS() {
+    // If already speaking, stop
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+      ttsBtn.classList.remove('tts-playing');
+      ttsIcon.textContent = '\u25B6';
+      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
+      return;
+    }
+
+    var text = Editor.getText();
+    if (!text || text.trim().length === 0) return;
+
+    ttsUtterance = new SpeechSynthesisUtterance(text);
+    ttsUtterance.lang = 'en-GB';
+    ttsUtterance.rate = 0.95;
+
+    ttsBtn.classList.add('tts-playing');
+    ttsIcon.textContent = '\u25A0';
+    ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Stop';
+
+    ttsUtterance.onend = function () {
+      ttsBtn.classList.remove('tts-playing');
+      ttsIcon.textContent = '\u25B6';
+      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
+    };
+
+    ttsUtterance.onerror = function () {
+      ttsBtn.classList.remove('tts-playing');
+      ttsIcon.textContent = '\u25B6';
+      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
+    };
+
+    window.speechSynthesis.speak(ttsUtterance);
+  }
+
+  // ========== Custom dictionary ==========
+
+  var DEFRA_DEFAULTS = [
+    'Defra', 'APHA', 'RPA', 'SFI', 'BPS', 'ELMS', 'ELM',
+    'NE', 'EA', 'MMO', 'Cefas', 'JNCC', 'RSPB',
+    'catchment', 'biodiversity', 'agri-environment',
+    'nitrate', 'slurry', 'waterbody', 'waterbodies',
+    'hedgerow', 'hedgerows', 'SSSI', 'SSSIs',
+    'HMRC', 'defra.gov.uk', 'GOV.UK'
+  ];
+
+  function getCustomDict() {
+    try {
+      var stored = localStorage.getItem('wa-custom-dictionary');
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    // First time: seed with Defra defaults
+    localStorage.setItem('wa-custom-dictionary', JSON.stringify(DEFRA_DEFAULTS));
+    return DEFRA_DEFAULTS.slice();
+  }
+
+  function saveCustomDict(words) {
+    localStorage.setItem('wa-custom-dictionary', JSON.stringify(words));
+  }
+
+  function loadCustomDictionary() {
+    var words = getCustomDict();
+    if (typeof QuickChecks.setCustomDictionary === 'function') {
+      QuickChecks.setCustomDictionary(words);
+    }
+  }
+
+  function addDictWord() {
+    var word = (dictInput.value || '').trim();
+    if (!word) return;
+    var words = getCustomDict();
+    // Case-insensitive check
+    var lower = word.toLowerCase();
+    var exists = words.some(function (w) { return w.toLowerCase() === lower; });
+    if (!exists) {
+      words.push(word);
+      saveCustomDict(words);
+      loadCustomDictionary();
+      // Re-run checks to clear false positives
+      recheckNow();
+    }
+    dictInput.value = '';
+    renderDictionary();
+  }
+
+  function removeDictWord(word) {
+    var words = getCustomDict().filter(function (w) { return w !== word; });
+    saveCustomDict(words);
+    loadCustomDictionary();
+    recheckNow();
+    renderDictionary();
+  }
+
+  function renderDictionary() {
+    var words = getCustomDict();
+    dictWordList.innerHTML = '';
+    words.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
+    words.forEach(function (word) {
+      var chip = document.createElement('span');
+      chip.className = 'dict-word-chip';
+      chip.textContent = word + ' ';
+      var removeBtn = document.createElement('button');
+      removeBtn.type = 'button';
+      removeBtn.className = 'dict-remove';
+      removeBtn.textContent = '\u00d7';
+      removeBtn.title = 'Remove "' + word + '"';
+      removeBtn.addEventListener('click', function () { removeDictWord(word); });
+      chip.appendChild(removeBtn);
+      dictWordList.appendChild(chip);
+    });
   }
 
   // ========== Start ==========

@@ -304,6 +304,8 @@ const QuickChecks = (function () {
     while ((match = wordRegex.exec(text)) !== null) {
       var word = match[0];
       var lower = word.toLowerCase();
+      // Skip words in the custom dictionary
+      if (isInCustomDictionary(word)) continue;
       if (COMMON_MISSPELLINGS[lower]) {
         var replacement = COMMON_MISSPELLINGS[lower];
         // Preserve original case for first letter
@@ -861,6 +863,8 @@ const QuickChecks = (function () {
       var word = match[1];
       var lower = word.toLowerCase();
 
+      // Skip words in the custom dictionary
+      if (isInCustomDictionary(word)) continue;
       // Check if this looks like a word with a missing first letter
       var found = findMissingLetterMatch(lower);
       if (found) {
@@ -1732,11 +1736,29 @@ const QuickChecks = (function () {
     return currentMode;
   }
 
+  /**
+   * Custom dictionary — words that should not be flagged as spelling mistakes.
+   */
+  var customDictSet = new Set();
+
+  function setCustomDictionary(words) {
+    customDictSet = new Set();
+    (words || []).forEach(function (w) {
+      customDictSet.add(w.toLowerCase());
+    });
+  }
+
+  function isInCustomDictionary(word) {
+    return customDictSet.has(word.toLowerCase());
+  }
+
   return {
     runAll: runAll,
     scheduleCheck: scheduleCheck,
     cancelPending: cancelPending,
     setMode: setMode,
-    getMode: getMode
+    getMode: getMode,
+    setCustomDictionary: setCustomDictionary,
+    isInCustomDictionary: isInCustomDictionary
   };
 })();

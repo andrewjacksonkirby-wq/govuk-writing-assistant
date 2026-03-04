@@ -1237,6 +1237,97 @@ body {
   pointer-events: none;
 }
 
+/* ===== Reading age display ===== */
+.stat-reading-age {
+  margin-left: auto;
+  gap: 6px;
+  font-weight: 600;
+}
+
+.reading-age-target {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.reading-age-target.over-target {
+  background: var(--color-correctness-bg);
+  color: var(--color-correctness);
+}
+
+.reading-age-target.near-target {
+  background: var(--color-clarity-bg);
+  color: #b45309;
+}
+
+/* ===== TTS button states ===== */
+#ttsBtn.tts-playing {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary-subtle);
+}
+
+/* ===== Custom dictionary modal ===== */
+.dict-add-row {
+  display: flex;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+}
+
+.dict-input {
+  flex: 1;
+  font-family: var(--font-main);
+  font-size: 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.dict-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.1);
+}
+
+.dict-word-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: var(--spacing-sm);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.dict-word-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  padding: 4px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius-pill);
+  color: var(--color-text-secondary);
+}
+
+.dict-word-chip .dict-remove {
+  cursor: pointer;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+  border: none;
+  background: none;
+}
+
+.dict-word-chip .dict-remove:hover {
+  color: var(--color-correctness);
+}
+
 /* Reduce motion if preferred */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
