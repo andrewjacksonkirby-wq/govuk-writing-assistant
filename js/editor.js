@@ -266,103 +266,169 @@ const Editor = (function () {
   }
 
   /**
-   * Rules that flag large structural ranges (whole sentences/paragraphs)
-   * should only appear in the sidebar, not as inline underlines.
-   * Underlining an entire sentence is visually useless — it looks like
-   * the whole paragraph is one error.
+   * Rules that flag large structural ranges (whole sentences/paragraphs).
+   * These render as background tints, not underlines.
    */
   var STRUCTURAL_RULES = ['sentence-length'];
 
   /**
-   * Render underline marks into the editor content.
-   * Splits text into segments and wraps flagged ranges with <mark> elements.
-   * Only word/phrase-level issues get underlined; structural issues (e.g.
-   * sentence length) are excluded so they don't swallow the whole paragraph.
+   * Return a CSS class for a structural mark's rule.
+   */
+  function getStructuralClass(mark) {
+    if (mark.ruleId === 'sentence-length') return 'struct-sentence-length';
+    return 'struct-default';
+  }
+
+  /**
+   * Render two-layer marks into the editor content:
+   *  Layer 1 — structural marks rendered as background-tinted <mark> wrappers
+   *  Layer 2 — word-level marks rendered as underlined <mark> elements nested inside
    */
   function renderUnderlines() {
     if (!editorEl) return;
     var text = getText();
     if (!text || currentUnderlines.length === 0) {
-      // If content has marks, restore to plain text
-      if (editorEl.querySelector('.issue-underline')) {
+      if (editorEl.querySelector('.issue-underline') || editorEl.querySelector('.structural-mark')) {
         editorEl.textContent = text;
       }
       return;
     }
 
-    // 1. Filter out structural/sentence-level rules — they should not
-    //    produce inline underlines (they still appear in the sidebar).
-    var wordLevel = currentUnderlines.filter(function (m) {
-      return STRUCTURAL_RULES.indexOf(m.ruleId) === -1;
+    // Split marks into structural (background) and word-level (underline)
+    var structuralMarks = [];
+    var wordLevelMarks = [];
+    currentUnderlines.forEach(function (m) {
+      if (STRUCTURAL_RULES.indexOf(m.ruleId) !== -1) {
+        structuralMarks.push(m);
+      } else {
+        wordLevelMarks.push(m);
+      }
     });
 
-    if (wordLevel.length === 0) {
-      if (editorEl.querySelector('.issue-underline')) {
-        editorEl.textContent = text;
-      }
-      return;
-    }
-
-    // 2. Sort marks by start position, then shortest first so that
-    //    small word-level marks are preferred over any remaining wide marks.
-    var marks = wordLevel.slice().sort(function (a, b) {
+    // Sort word-level: start asc, then shortest first
+    wordLevelMarks.sort(function (a, b) {
       return a.start - b.start || (a.end - a.start) - (b.end - b.start);
     });
 
-    // 3. Remove overlapping marks — keep the more specific (shorter) one.
-    //    Because we sorted shortest-first at each position, the first
-    //    mark we encounter at a position is the most specific.
-    var filtered = [];
-    var lastEnd = -1;
-    marks.forEach(function (m) {
-      if (m.start >= lastEnd) {
-        filtered.push(m);
-        lastEnd = m.end;
+    // De-overlap word-level marks (keep shorter/earlier)
+    var filteredWord = [];
+    var wEnd = -1;
+    wordLevelMarks.forEach(function (m) {
+      if (m.start >= wEnd) {
+        filteredWord.push(m);
+        wEnd = m.end;
       }
     });
 
-    // Build fragments
+    // Sort structural by start
+    structuralMarks.sort(function (a, b) {
+      return a.start - b.start;
+    });
+
+    // Build a list of "segments" — each is either a structural range
+    // (which may contain word-level marks) or a standalone word-level mark.
+    // We iterate through the text left-to-right using both lists.
+
     var frag = document.createDocumentFragment();
     var pos = 0;
+    var si = 0; // structural index
+    var wi = 0; // word-level index
 
-    filtered.forEach(function (m) {
-      if (m.start < pos || m.start >= text.length || m.end > text.length) return;
+    while (si < structuralMarks.length || wi < filteredWord.length) {
+      var sm = si < structuralMarks.length ? structuralMarks[si] : null;
+      var wm = wi < filteredWord.length ? filteredWord[wi] : null;
 
-      // Text before this mark
-      if (m.start > pos) {
-        frag.appendChild(document.createTextNode(text.substring(pos, m.start)));
+      // Determine which comes first
+      if (sm && (!wm || sm.start <= wm.start)) {
+        // Emit text before this structural mark
+        if (sm.start > pos) {
+          frag.appendChild(document.createTextNode(text.substring(pos, sm.start)));
+        }
+
+        // Create the structural background wrapper
+        var structEl = document.createElement('mark');
+        structEl.className = 'structural-mark ' + getStructuralClass(sm);
+        structEl.title = sm.title || sm.message || '';
+        structEl.dataset.issueId = sm.id || '';
+        (function (issueRef) {
+          structEl.addEventListener('click', function (e) {
+            // Only fire if the click wasn't caught by a nested word-mark
+            if (underlineCallback) underlineCallback(issueRef);
+          });
+        })(sm);
+
+        // Fill the structural mark with text + nested word-level marks
+        var innerPos = sm.start;
+        while (wi < filteredWord.length && filteredWord[wi].start < sm.end) {
+          var w = filteredWord[wi];
+          // Clamp to structural boundaries
+          var wStart = Math.max(w.start, sm.start);
+          var wEndClamped = Math.min(w.end, sm.end);
+
+          // Text before this word mark (inside structural)
+          if (wStart > innerPos) {
+            structEl.appendChild(document.createTextNode(text.substring(innerPos, wStart)));
+          }
+
+          // The word-level underline mark
+          var wordEl = document.createElement('mark');
+          wordEl.className = 'issue-underline ' + getCategoryClass(w);
+          wordEl.textContent = text.substring(wStart, wEndClamped);
+          wordEl.title = w.title || w.message || '';
+          wordEl.dataset.issueId = w.id || '';
+          (function (issueRef) {
+            wordEl.addEventListener('click', function (e) {
+              e.stopPropagation();
+              if (underlineCallback) underlineCallback(issueRef);
+            });
+          })(w);
+          structEl.appendChild(wordEl);
+
+          innerPos = wEndClamped;
+          wi++;
+        }
+
+        // Remaining text inside structural mark
+        if (innerPos < sm.end) {
+          structEl.appendChild(document.createTextNode(text.substring(innerPos, sm.end)));
+        }
+
+        frag.appendChild(structEl);
+        pos = sm.end;
+        si++;
+      } else {
+        // Word-level mark outside any structural range
+        if (wm.start > pos) {
+          frag.appendChild(document.createTextNode(text.substring(pos, wm.start)));
+        }
+        if (wm.start >= pos) {
+          var wordEl2 = document.createElement('mark');
+          wordEl2.className = 'issue-underline ' + getCategoryClass(wm);
+          wordEl2.textContent = text.substring(wm.start, wm.end);
+          wordEl2.title = wm.title || wm.message || '';
+          wordEl2.dataset.issueId = wm.id || '';
+          (function (issueRef) {
+            wordEl2.addEventListener('click', function (e) {
+              e.stopPropagation();
+              if (underlineCallback) underlineCallback(issueRef);
+            });
+          })(wm);
+          frag.appendChild(wordEl2);
+          pos = wm.end;
+        }
+        wi++;
       }
+    }
 
-      // The underlined mark
-      var mark = document.createElement('mark');
-      var catClass = getCategoryClass(m);
-      mark.className = 'issue-underline ' + catClass;
-      mark.textContent = text.substring(m.start, m.end);
-      mark.title = m.title || m.message || '';
-      mark.dataset.issueId = m.id || '';
-
-      mark.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (underlineCallback) underlineCallback(m);
-      });
-
-      frag.appendChild(mark);
-      pos = m.end;
-    });
-
-    // Remaining text after last mark
+    // Remaining text
     if (pos < text.length) {
       frag.appendChild(document.createTextNode(text.substring(pos)));
     }
 
-    // Save cursor position
+    // Save cursor, replace content, restore cursor
     var savedOffset = saveCaretOffset();
-
-    // Replace editor content
     editorEl.innerHTML = '';
     editorEl.appendChild(frag);
-
-    // Restore cursor position
     if (savedOffset !== null) {
       restoreCaretOffset(savedOffset);
     }
@@ -424,7 +490,7 @@ const Editor = (function () {
   function clearUnderlines() {
     currentUnderlines = [];
     if (!editorEl) return;
-    if (editorEl.querySelector('.issue-underline')) {
+    if (editorEl.querySelector('.issue-underline') || editorEl.querySelector('.structural-mark')) {
       var text = editorEl.innerText || '';
       editorEl.textContent = text;
     }

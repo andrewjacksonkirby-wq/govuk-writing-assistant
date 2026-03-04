@@ -1098,6 +1098,25 @@ body {
   border-color: var(--color-correctness-border);
 }
 
+/* ===== Structural marks (sentence/paragraph-level background tints) ===== */
+.structural-mark {
+  display: inline;
+  background: transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.structural-mark.struct-sentence-length {
+  background: rgba(8, 145, 178, 0.10);
+}
+.structural-mark.struct-sentence-length:hover {
+  background: rgba(8, 145, 178, 0.22);
+}
+
 /* ===== Inline issue underlines (Grammarly-style) ===== */
 .issue-underline {
   display: inline;
@@ -1108,6 +1127,8 @@ body {
   text-decoration: none;
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
+  position: relative;
+  z-index: 1;
 }
 
 /* --- Correctness (red) --- */
