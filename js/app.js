@@ -37,6 +37,7 @@
     // Init suggestions
     Suggestions.init({
       onApply: handleApply,
+      onApplyAll: handleApplyAll,
       onSelect: handleSelect
     });
 
@@ -180,6 +181,16 @@
     if (suggestion.replacement !== undefined) {
       Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement);
     }
+  }
+
+  function handleApplyAll(suggestions) {
+    // Already sorted descending by position in Suggestions.applyAll
+    // so later replacements don't shift earlier offsets
+    suggestions.forEach(function (s) {
+      if (s.replacement !== undefined) {
+        Editor.applyReplacement(s.start, s.end, s.replacement);
+      }
+    });
   }
 
   function handleSelect(suggestion) {

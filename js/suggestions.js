@@ -12,6 +12,7 @@ const Suggestions = (function () {
 
   // Callbacks
   var onApply = null;
+  var onApplyAll = null;
   var onSelect = null;
 
   // DOM refs (set during init)
@@ -26,6 +27,7 @@ const Suggestions = (function () {
 
   function init(callbacks) {
     onApply = callbacks.onApply;
+    onApplyAll = callbacks.onApplyAll;
     onSelect = callbacks.onSelect;
 
     listEl = document.getElementById('suggestionsList');
@@ -122,6 +124,76 @@ const Suggestions = (function () {
       activeSuggestionId = null;
     }
 
+    render();
+  }
+
+  /**
+   * Get the grouping key for a suggestion (same rule + same original text).
+   */
+  function getSiblingKey(suggestion) {
+    return suggestion.ruleId + ':' + (suggestion.original || '').toLowerCase();
+  }
+
+  /**
+   * Find all suggestions that match the same rule and original text.
+   */
+  function getSiblings(suggestion) {
+    var key = getSiblingKey(suggestion);
+    var all = correctnessSuggestions.concat(claritySuggestions);
+    return all.filter(function (s) {
+      return getSiblingKey(s) === key;
+    });
+  }
+
+  /**
+   * Apply fix to all matching suggestions (same rule + original text).
+   * Applies in reverse document order so offsets stay valid.
+   */
+  function applyAll(suggestion) {
+    var siblings = getSiblings(suggestion);
+    // Sort by position descending for safe replacement
+    siblings.sort(function (a, b) { return b.start - a.start; });
+
+    if (onApplyAll) {
+      onApplyAll(siblings);
+    }
+
+    // Dismiss all siblings
+    var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
+    siblings.forEach(function (s) {
+      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+      dismissedIds.add(key);
+    });
+    saveDismissed();
+
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+    claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+
+    if (siblingIds.has(activeSuggestionId)) {
+      activeSuggestionId = null;
+    }
+    render();
+  }
+
+  /**
+   * Dismiss all matching suggestions (same rule + original text).
+   */
+  function dismissAll(suggestion) {
+    var siblings = getSiblings(suggestion);
+    var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
+
+    siblings.forEach(function (s) {
+      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+      dismissedIds.add(key);
+    });
+    saveDismissed();
+
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+    claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
+
+    if (siblingIds.has(activeSuggestionId)) {
+      activeSuggestionId = null;
+    }
     render();
   }
 
@@ -305,6 +377,9 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
+    var siblings = getSiblings(suggestion);
+    var hasSiblings = siblings.length > 1;
+
     if (suggestion.replacement !== undefined) {
       var applyBtn = document.createElement('button');
       applyBtn.type = 'button';
@@ -316,6 +391,18 @@ const Suggestions = (function () {
         dismiss(suggestion);
       });
       actions.appendChild(applyBtn);
+
+      if (hasSiblings) {
+        var applyAllBtn = document.createElement('button');
+        applyAllBtn.type = 'button';
+        applyAllBtn.className = 'btn btn-primary btn-sm btn-batch';
+        applyAllBtn.textContent = 'Apply all (' + siblings.length + ')';
+        applyAllBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          applyAll(suggestion);
+        });
+        actions.appendChild(applyAllBtn);
+      }
     } else {
       var reviewBtn = document.createElement('button');
       reviewBtn.type = 'button';
@@ -339,6 +426,18 @@ const Suggestions = (function () {
       dismiss(suggestion);
     });
     actions.appendChild(dismissBtn);
+
+    if (hasSiblings) {
+      var ignoreAllBtn = document.createElement('button');
+      ignoreAllBtn.type = 'button';
+      ignoreAllBtn.className = 'btn btn-secondary btn-sm btn-batch';
+      ignoreAllBtn.textContent = 'Ignore all (' + siblings.length + ')';
+      ignoreAllBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        dismissAll(suggestion);
+      });
+      actions.appendChild(ignoreAllBtn);
+    }
 
     card.appendChild(actions);
     return card;

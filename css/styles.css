@@ -495,7 +495,12 @@ body {
 
 .suggestion-actions {
   display: flex;
-  gap: var(--spacing-sm);
+  gap: var(--spacing-xs);
+  flex-wrap: wrap;
+}
+
+.suggestion-actions .btn-batch {
+  font-size: 12px;
 }
 
 .empty-state {
