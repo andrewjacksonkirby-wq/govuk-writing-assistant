@@ -51,7 +51,7 @@ const Documents = (function () {
       title: 'Untitled draft',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      sensitivity: 'sensitive', // 'sensitive' or 'safe'
+      sensitivity: 'safe', // 'sensitive' or 'safe'
       versions: []
     };
     saveDocs(docs);
