@@ -400,13 +400,15 @@
 
     // Update AI status indicator
     var toolbar = document.querySelector('.editor-actions');
-    var existingStatus = toolbar.querySelector('.ai-status');
-    if (existingStatus) existingStatus.remove();
+    if (toolbar) {
+      var existingStatus = toolbar.querySelector('.ai-status');
+      if (existingStatus) existingStatus.remove();
 
-    var statusEl = document.createElement('span');
-    statusEl.className = 'ai-status ' + (isSafe ? 'available' : 'unavailable');
-    statusEl.textContent = isSafe ? 'AI check available' : 'AI check unavailable';
-    toolbar.insertBefore(statusEl, checkNowBtn);
+      var statusEl = document.createElement('span');
+      statusEl.className = 'ai-status ' + (isSafe ? 'available' : 'unavailable');
+      statusEl.textContent = isSafe ? 'AI check available' : 'AI check unavailable';
+      toolbar.insertBefore(statusEl, checkNowBtn);
+    }
   }
 
   function updateModeUI(mode) {
@@ -559,8 +561,8 @@
       var diffHours = Math.floor(diffMs / 3600000);
 
       if (diffMins < 1) return 'Just now';
-      if (diffMins < 60) return diffMins + ' minutes ago';
-      if (diffHours < 24) return diffHours + ' hours ago';
+      if (diffMins < 60) return diffMins + (diffMins === 1 ? ' minute ago' : ' minutes ago');
+      if (diffHours < 24) return diffHours + (diffHours === 1 ? ' hour ago' : ' hours ago');
 
       return d.toLocaleDateString('en-GB', {
         day: 'numeric',

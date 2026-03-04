@@ -55,7 +55,8 @@ const QuickChecks = (function () {
     'experiance': 'experience',
     'foriegn': 'foreign',
     'fourty': 'forty',
-    'fulfil': 'fulfil',
+    'fullfil': 'fulfil',
+    'fullfill': 'fulfil',
     'goverment': 'government',
     'governemnt': 'government',
     'guidence': 'guidance',
@@ -617,6 +618,7 @@ const QuickChecks = (function () {
       // Skip if mode-restricted and doesn't match current mode
       if (entry.modes && entry.modes.length > 0 && entry.modes.indexOf(currentMode) === -1) return;
 
+      entry.regex.lastIndex = 0; // Reset — g flag retains lastIndex between calls
       var match;
       while ((match = entry.regex.exec(text)) !== null) {
         var target = match[entry.matchGroup];
@@ -656,6 +658,7 @@ const QuickChecks = (function () {
       if (!entry.msg || !entry.category) return; // skip null entries
       if (entry.modes && entry.modes.length > 0 && entry.modes.indexOf(currentMode) === -1) return;
 
+      entry.regex.lastIndex = 0; // Reset — g flag retains lastIndex between calls
       var match;
       while ((match = entry.regex.exec(text)) !== null) {
         var suggestion = {
