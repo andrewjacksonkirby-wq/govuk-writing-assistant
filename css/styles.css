@@ -461,6 +461,37 @@ body {
   color: var(--color-text);
 }
 
+.suggestion-context {
+  font-size: 13px;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  margin-bottom: var(--spacing-sm);
+  line-height: 1.5;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-context .context-highlight {
+  background: #fff3cd;
+  color: var(--color-text);
+  border-radius: 2px;
+  padding: 0 1px;
+  font-weight: 600;
+}
+
+.suggestion-card.correctness .context-highlight {
+  background: var(--color-correctness-bg);
+  border-bottom: 2px solid var(--color-correctness);
+}
+
+.suggestion-card.clarity .context-highlight {
+  background: var(--color-clarity-bg);
+  border-bottom: 2px solid var(--color-clarity);
+}
+
 .suggestion-message {
   font-size: 13px;
   color: var(--color-text-secondary);

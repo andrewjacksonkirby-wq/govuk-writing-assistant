@@ -335,6 +335,54 @@ const Suggestions = (function () {
     });
   }
 
+  /**
+   * Get the full editor text for context snippets.
+   */
+  function getEditorText() {
+    try {
+      return Editor.getText() || '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /**
+   * Build a context snippet showing surrounding text with the flagged word highlighted.
+   * Shows ~30 chars either side, trimmed to word boundaries.
+   */
+  function buildContextSnippet(suggestion) {
+    var text = getEditorText();
+    if (!text || suggestion.start === undefined) return null;
+
+    var start = suggestion.start;
+    var end = suggestion.end || (start + (suggestion.original || '').length);
+    if (start < 0 || end > text.length) return null;
+
+    // Grab context: up to 40 chars before and after
+    var ctxBefore = text.substring(Math.max(0, start - 40), start);
+    var ctxTarget = text.substring(start, end);
+    var ctxAfter = text.substring(end, Math.min(text.length, end + 40));
+
+    // Trim to word boundaries and add ellipsis
+    if (start - 40 > 0) {
+      var spaceIdx = ctxBefore.indexOf(' ');
+      if (spaceIdx !== -1) ctxBefore = ctxBefore.substring(spaceIdx + 1);
+      ctxBefore = '...' + ctxBefore;
+    }
+    if (end + 40 < text.length) {
+      var lastSpace = ctxAfter.lastIndexOf(' ');
+      if (lastSpace !== -1) ctxAfter = ctxAfter.substring(0, lastSpace);
+      ctxAfter = ctxAfter + '...';
+    }
+
+    // Trim newlines to keep it single-line
+    ctxBefore = ctxBefore.replace(/\n/g, ' ');
+    ctxTarget = ctxTarget.replace(/\n/g, ' ');
+    ctxAfter = ctxAfter.replace(/\n/g, ' ');
+
+    return { before: ctxBefore, target: ctxTarget, after: ctxAfter };
+  }
+
   function createCard(suggestion, groupClass) {
     var card = document.createElement('div');
     card.className = 'suggestion-card ' + groupClass;
@@ -356,6 +404,18 @@ const Suggestions = (function () {
     titleEl.className = 'suggestion-title';
     titleEl.textContent = suggestion.title;
     card.appendChild(titleEl);
+
+    // Context snippet — shows where in the text this issue is
+    var ctx = buildContextSnippet(suggestion);
+    if (ctx) {
+      var ctxEl = document.createElement('div');
+      ctxEl.className = 'suggestion-context';
+      ctxEl.innerHTML =
+        escapeHtml(ctx.before) +
+        '<mark class="context-highlight">' + escapeHtml(ctx.target) + '</mark>' +
+        escapeHtml(ctx.after);
+      card.appendChild(ctxEl);
+    }
 
     var msgEl = document.createElement('div');
     msgEl.className = 'suggestion-message';
