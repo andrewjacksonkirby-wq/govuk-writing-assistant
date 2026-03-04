@@ -256,6 +256,8 @@
     if (suggestion.replacement !== undefined) {
       Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement);
     }
+    // Immediately re-check (don't wait for debounce) since offsets have shifted
+    recheckNow();
   }
 
   function handleApplyAll(suggestions) {
@@ -266,6 +268,19 @@
         Editor.applyReplacement(s.start, s.end, s.replacement);
       }
     });
+    recheckNow();
+  }
+
+  /**
+   * Run quick checks immediately (cancel any pending debounce).
+   */
+  function recheckNow() {
+    QuickChecks.cancelPending();
+    var text = Editor.getText();
+    var version = Editor.getVersion();
+    var results = QuickChecks.runAll(text);
+    lastCheckVersion = version;
+    processQuickCheckResults(results);
   }
 
   function handleSelect(suggestion) {
