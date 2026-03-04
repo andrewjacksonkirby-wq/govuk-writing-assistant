@@ -101,6 +101,7 @@ const Stats = (function () {
   }
 
   function setReadability(score) {
+    lastReadabilityScore = score;
     if (score === null) {
       els.readability.textContent = '--';
       els.readability.className = 'stat-value';
@@ -119,7 +120,7 @@ const Stats = (function () {
       label = score + ' Hard';
       cls = 'readability-hard';
     } else {
-      label = score + ' V.Hard';
+      label = score + ' Very hard';
       cls = 'readability-vhard';
     }
 
@@ -131,9 +132,16 @@ const Stats = (function () {
     }
   }
 
+  var lastReadabilityScore = null;
+
+  function getReadabilityScore() {
+    return lastReadabilityScore;
+  }
+
   return {
     init: init,
     update: update,
-    countWords: countWords
+    countWords: countWords,
+    getReadabilityScore: getReadabilityScore
   };
 })();

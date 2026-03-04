@@ -234,6 +234,36 @@ const QuickChecks = (function () {
       id: 'tone',
       category: 'Tone',
       run: checkTonePatterns
+    },
+    {
+      id: 'missing-letter',
+      category: 'Spelling',
+      run: checkMissingLetters
+    },
+    {
+      id: 'sentence-length',
+      category: 'Clarity',
+      run: checkSentenceLength
+    },
+    {
+      id: 'passive-voice',
+      category: 'Clarity',
+      run: checkPassiveVoice
+    },
+    {
+      id: 'date-format',
+      category: 'Style',
+      run: checkDateFormat
+    },
+    {
+      id: 'contractions',
+      category: 'Style',
+      run: checkContractions
+    },
+    {
+      id: 'numbers',
+      category: 'Style',
+      run: checkNumbers
     }
   ];
 
@@ -423,7 +453,60 @@ const QuickChecks = (function () {
       { regex: /\b(purchase)\b/gi, fix: 'buy', msg: 'Prefer "buy" over "purchase" for plain English' },
       { regex: /\b(regarding)\b/gi, fix: 'about', msg: 'Prefer "about" over "regarding" for plain English' },
       { regex: /\b(in order to)\b/gi, fix: 'to', msg: 'Prefer "to" over "in order to" for brevity' },
-      { regex: /\b(prior to)\b/gi, fix: 'before', msg: 'Prefer "before" over "prior to" for plain English' }
+      { regex: /\b(prior to)\b/gi, fix: 'before', msg: 'Prefer "before" over "prior to" for plain English' },
+      // Expanded plain English vocabulary
+      { regex: /\b(facilitate)\b/gi, fix: 'help', msg: 'Prefer "help" over "facilitate" for plain English' },
+      { regex: /\b(endeavour)\b/gi, fix: 'try', msg: 'Prefer "try" over "endeavour" for plain English' },
+      { regex: /\b(terminate)\b/gi, fix: 'end', msg: 'Prefer "end" over "terminate" for plain English' },
+      { regex: /\b(additional)\b/gi, fix: 'extra', msg: 'Prefer "extra" or "more" over "additional" for plain English' },
+      { regex: /\b(accordingly)\b/gi, fix: 'so', msg: 'Prefer "so" over "accordingly" for plain English' },
+      { regex: /\b(subsequently)\b/gi, fix: 'then', msg: 'Prefer "then" over "subsequently" for plain English' },
+      { regex: /\b(approximately)\b/gi, fix: 'about', msg: 'Prefer "about" over "approximately" for plain English' },
+      { regex: /\b(furthermore)\b/gi, fix: 'also', msg: 'Prefer "also" over "furthermore" for plain English' },
+      { regex: /\b(nevertheless)\b/gi, fix: 'but', msg: 'Prefer "but" or "however" over "nevertheless" for plain English' },
+      { regex: /\b(notwithstanding)\b/gi, fix: 'despite', msg: 'Prefer "despite" over "notwithstanding" for plain English' },
+      { regex: /\b(ascertain)\b/gi, fix: 'find out', msg: 'Prefer "find out" over "ascertain" for plain English' },
+      { regex: /\b(demonstrate)\b/gi, fix: 'show', msg: 'Prefer "show" over "demonstrate" for plain English' },
+      { regex: /\b(consequently)\b/gi, fix: 'so', msg: 'Prefer "so" over "consequently" for plain English' },
+      { regex: /\b(assistance)\b/gi, fix: 'help', msg: 'Prefer "help" over "assistance" for plain English' },
+      { regex: /\b(sufficient)\b/gi, fix: 'enough', msg: 'Prefer "enough" over "sufficient" for plain English' },
+      { regex: /\b(obtain)\b/gi, fix: 'get', msg: 'Prefer "get" over "obtain" for plain English' },
+      { regex: /\b(require)\b/gi, fix: 'need', msg: 'Prefer "need" over "require" for plain English' },
+      { regex: /\b(requirement)\b/gi, fix: 'need', msg: 'Prefer "need" over "requirement" for plain English' },
+      { regex: /\b(modify)\b/gi, fix: 'change', msg: 'Prefer "change" over "modify" for plain English' },
+      { regex: /\b(submit)\b/gi, fix: 'send', msg: 'Prefer "send" over "submit" for plain English' },
+      { regex: /\b(upon)\b/gi, fix: 'on', msg: 'Prefer "on" over "upon" for plain English' },
+      { regex: /\b(whilst)\b/gi, fix: 'while', msg: 'Prefer "while" over "whilst" for plain English' },
+      { regex: /\b(amongst)\b/gi, fix: 'among', msg: 'Prefer "among" over "amongst" for plain English' },
+      { regex: /\b(attempt)\b/gi, fix: 'try', msg: 'Prefer "try" over "attempt" for plain English' },
+      { regex: /\b(initiate)\b/gi, fix: 'start', msg: 'Prefer "start" over "initiate" for plain English' },
+      { regex: /\b(implement)\b/gi, fix: 'carry out', msg: 'Prefer "carry out" or "set up" over "implement" for plain English' },
+      { regex: /\b(indicate)\b/gi, fix: 'show', msg: 'Prefer "show" or "suggest" over "indicate" for plain English' },
+      { regex: /\b(therefore)\b/gi, fix: 'so', msg: 'Prefer "so" over "therefore" for plain English' },
+      { regex: /\b(however)\b/gi, fix: 'but', msg: 'Consider "but" instead of "however" for simpler English' },
+      { regex: /\b(in accordance with)\b/gi, fix: 'in line with', msg: 'Prefer "in line with" or "following" over "in accordance with"' },
+      { regex: /\b(with reference to)\b/gi, fix: 'about', msg: 'Prefer "about" over "with reference to"' },
+      { regex: /\b(in the event of)\b/gi, fix: 'if', msg: 'Prefer "if" over "in the event of"' },
+      { regex: /\b(at the present time)\b/gi, fix: 'now', msg: 'Prefer "now" over "at the present time"' },
+      { regex: /\b(on a regular basis)\b/gi, fix: 'regularly', msg: 'Prefer "regularly" or "often" over "on a regular basis"' },
+      { regex: /\b(in the near future)\b/gi, fix: 'soon', msg: 'Prefer "soon" over "in the near future"' },
+      { regex: /\b(a large number of)\b/gi, fix: 'many', msg: 'Prefer "many" over "a large number of"' },
+      { regex: /\b(the majority of)\b/gi, fix: 'most', msg: 'Prefer "most" over "the majority of"' },
+      // GOV.UK style patterns (moved from full check — now instant)
+      { regex: /\bplease\b/gi, fix: null, msg: 'GOV.UK style: avoid "please" — be direct', modes: ['govuk'] },
+      { regex: /\bkindly\b/gi, fix: null, msg: 'GOV.UK style: avoid "kindly" — be direct', modes: ['govuk'] },
+      { regex: /\bgoing forward\b/gi, fix: null, msg: 'Avoid "going forward" — be specific about timing', modes: ['govuk'] },
+      { regex: /\bat this point in time\b/gi, fix: 'now', msg: 'Use "now" or "currently" instead', modes: ['govuk'] },
+      { regex: /\bin the event that\b/gi, fix: 'if', msg: 'Use "if" instead of "in the event that"', modes: ['govuk'] },
+      { regex: /\bwith regards to\b/gi, fix: 'about', msg: 'Use "about" instead of "with regards to"', modes: ['govuk'] },
+      { regex: /\ba number of\b/gi, fix: null, msg: 'Be specific — say how many instead of "a number of"', modes: ['govuk'] },
+      { regex: /\bin respect of\b/gi, fix: 'about', msg: 'Use "about" or "for" instead of "in respect of"', modes: ['govuk'] },
+      { regex: /\betc\.?\b/gi, fix: null, msg: 'GOV.UK style: avoid "etc" — list the items or say "for example"', modes: ['govuk'] },
+      { regex: /\bie\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "ie"', modes: ['govuk'] },
+      { regex: /\beg\b/gi, fix: 'for example', msg: 'Write "for example" instead of "eg"', modes: ['govuk'] },
+      { regex: /\bvia\b/gi, fix: 'through', msg: 'GOV.UK style: use "through" or "by" instead of "via"', modes: ['govuk'] },
+      { regex: /\bi\.e\.\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "i.e."', modes: ['govuk'] },
+      { regex: /\be\.g\.\b/gi, fix: 'for example', msg: 'Write "for example" instead of "e.g."', modes: ['govuk'] }
     ];
 
     patterns.forEach(function (pat) {
@@ -523,6 +606,328 @@ const QuickChecks = (function () {
         results.push(suggestion);
       }
     });
+    return results;
+  }
+
+  /**
+   * Detect words with missing first letter (e.g. "nternal" → "internal").
+   * Uses a dictionary of common words where dropping the first letter
+   * produces a non-word that we can detect.
+   */
+  var MISSING_FIRST_LETTER = {
+    'ccess': 'access', 'ccount': 'account', 'ccording': 'according',
+    'ctual': 'actual', 'ctually': 'actually', 'ddress': 'address',
+    'dditional': 'additional', 'dvice': 'advice', 'greement': 'agreement',
+    'llowed': 'allowed', 'lready': 'already', 'lternative': 'alternative',
+    'mount': 'amount', 'nalysis': 'analysis', 'nother': 'another',
+    'nswer': 'answer', 'pplication': 'application', 'pply': 'apply',
+    'pproval': 'approval', 'pprove': 'approve', 'ssessment': 'assessment',
+    'vailable': 'available', 'usiness': 'business', 'omplete': 'complete',
+    'ompletely': 'completely', 'ondition': 'condition', 'onfirm': 'confirm',
+    'onsider': 'consider', 'ontact': 'contact', 'ontinue': 'continue',
+    'ontract': 'contract', 'ontrol': 'control', 'orrect': 'correct',
+    'urrent': 'current', 'urrently': 'currently', 'ecision': 'decision',
+    'epartment': 'department', 'escription': 'description',
+    'etail': 'detail', 'etails': 'details', 'evelop': 'develop',
+    'evelopment': 'development', 'ifferent': 'different',
+    'irectly': 'directly', 'ocument': 'document', 'mployee': 'employee',
+    'nquiry': 'enquiry', 'nsure': 'ensure', 'nvironment': 'environment',
+    'ssential': 'essential', 'stimate': 'estimate', 'vidence': 'evidence',
+    'xample': 'example', 'xpect': 'expect', 'xperience': 'experience',
+    'inancial': 'financial', 'ollowing': 'following', 'overnment': 'government',
+    'uidance': 'guidance', 'mmediate': 'immediate', 'mmediately': 'immediately',
+    'mportant': 'important', 'nclude': 'include', 'ncluding': 'including',
+    'ncrease': 'increase', 'ndividual': 'individual',
+    'nformation': 'information', 'nitial': 'initial',
+    'nternal': 'internal', 'nternational': 'international',
+    'nvestigation': 'investigation', 'ssue': 'issue',
+    'anagement': 'management', 'anager': 'manager', 'eeting': 'meeting',
+    'ember': 'member', 'inister': 'minister', 'ational': 'national',
+    'ecessary': 'necessary', 'umber': 'number', 'fficer': 'officer',
+    'peration': 'operation', 'pportunity': 'opportunity',
+    'rganisation': 'organisation', 'riginal': 'original',
+    'arliament': 'parliament', 'articular': 'particular',
+    'eople': 'people', 'eriod': 'period', 'erson': 'person',
+    'olicy': 'policy', 'osition': 'position', 'ossible': 'possible',
+    'roblem': 'problem', 'rocess': 'process', 'rogramme': 'programme',
+    'roject': 'project', 'rovide': 'provide', 'ublic': 'public',
+    'uality': 'quality', 'uestion': 'question', 'eceive': 'receive',
+    'ecommend': 'recommend', 'eference': 'reference', 'eport': 'report',
+    'equest': 'request', 'equire': 'require', 'equirement': 'requirement',
+    'esource': 'resource', 'esponse': 'response', 'esponsible': 'responsible',
+    'eview': 'review', 'ection': 'section', 'ervice': 'service',
+    'imilar': 'similar', 'ituation': 'situation', 'pecific': 'specific',
+    'tandard': 'standard', 'tatement': 'statement', 'upport': 'support',
+    'ystem': 'system', 'hrough': 'through', 'ogether': 'together',
+    'raining': 'training', 'nderstand': 'understand', 'pdate': 'update',
+    'ithin': 'within', 'ithout': 'without'
+  };
+
+  function checkMissingLetters(text) {
+    var results = [];
+    var wordRegex = /\b([a-zA-Z]{4,})\b/g;
+    var match;
+    while ((match = wordRegex.exec(text)) !== null) {
+      var word = match[1];
+      var lower = word.toLowerCase();
+
+      // Check if this looks like a word with a missing first letter
+      if (MISSING_FIRST_LETTER[lower]) {
+        var replacement = MISSING_FIRST_LETTER[lower];
+        // Preserve case
+        if (word[0] === word[0].toUpperCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'missing-letter',
+          source: 'regex',
+          group: 'correctness',
+          category: 'Spelling',
+          start: match.index,
+          end: match.index + word.length,
+          message: '"' + word + '" looks like "' + replacement + '" with a missing first letter',
+          title: 'Missing letter',
+          replacement: replacement,
+          original: word
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Check sentence length (GOV.UK recommends under 25 words).
+   */
+  function checkSentenceLength(text) {
+    var results = [];
+    // Split on sentence-ending punctuation
+    var sentenceRegex = /[^.!?]*[.!?]+/g;
+    var match;
+    while ((match = sentenceRegex.exec(text)) !== null) {
+      var sentence = match[0].trim();
+      if (!sentence) continue;
+      var words = sentence.split(/\s+/).filter(function (w) { return w.length > 0; });
+      if (words.length > 25) {
+        results.push({
+          id: makeId(),
+          ruleId: 'sentence-length',
+          source: 'regex',
+          group: 'clarity',
+          category: 'Sentence length',
+          start: match.index,
+          end: match.index + match[0].length,
+          message: 'This sentence has ' + words.length + ' words. Try to keep sentences under 25 words.',
+          title: 'Long sentence',
+          original: sentence
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Improved passive voice detection.
+   * Uses a curated list of common past participles to reduce false positives
+   * (avoids flagging adjectives like "excited", "interested", "concerned").
+   */
+  var PAST_PARTICIPLES = new Set([
+    'accepted', 'achieved', 'added', 'agreed', 'allowed', 'announced',
+    'applied', 'approved', 'arranged', 'asked', 'assessed', 'assigned',
+    'awarded', 'based', 'built', 'called', 'carried', 'caused', 'changed',
+    'charged', 'checked', 'chosen', 'claimed', 'closed', 'collected',
+    'completed', 'confirmed', 'considered', 'contacted', 'controlled',
+    'covered', 'created', 'decided', 'defined', 'delivered', 'described',
+    'designed', 'developed', 'directed', 'discussed', 'distributed',
+    'done', 'drawn', 'driven', 'dropped', 'earned', 'employed', 'ended',
+    'entered', 'established', 'examined', 'expected', 'explained',
+    'expressed', 'extended', 'filed', 'filled', 'fixed', 'followed',
+    'formed', 'found', 'funded', 'given', 'governed', 'granted', 'grown',
+    'handled', 'heard', 'held', 'helped', 'hidden', 'hired', 'hit',
+    'identified', 'improved', 'included', 'increased', 'informed',
+    'introduced', 'investigated', 'invited', 'issued', 'joined', 'judged',
+    'kept', 'killed', 'known', 'launched', 'led', 'left', 'listed',
+    'lost', 'made', 'maintained', 'managed', 'measured', 'met', 'moved',
+    'named', 'needed', 'noted', 'obtained', 'offered', 'opened',
+    'operated', 'ordered', 'organised', 'owned', 'paid', 'passed',
+    'performed', 'placed', 'planned', 'played', 'posted', 'prepared',
+    'presented', 'processed', 'produced', 'protected', 'provided',
+    'published', 'put', 'raised', 'reached', 'read', 'received',
+    'recognised', 'recorded', 'reduced', 'referred', 'refused', 'released',
+    'removed', 'replaced', 'reported', 'requested', 'required', 'resolved',
+    'reviewed', 'run', 'said', 'seen', 'selected', 'sent', 'served',
+    'set', 'shared', 'shown', 'signed', 'sold', 'solved', 'sought',
+    'spent', 'split', 'spoken', 'started', 'stated', 'stopped', 'stored',
+    'submitted', 'supported', 'taken', 'taught', 'tested', 'thought',
+    'told', 'treated', 'turned', 'understood', 'updated', 'used',
+    'visited', 'wanted', 'warned', 'withdrawn', 'won', 'worked', 'written'
+  ]);
+
+  function checkPassiveVoice(text) {
+    var results = [];
+    // Pattern: be-verb + (optional adverb) + past participle from curated list
+    var beVerbs = '(?:is|are|was|were|be|been|being)';
+    var adverb = '(?:\\s+\\w+ly)?';
+    var regex = new RegExp('\\b(' + beVerbs + ')' + adverb + '\\s+(\\w+)\\b', 'gi');
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      var participle = match[2].toLowerCase();
+      if (PAST_PARTICIPLES.has(participle)) {
+        results.push({
+          id: makeId(),
+          ruleId: 'passive-voice',
+          source: 'regex',
+          group: 'clarity',
+          category: 'Passive voice',
+          start: match.index,
+          end: match.index + match[0].length,
+          message: 'Consider using active voice for clearer writing. Who is doing the action?',
+          title: 'Passive voice',
+          original: match[0]
+        });
+      }
+    }
+    return results;
+  }
+
+  /**
+   * Check date format issues (GOV.UK style: "1 January 2024").
+   */
+  function checkDateFormat(text) {
+    var results = [];
+    // Numeric date formats like 01/01/2024
+    var numericDate = /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g;
+    var match;
+    while ((match = numericDate.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use "1 January 2024" format instead of numeric dates',
+        title: 'Date format',
+        original: match[0]
+      });
+    }
+
+    // Ordinals with dates: "1st January", "2nd March"
+    var ordinalDate = /\b(\d{1,2})(?:st|nd|rd|th)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi;
+    while ((match = ordinalDate.exec(text)) !== null) {
+      var fixedDate = match[1] + ' ' + match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: do not use ordinals with dates. Write "1 January" not "1st January"',
+        title: 'Date format',
+        replacement: fixedDate,
+        original: match[0]
+      });
+    }
+    return results;
+  }
+
+  /**
+   * GOV.UK encourages contractions for a friendlier tone.
+   * Flag formal non-contracted forms and suggest contractions.
+   */
+  function checkContractions(text) {
+    if (currentMode !== 'govuk') return [];
+
+    var results = [];
+    var patterns = [
+      { regex: /\b(do not)\b/gi, fix: "don't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(does not)\b/gi, fix: "doesn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(did not)\b/gi, fix: "didn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(cannot)\b/gi, fix: "can't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(can not)\b/gi, fix: "can't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(will not)\b/gi, fix: "won't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(would not)\b/gi, fix: "wouldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(should not)\b/gi, fix: "shouldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(could not)\b/gi, fix: "couldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(is not)\b/gi, fix: "isn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(are not)\b/gi, fix: "aren't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(was not)\b/gi, fix: "wasn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(were not)\b/gi, fix: "weren't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(has not)\b/gi, fix: "hasn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(have not)\b/gi, fix: "haven't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(had not)\b/gi, fix: "hadn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(you will)\b/gi, fix: "you'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(we will)\b/gi, fix: "we'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(they will)\b/gi, fix: "they'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(it is)\b/gi, fix: "it's", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(you are)\b/gi, fix: "you're", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(we are)\b/gi, fix: "we're", msg: 'GOV.UK style: use contractions for a friendlier tone' },
+      { regex: /\b(they are)\b/gi, fix: "they're", msg: 'GOV.UK style: use contractions for a friendlier tone' }
+    ];
+
+    patterns.forEach(function (pat) {
+      var match;
+      while ((match = pat.regex.exec(text)) !== null) {
+        var replacement = pat.fix;
+        // Preserve capitalisation
+        if (match[1][0] === match[1][0].toUpperCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'contractions',
+          source: 'regex',
+          group: 'clarity',
+          category: 'Contractions',
+          start: match.index,
+          end: match.index + match[1].length,
+          message: pat.msg,
+          title: 'Use contraction',
+          replacement: replacement,
+          original: match[1]
+        });
+      }
+    });
+    return results;
+  }
+
+  /**
+   * GOV.UK number style: spell out one to nine, use digits for 10+.
+   */
+  function checkNumbers(text) {
+    if (currentMode !== 'govuk') return [];
+
+    var results = [];
+    var DIGIT_TO_WORD = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine' };
+
+    // Standalone digits 1-9 (not part of a larger number, date, or measurement)
+    var digitRegex = /(?<!\d)(\b[1-9]\b)(?!\d|\/|\.|,\d|%|st|nd|rd|th|:|pm|am)/g;
+    var match;
+    while ((match = digitRegex.exec(text)) !== null) {
+      // Skip if part of a range like "5 to 10" or list with larger numbers
+      var after = text.substring(match.index + match[0].length, match.index + match[0].length + 10);
+      if (/^\s*(-|to|–)\s*\d{2,}/.test(after)) continue;
+
+      var word = DIGIT_TO_WORD[match[1]];
+      if (word) {
+        results.push({
+          id: makeId(),
+          ruleId: 'numbers',
+          source: 'regex',
+          group: 'clarity',
+          category: 'Numbers',
+          start: match.index,
+          end: match.index + match[1].length,
+          message: 'GOV.UK style: spell out numbers one to nine',
+          title: 'Number style',
+          replacement: word,
+          original: match[1]
+        });
+      }
+    }
     return results;
   }
 

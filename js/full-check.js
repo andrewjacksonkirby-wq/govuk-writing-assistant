@@ -129,79 +129,14 @@ const FullCheck = (function () {
     setTimeout(function () {
       var results = [];
 
-      // Check sentence length
-      var sentences = text.split(/[.!?]+/).filter(function (s) { return s.trim().length > 0; });
-      sentences.forEach(function (sentence) {
-        var words = sentence.trim().split(/\s+/);
-        if (words.length > 25) {
-          var start = text.indexOf(sentence.trim());
-          if (start >= 0) {
-            results.push({
-              id: makeId(),
-              ruleId: 'sentence-length',
-              source: 'ai',
-              group: 'clarity',
-              category: 'Sentence length',
-              start: start,
-              end: start + sentence.trim().length,
-              message: 'This sentence has ' + words.length + ' words. GOV.UK recommends keeping sentences under 25 words.',
-              title: 'Long sentence',
-              original: sentence.trim()
-            });
-          }
-        }
-      });
-
-      // Check for passive voice patterns
-      var passivePatterns = [
-        /\b(was|were|is|are|been|being|be)\s+(being\s+)?\w+ed\b/gi,
-        /\b(has|have|had)\s+been\s+\w+ed\b/gi
-      ];
-      passivePatterns.forEach(function (pat) {
-        var match;
-        while ((match = pat.exec(text)) !== null) {
-          results.push({
-            id: makeId(),
-            ruleId: 'passive-voice',
-            source: 'ai',
-            group: 'clarity',
-            category: 'Tone',
-            start: match.index,
-            end: match.index + match[0].length,
-            message: 'Consider using active voice for clearer writing.',
-            title: 'Passive voice',
-            original: match[0]
-          });
-        }
-      });
-
-      // Check for GOV.UK date format issues
-      var datePatterns = [
-        { regex: /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g, msg: 'GOV.UK style: use "1 January 2024" format instead of numeric dates' },
-        { regex: /\b(\d{1,2})(?:st|nd|rd|th)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi, msg: 'GOV.UK style: do not use ordinals with dates. Write "1 January" not "1st January"' }
-      ];
-      datePatterns.forEach(function (pat) {
-        var match;
-        while ((match = pat.regex.exec(text)) !== null) {
-          results.push({
-            id: makeId(),
-            ruleId: 'date-format',
-            source: 'ai',
-            group: 'clarity',
-            category: 'Dates',
-            start: match.index,
-            end: match.index + match[0].length,
-            message: pat.msg,
-            title: 'Date format',
-            original: match[0]
-          });
-        }
-      });
+      // Checks for: link text, first person (GOV.UK)
+      // NOTE: sentence length, passive voice, dates, contractions, numbers,
+      // and GOV.UK style patterns are now in quick-checks.js for instant feedback.
 
       // Check for "click here" and poor link text
       var linkPatterns = [
-        { regex: /\bclick here\b/gi, msg: 'Avoid "click here" - use descriptive link text instead' },
-        { regex: /\bhere\b(?=\s*<|\s*\(http)/gi, msg: 'Avoid using "here" as link text - describe the destination' }
+        { regex: /\bclick here\b/gi, msg: 'Avoid "click here" — use descriptive link text instead' },
+        { regex: /\bhere\b(?=\s*<|\s*\(http)/gi, msg: 'Avoid using "here" as link text — describe the destination' }
       ];
       linkPatterns.forEach(function (pat) {
         var match;
@@ -221,39 +156,24 @@ const FullCheck = (function () {
         }
       });
 
-      // GOV.UK style checks (only in govuk mode)
+      // First person "I" check (only in govuk mode, kept in full check as it's noisy)
       if (currentMode === 'govuk') {
-        var stylePatterns = [
-          { regex: /\bplease\b/gi, msg: 'GOV.UK style: avoid using "please" - be direct' },
-          { regex: /\bkindly\b/gi, msg: 'GOV.UK style: avoid "kindly" - be direct' },
-          { regex: /\bgoing forward\b/gi, msg: 'Avoid "going forward" - be specific about timing' },
-          { regex: /\bat this point in time\b/gi, msg: 'Use "now" or "currently" instead' },
-          { regex: /\bin the event that\b/gi, msg: 'Use "if" instead of "in the event that"' },
-          { regex: /\bwith regards to\b/gi, msg: 'Use "about" instead of "with regards to"' },
-          { regex: /\ba number of\b/gi, msg: 'Be specific - say how many instead of "a number of"' },
-          { regex: /\bin respect of\b/gi, msg: 'Use "about" or "for" instead of "in respect of"' },
-          { regex: /\bI\b/g, msg: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure the sentence.' },
-          { regex: /\betc\.?\b/gi, msg: 'GOV.UK style: avoid "etc" - list the items or say "for example"' },
-          { regex: /\bie\b/gi, msg: 'Write "that is" or rephrase instead of "ie"' },
-          { regex: /\beg\b/gi, msg: 'Write "for example" instead of "eg"' }
-        ];
-        stylePatterns.forEach(function (pat) {
-          var match;
-          while ((match = pat.regex.exec(text)) !== null) {
-            results.push({
-              id: makeId(),
-              ruleId: 'govuk-style',
-              source: 'ai',
-              group: 'clarity',
-              category: 'GOV.UK style',
-              start: match.index,
-              end: match.index + match[0].length,
-              message: pat.msg,
-              title: 'Style',
-              original: match[0]
-            });
-          }
-        });
+        var firstPersonRegex = /\bI\b/g;
+        var fpMatch;
+        while ((fpMatch = firstPersonRegex.exec(text)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'govuk-style',
+            source: 'ai',
+            group: 'clarity',
+            category: 'GOV.UK style',
+            start: fpMatch.index,
+            end: fpMatch.index + 1,
+            message: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure.',
+            title: 'First person',
+            original: 'I'
+          });
+        }
       }
 
       // Email/chat tone checks (only in email/chat modes)

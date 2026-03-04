@@ -70,41 +70,46 @@
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header">
-        <h2 class="sidebar-title">Suggestions</h2>
+        <div class="score-section" id="scoreSection">
+          <div class="score-circle" id="scoreCircle">
+            <svg viewBox="0 0 80 80" class="score-ring">
+              <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e8e8" stroke-width="6"/>
+              <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" stroke-linecap="round"
+                      class="score-ring-fill" id="scoreRingFill"
+                      stroke-dasharray="213.6" stroke-dashoffset="213.6"
+                      transform="rotate(-90 40 40)"/>
+            </svg>
+            <span class="score-number" id="scoreNumber">--</span>
+          </div>
+          <div class="score-label">Overall score</div>
+          <div class="score-readability" id="scoreReadability"></div>
+        </div>
       </div>
 
-      <div class="sidebar-filters">
-        <button type="button" class="filter-btn active" data-filter="all">All</button>
-        <button type="button" class="filter-btn" data-filter="correctness">Correctness</button>
-        <button type="button" class="filter-btn" data-filter="clarity">Clarity and style</button>
-      </div>
-
-      <div class="sidebar-summary" id="sidebarSummary">
-        <span class="summary-item" id="summaryTotal">0 suggestions</span>
-        <span class="summary-item" id="summaryCorrectness">0 correctness</span>
-        <span class="summary-item" id="summaryClarity">0 clarity</span>
+      <div class="sidebar-categories" id="sidebarCategories">
+        <button type="button" class="cat-tab active" data-filter="all">
+          <span class="cat-tab-label">All</span>
+          <span class="cat-tab-count" id="countAll">0</span>
+        </button>
+        <button type="button" class="cat-tab" data-filter="correctness">
+          <span class="cat-dot correctness-dot"></span>
+          <span class="cat-tab-label">Correctness</span>
+          <span class="cat-tab-count" id="countCorrectness">0</span>
+        </button>
+        <button type="button" class="cat-tab" data-filter="clarity">
+          <span class="cat-dot clarity-dot"></span>
+          <span class="cat-tab-label">Clarity</span>
+          <span class="cat-tab-count" id="countClarity">0</span>
+        </button>
+        <button type="button" class="cat-tab" data-filter="style">
+          <span class="cat-dot style-dot"></span>
+          <span class="cat-tab-label">Style</span>
+          <span class="cat-tab-count" id="countStyle">0</span>
+        </button>
       </div>
 
       <div class="suggestions-list" id="suggestionsList">
-        <div class="suggestion-group" id="correctnessGroup">
-          <button type="button" class="group-header" data-group="correctness" aria-expanded="true">
-            <span class="group-label">Correctness</span>
-            <span class="group-count" id="correctnessCount">0</span>
-          </button>
-          <div class="group-body" id="correctnessBody">
-            <p class="empty-state">No issues found</p>
-          </div>
-        </div>
-
-        <div class="suggestion-group" id="clarityGroup">
-          <button type="button" class="group-header" data-group="clarity" aria-expanded="true">
-            <span class="group-label">Clarity and style</span>
-            <span class="group-count" id="clarityCount">0</span>
-          </button>
-          <div class="group-body" id="clarityBody">
-            <p class="empty-state" id="clarityEmpty">Run "Check now" to see AI suggestions</p>
-          </div>
-        </div>
+        <!-- Cards rendered dynamically -->
       </div>
     </aside>
   </main>

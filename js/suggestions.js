@@ -1,18 +1,21 @@
 /**
  * Suggestions module
- * Manages the sidebar: rendering, filtering, grouping, apply/dismiss actions.
+ * Manages the sidebar: score circle, category tabs, collapsible cards,
+ * apply/dismiss actions.
  *
- * Layout follows the Grammarly pattern:
- *   - Two top-level collapsible groups: Correctness, Clarity & style
- *   - Flat list of suggestion cards within each group (no nested sub-groups)
- *   - Duplicate issues (same rule + same original text) merged into one card
+ * Layout follows Grammarly pattern:
+ *   - Score circle at top
+ *   - Category tabs: All, Correctness, Clarity, Style
+ *   - Flat list of collapsible suggestion cards
+ *   - Duplicate issues merged into one card
  */
 const Suggestions = (function () {
   var correctnessSuggestions = [];
   var claritySuggestions = [];
   var dismissedIds = new Set();
-  var activeFilter = 'all'; // 'all', 'correctness', 'clarity'
+  var activeFilter = 'all';
   var activeSuggestionId = null;
+  var expandedCardId = null;
   var hasRunFullCheck = false;
 
   // Callbacks
@@ -20,15 +23,33 @@ const Suggestions = (function () {
   var onApplyAll = null;
   var onSelect = null;
 
-  // DOM refs (set during init)
-  var listEl, correctnessBody, clarityBody;
-  var correctnessCount, clarityCount;
-  var summaryTotal, summaryCorrectness, summaryClarity;
-  var clarityGroup, clarityEmpty;
-  var correctnessGroup;
+  // DOM refs
+  var listEl;
+  var scoreNumber, scoreRingFill, scoreReadability;
+  var countAll, countCorrectness, countClarity, countStyle;
 
-  // Dismissed storage key
   var DISMISSED_KEY = 'govuk-wa-dismissed';
+
+  /**
+   * Map ruleIds/groups to display categories.
+   */
+  function getCardCategory(suggestion) {
+    var group = suggestion.group;
+    var ruleId = suggestion.ruleId;
+
+    // Style category: GOV.UK style, contractions, numbers, date format
+    if (['contractions', 'numbers', 'date-format', 'govuk-style'].indexOf(ruleId) !== -1) {
+      return 'style';
+    }
+    // Clarity: sentence length, passive voice, overused words, tone
+    if (['sentence-length', 'passive-voice', 'overused-word', 'tone', 'email-tone', 'chat-length'].indexOf(ruleId) !== -1) {
+      return 'clarity';
+    }
+    // Correctness: everything else from quick checks
+    if (group === 'correctness') return 'correctness';
+    if (group === 'clarity') return 'clarity';
+    return 'correctness';
+  }
 
   function init(callbacks) {
     onApply = callbacks.onApply;
@@ -36,37 +57,24 @@ const Suggestions = (function () {
     onSelect = callbacks.onSelect;
 
     listEl = document.getElementById('suggestionsList');
-    correctnessBody = document.getElementById('correctnessBody');
-    clarityBody = document.getElementById('clarityBody');
-    correctnessCount = document.getElementById('correctnessCount');
-    clarityCount = document.getElementById('clarityCount');
-    summaryTotal = document.getElementById('summaryTotal');
-    summaryCorrectness = document.getElementById('summaryCorrectness');
-    summaryClarity = document.getElementById('summaryClarity');
-    clarityGroup = document.getElementById('clarityGroup');
-    clarityEmpty = document.getElementById('clarityEmpty');
-    correctnessGroup = document.getElementById('correctnessGroup');
+    scoreNumber = document.getElementById('scoreNumber');
+    scoreRingFill = document.getElementById('scoreRingFill');
+    scoreReadability = document.getElementById('scoreReadability');
+    countAll = document.getElementById('countAll');
+    countCorrectness = document.getElementById('countCorrectness');
+    countClarity = document.getElementById('countClarity');
+    countStyle = document.getElementById('countStyle');
 
-    // Load dismissed
     loadDismissed();
 
-    // Set up filter buttons
-    var filterBtns = document.querySelectorAll('.filter-btn');
-    filterBtns.forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        filterBtns.forEach(function (b) { b.classList.remove('active'); });
-        btn.classList.add('active');
-        activeFilter = btn.dataset.filter;
+    // Category tab listeners
+    var catTabs = document.querySelectorAll('.cat-tab');
+    catTabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        catTabs.forEach(function (t) { t.classList.remove('active'); });
+        tab.classList.add('active');
+        activeFilter = tab.dataset.filter;
         render();
-      });
-    });
-
-    // Set up group collapse toggles
-    var groupHeaders = document.querySelectorAll('.group-header');
-    groupHeaders.forEach(function (header) {
-      header.addEventListener('click', function () {
-        var expanded = header.getAttribute('aria-expanded') === 'true';
-        header.setAttribute('aria-expanded', expanded ? 'false' : 'true');
       });
     });
   }
@@ -84,9 +92,6 @@ const Suggestions = (function () {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
   }
 
-  /**
-   * Update correctness suggestions (from quick checks).
-   */
   function setCorrectness(suggestions) {
     correctnessSuggestions = suggestions.filter(function (s) {
       return !dismissedIds.has(s.ruleId + ':' + s.start + ':' + s.original);
@@ -94,9 +99,6 @@ const Suggestions = (function () {
     render();
   }
 
-  /**
-   * Update clarity suggestions (from full check).
-   */
   function setClarity(suggestions) {
     hasRunFullCheck = true;
     claritySuggestions = suggestions.filter(function (s) {
@@ -105,65 +107,40 @@ const Suggestions = (function () {
     render();
   }
 
-  /**
-   * Mark full check as run (even if no results yet).
-   */
   function markFullCheckRun() {
     hasRunFullCheck = true;
     render();
   }
 
-  /**
-   * Dismiss a suggestion.
-   */
   function dismiss(suggestion) {
     var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
     dismissedIds.add(key);
     saveDismissed();
 
-    // Remove from arrays
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
     claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
 
-    if (activeSuggestionId === suggestion.id) {
-      activeSuggestionId = null;
-    }
-
+    if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
+    if (expandedCardId === suggestion.id) expandedCardId = null;
     render();
   }
 
-  /**
-   * Get the grouping key for a suggestion (same rule + same original text).
-   */
   function getSiblingKey(suggestion) {
     return suggestion.ruleId + ':' + (suggestion.original || '').toLowerCase();
   }
 
-  /**
-   * Find all suggestions that match the same rule and original text.
-   */
   function getSiblings(suggestion) {
     var key = getSiblingKey(suggestion);
     var all = correctnessSuggestions.concat(claritySuggestions);
-    return all.filter(function (s) {
-      return getSiblingKey(s) === key;
-    });
+    return all.filter(function (s) { return getSiblingKey(s) === key; });
   }
 
-  /**
-   * Apply fix to all matching suggestions (same rule + original text).
-   * Applies in reverse document order so offsets stay valid.
-   */
   function applyAll(suggestion) {
     var siblings = getSiblings(suggestion);
-    // Sort by position descending for safe replacement
     siblings.sort(function (a, b) { return b.start - a.start; });
 
-    if (onApplyAll) {
-      onApplyAll(siblings);
-    }
+    if (onApplyAll) onApplyAll(siblings);
 
-    // Dismiss all siblings
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
     siblings.forEach(function (s) {
       var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
@@ -174,15 +151,11 @@ const Suggestions = (function () {
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
     claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
 
-    if (siblingIds.has(activeSuggestionId)) {
-      activeSuggestionId = null;
-    }
+    if (siblingIds.has(activeSuggestionId)) activeSuggestionId = null;
+    if (siblingIds.has(expandedCardId)) expandedCardId = null;
     render();
   }
 
-  /**
-   * Dismiss all matching suggestions (same rule + original text).
-   */
   function dismissAll(suggestion) {
     var siblings = getSiblings(suggestion);
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
@@ -196,51 +169,69 @@ const Suggestions = (function () {
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
     claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
 
-    if (siblingIds.has(activeSuggestionId)) {
-      activeSuggestionId = null;
-    }
+    if (siblingIds.has(activeSuggestionId)) activeSuggestionId = null;
+    if (siblingIds.has(expandedCardId)) expandedCardId = null;
     render();
   }
 
-  /**
-   * Get all current suggestions.
-   */
   function getAll() {
     return correctnessSuggestions.concat(claritySuggestions);
   }
 
-  // ===== Rendering =====
+  // ===== Score calculation =====
 
-  /**
-   * Render the full sidebar.
-   */
-  function render() {
-    var corr = correctnessSuggestions;
-    var clar = claritySuggestions;
-
-    // Update counts
-    correctnessCount.textContent = corr.length;
-    clarityCount.textContent = clar.length;
-    summaryTotal.textContent = (corr.length + clar.length) + ' suggestions';
-    summaryCorrectness.textContent = corr.length + ' correctness';
-    summaryClarity.textContent = clar.length + ' clarity';
-
-    // Filter visibility
-    correctnessGroup.classList.toggle('hidden', activeFilter === 'clarity');
-    clarityGroup.classList.toggle('hidden', activeFilter === 'correctness');
-
-    // Render correctness — flat card list (Grammarly-style)
-    renderCardList(correctnessBody, corr, 'correctness');
-
-    // Render clarity
-    renderClarityCards(clarityBody, clar);
+  function calculateScore(allSuggestions) {
+    if (allSuggestions.length === 0) return 100;
+    // Deduct points per issue, weighted by type
+    var deductions = 0;
+    allSuggestions.forEach(function (s) {
+      var cat = getCardCategory(s);
+      if (cat === 'correctness') deductions += 4;
+      else if (cat === 'clarity') deductions += 2;
+      else deductions += 1;
+    });
+    return Math.max(0, Math.min(100, 100 - deductions));
   }
 
-  /**
-   * Deduplicate suggestions: merge items with the same ruleId + original text
-   * into a single representative item with a siblings array.
-   * Returns array of { suggestion, siblings } objects.
-   */
+  function updateScore(allSuggestions) {
+    var score = calculateScore(allSuggestions);
+    scoreNumber.textContent = score;
+
+    // Animate ring
+    var circumference = 213.6; // 2 * PI * 34
+    var offset = circumference - (score / 100) * circumference;
+    scoreRingFill.style.strokeDashoffset = offset;
+
+    // Color
+    scoreRingFill.className = 'score-ring-fill';
+    if (score >= 80) scoreRingFill.classList.add('score-good');
+    else if (score >= 60) scoreRingFill.classList.add('score-ok');
+    else if (score >= 40) scoreRingFill.classList.add('score-poor');
+    else scoreRingFill.classList.add('score-bad');
+  }
+
+  function updateReadabilityDisplay() {
+    if (!scoreReadability) return;
+    try {
+      var score = Stats.getReadabilityScore();
+      if (score === null) {
+        scoreReadability.textContent = '';
+        return;
+      }
+      var label, cls;
+      if (score >= 70) { label = 'Readability: Easy (' + score + ')'; cls = 'readability-easy'; }
+      else if (score >= 50) { label = 'Readability: OK (' + score + ')'; cls = 'readability-ok'; }
+      else if (score >= 30) { label = 'Readability: Hard (' + score + ')'; cls = 'readability-hard'; }
+      else { label = 'Readability: Very hard (' + score + ')'; cls = 'readability-vhard'; }
+      scoreReadability.textContent = label;
+      scoreReadability.className = 'score-readability ' + cls;
+    } catch (e) {
+      scoreReadability.textContent = '';
+    }
+  }
+
+  // ===== Deduplication =====
+
   function deduplicateSuggestions(suggestions) {
     var groups = {};
     var order = [];
@@ -252,80 +243,71 @@ const Suggestions = (function () {
       }
       groups[key].push(s);
     });
-
     return order.map(function (key) {
       return { suggestion: groups[key][0], siblings: groups[key] };
     });
   }
 
-  /**
-   * Render a flat list of suggestion cards (no sub-groups).
-   * Duplicates are merged into a single card.
-   */
-  function renderCardList(container, suggestions, groupClass) {
-    container.innerHTML = '';
+  // ===== Rendering =====
 
-    if (suggestions.length === 0) {
-      var emptyP = document.createElement('p');
-      emptyP.className = 'empty-state';
-      emptyP.textContent = 'No issues found';
-      container.appendChild(emptyP);
-      return;
-    }
+  function render() {
+    var all = correctnessSuggestions.concat(claritySuggestions);
 
-    var deduped = deduplicateSuggestions(suggestions);
+    // Sort by document position (reading order)
+    all.sort(function (a, b) { return a.start - b.start; });
 
-    deduped.forEach(function (d) {
-      container.appendChild(createCard(d.suggestion, groupClass, d.siblings));
+    // Count by category
+    var corrCount = 0, clarCount = 0, styleCount = 0;
+    all.forEach(function (s) {
+      var cat = getCardCategory(s);
+      if (cat === 'correctness') corrCount++;
+      else if (cat === 'clarity') clarCount++;
+      else if (cat === 'style') styleCount++;
     });
-  }
 
-  /**
-   * Render clarity cards (with "run check" empty state).
-   */
-  function renderClarityCards(container, suggestions) {
-    container.innerHTML = '';
+    countAll.textContent = all.length;
+    countCorrectness.textContent = corrCount;
+    countClarity.textContent = clarCount;
+    countStyle.textContent = styleCount;
 
-    if (!hasRunFullCheck) {
+    updateScore(all);
+    updateReadabilityDisplay();
+
+    // Filter suggestions
+    var filtered;
+    if (activeFilter === 'all') {
+      filtered = all;
+    } else {
+      filtered = all.filter(function (s) { return getCardCategory(s) === activeFilter; });
+    }
+
+    // Render cards
+    listEl.innerHTML = '';
+
+    if (filtered.length === 0) {
       var emptyP = document.createElement('p');
       emptyP.className = 'empty-state';
-      emptyP.textContent = 'Run "Check now" to see AI suggestions';
-      container.appendChild(emptyP);
+      if (all.length === 0) {
+        emptyP.textContent = 'No issues found. Looking good!';
+      } else {
+        emptyP.textContent = 'No issues in this category';
+      }
+      listEl.appendChild(emptyP);
       return;
     }
 
-    if (suggestions.length === 0) {
-      var emptyP2 = document.createElement('p');
-      emptyP2.className = 'empty-state';
-      emptyP2.textContent = 'No issues found';
-      container.appendChild(emptyP2);
-      return;
-    }
-
-    var deduped = deduplicateSuggestions(suggestions);
-
+    var deduped = deduplicateSuggestions(filtered);
     deduped.forEach(function (d) {
-      container.appendChild(createCard(d.suggestion, 'clarity', d.siblings));
+      listEl.appendChild(createCard(d.suggestion, d.siblings));
     });
   }
 
   // ===== Context snippets =====
 
-  /**
-   * Get the full editor text for context snippets.
-   */
   function getEditorText() {
-    try {
-      return Editor.getText() || '';
-    } catch (e) {
-      return '';
-    }
+    try { return Editor.getText() || ''; } catch (e) { return ''; }
   }
 
-  /**
-   * Build a context snippet showing surrounding text with the flagged word highlighted.
-   * Shows ~30 chars either side, trimmed to word boundaries.
-   */
   function buildContextSnippet(suggestion) {
     var text = getEditorText();
     if (!text || suggestion.start === undefined) return null;
@@ -334,12 +316,10 @@ const Suggestions = (function () {
     var end = suggestion.end || (start + (suggestion.original || '').length);
     if (start < 0 || end > text.length) return null;
 
-    // Grab context: up to 40 chars before and after
     var ctxBefore = text.substring(Math.max(0, start - 40), start);
     var ctxTarget = text.substring(start, end);
     var ctxAfter = text.substring(end, Math.min(text.length, end + 40));
 
-    // Trim to word boundaries and add ellipsis
     if (start - 40 > 0) {
       var spaceIdx = ctxBefore.indexOf(' ');
       if (spaceIdx !== -1) ctxBefore = ctxBefore.substring(spaceIdx + 1);
@@ -351,7 +331,6 @@ const Suggestions = (function () {
       ctxAfter = ctxAfter + '...';
     }
 
-    // Trim newlines to keep it single-line
     ctxBefore = ctxBefore.replace(/\n/g, ' ');
     ctxTarget = ctxTarget.replace(/\n/g, ' ');
     ctxAfter = ctxAfter.replace(/\n/g, ' ');
@@ -361,53 +340,83 @@ const Suggestions = (function () {
 
   // ===== Card creation =====
 
-  /**
-   * Create a suggestion card element.
-   * Follows Grammarly layout: category tag, context, message, preview, actions.
-   */
-  function createCard(suggestion, groupClass, siblings) {
+  function createCard(suggestion, siblings) {
+    var cat = getCardCategory(suggestion);
     var card = document.createElement('div');
-    card.className = 'suggestion-card ' + groupClass;
+    card.className = 'suggestion-card ' + cat;
     card.dataset.id = suggestion.id;
 
     if (!siblings) siblings = [suggestion];
     var hasSiblings = siblings.length > 1;
 
-    if (suggestion.id === activeSuggestionId) {
-      card.classList.add('active');
-    }
+    if (suggestion.id === activeSuggestionId) card.classList.add('active');
+    if (suggestion.id === expandedCardId) card.classList.add('expanded');
 
-    // Click card to select and highlight in editor
-    card.addEventListener('click', function (e) {
-      if (e.target.closest('.suggestion-actions')) return;
-      activeSuggestionId = suggestion.id;
-      render();
-      if (onSelect) onSelect(suggestion);
-    });
+    // --- Header (always visible, compact) ---
+    var header = document.createElement('div');
+    header.className = 'card-header';
 
-    // --- Category tag (small coloured label) ---
-    if (suggestion.category) {
-      var catTag = document.createElement('span');
-      catTag.className = 'suggestion-cat-tag ' + groupClass;
-      catTag.textContent = suggestion.category;
-      card.appendChild(catTag);
-    }
+    var dot = document.createElement('span');
+    dot.className = 'card-dot ' + cat;
+    header.appendChild(dot);
 
-    // --- Title + occurrence badge ---
+    var headerText = document.createElement('div');
+    headerText.className = 'card-header-text';
+
     var titleEl = document.createElement('div');
-    titleEl.className = 'suggestion-title';
+    titleEl.className = 'card-title';
     titleEl.textContent = suggestion.title || suggestion.message;
-    card.appendChild(titleEl);
+    headerText.appendChild(titleEl);
+
+    // Show the flagged word in compact view
+    var wordEl = document.createElement('div');
+    wordEl.className = 'card-word';
+    var original = suggestion.original || '';
+    wordEl.textContent = original.length > 50 ? original.substring(0, 50) + '...' : original;
+    headerText.appendChild(wordEl);
+
+    header.appendChild(headerText);
 
     if (hasSiblings) {
       var badge = document.createElement('span');
       badge.className = 'occurrence-badge';
-      badge.textContent = siblings.length + '\u00d7'; // × symbol
-      titleEl.appendChild(document.createTextNode(' '));
-      titleEl.appendChild(badge);
+      badge.textContent = siblings.length + '\u00d7';
+      header.appendChild(badge);
     }
 
-    // --- Context snippet ---
+    // Chevron
+    var chevron = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    chevron.setAttribute('viewBox', '0 0 16 16');
+    chevron.setAttribute('class', 'card-chevron');
+    var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', 'M4 6l4 4 4-4');
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'round');
+    chevron.appendChild(path);
+    header.appendChild(chevron);
+
+    card.appendChild(header);
+
+    // Click header to expand/collapse
+    header.addEventListener('click', function (e) {
+      if (e.target.closest('.suggestion-actions')) return;
+      if (expandedCardId === suggestion.id) {
+        expandedCardId = null;
+      } else {
+        expandedCardId = suggestion.id;
+        activeSuggestionId = suggestion.id;
+        if (onSelect) onSelect(suggestion);
+      }
+      render();
+    });
+
+    // --- Body (shown when expanded) ---
+    var body = document.createElement('div');
+    body.className = 'card-body';
+
+    // Context snippet
     var ctx = buildContextSnippet(suggestion);
     if (ctx) {
       var ctxEl = document.createElement('div');
@@ -416,16 +425,16 @@ const Suggestions = (function () {
         escapeHtml(ctx.before) +
         '<mark class="context-highlight">' + escapeHtml(ctx.target) + '</mark>' +
         escapeHtml(ctx.after);
-      card.appendChild(ctxEl);
+      body.appendChild(ctxEl);
     }
 
-    // --- Message ---
+    // Message
     var msgEl = document.createElement('div');
     msgEl.className = 'suggestion-message';
     msgEl.textContent = suggestion.message;
-    card.appendChild(msgEl);
+    body.appendChild(msgEl);
 
-    // --- Replacement preview ---
+    // Replacement preview
     if (suggestion.replacement !== undefined && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'suggestion-preview';
@@ -433,10 +442,10 @@ const Suggestions = (function () {
         '<span class="original">' + escapeHtml(suggestion.original) + '</span>' +
         '<span class="arrow"> \u2192 </span>' +
         '<span class="replacement">' + escapeHtml(suggestion.replacement) + '</span>';
-      card.appendChild(preview);
+      body.appendChild(preview);
     }
 
-    // --- Actions ---
+    // Actions
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
@@ -445,7 +454,7 @@ const Suggestions = (function () {
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
         applyAllBtn.className = 'btn btn-primary btn-sm';
-        applyAllBtn.textContent = 'Apply all (' + siblings.length + ')';
+        applyAllBtn.textContent = 'Accept all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           applyAll(suggestion);
@@ -455,7 +464,7 @@ const Suggestions = (function () {
         var applyBtn = document.createElement('button');
         applyBtn.type = 'button';
         applyBtn.className = 'btn btn-primary btn-sm';
-        applyBtn.textContent = 'Apply';
+        applyBtn.textContent = 'Accept';
         applyBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           if (onApply) onApply(suggestion);
@@ -463,18 +472,6 @@ const Suggestions = (function () {
         });
         actions.appendChild(applyBtn);
       }
-    } else {
-      var reviewBtn = document.createElement('button');
-      reviewBtn.type = 'button';
-      reviewBtn.className = 'btn btn-secondary btn-sm';
-      reviewBtn.textContent = 'Review';
-      reviewBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        activeSuggestionId = suggestion.id;
-        render();
-        if (onSelect) onSelect(suggestion);
-      });
-      actions.appendChild(reviewBtn);
     }
 
     var dismissBtn = document.createElement('button');
@@ -483,15 +480,14 @@ const Suggestions = (function () {
     dismissBtn.textContent = hasSiblings ? 'Dismiss all' : 'Dismiss';
     dismissBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (hasSiblings) {
-        dismissAll(suggestion);
-      } else {
-        dismiss(suggestion);
-      }
+      if (hasSiblings) dismissAll(suggestion);
+      else dismiss(suggestion);
     });
     actions.appendChild(dismissBtn);
 
-    card.appendChild(actions);
+    body.appendChild(actions);
+    card.appendChild(body);
+
     return card;
   }
 
@@ -501,13 +497,11 @@ const Suggestions = (function () {
     return div.innerHTML;
   }
 
-  /**
-   * Clear all suggestions (e.g., when switching documents).
-   */
   function clearAll() {
     correctnessSuggestions = [];
     claritySuggestions = [];
     activeSuggestionId = null;
+    expandedCardId = null;
     hasRunFullCheck = false;
     render();
   }
