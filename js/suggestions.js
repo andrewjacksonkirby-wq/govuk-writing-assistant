@@ -45,7 +45,8 @@ const Suggestions = (function () {
     if (['sentence-length', 'passive-voice', 'overused-word', 'tone', 'email-tone', 'chat-length'].indexOf(ruleId) !== -1) {
       return 'clarity';
     }
-    // Correctness: everything else from quick checks
+    // Respect explicit group from pattern definitions
+    if (group === 'style') return 'style';
     if (group === 'correctness') return 'correctness';
     if (group === 'clarity') return 'clarity';
     return 'correctness';
@@ -362,6 +363,12 @@ const Suggestions = (function () {
 
     var headerText = document.createElement('div');
     headerText.className = 'card-header-text';
+
+    // Category badge (e.g. "Spelling", "Capitalisation", "Plain English")
+    var catBadge = document.createElement('span');
+    catBadge.className = 'card-category-badge ' + cat;
+    catBadge.textContent = suggestion.category || cat;
+    headerText.appendChild(catBadge);
 
     var titleEl = document.createElement('div');
     titleEl.className = 'card-title';
