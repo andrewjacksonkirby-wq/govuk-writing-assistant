@@ -18,6 +18,7 @@ const Editor = (function () {
   function handleInput() {
     clearHighlights();
     clearInlineMarks();
+    currentUnderlines = []; // Clear stale underlines; new ones arrive after debounce
     documentVersion++;
     notifyChange();
   }
@@ -248,6 +249,148 @@ const Editor = (function () {
     if (overlayEl) overlayEl.innerHTML = '';
   }
 
+  // ===== Inline underlines for all detected issues =====
+  let currentUnderlines = [];
+  let underlineCallback = null;
+
+  /**
+   * Show persistent underlines for all detected issues directly in the editor.
+   * Uses mark elements inserted into the editor content.
+   * marks: array of {start, end, ruleId, group, category, replacement, title, original, id}
+   * onClick: callback(mark) when user clicks an underlined word
+   */
+  function showUnderlines(marks, onClick) {
+    underlineCallback = onClick;
+    currentUnderlines = marks || [];
+    renderUnderlines();
+  }
+
+  /**
+   * Render underline marks into the editor content.
+   * Splits text into segments and wraps flagged ranges with <mark> elements.
+   */
+  function renderUnderlines() {
+    if (!editorEl) return;
+    var text = getText();
+    if (!text || currentUnderlines.length === 0) {
+      // If content has marks, restore to plain text
+      if (editorEl.querySelector('.issue-underline')) {
+        editorEl.textContent = text;
+      }
+      return;
+    }
+
+    // Sort marks by start position, then by length (longer first for nesting)
+    var marks = currentUnderlines.slice().sort(function (a, b) {
+      return a.start - b.start || (b.end - b.start) - (a.end - a.start);
+    });
+
+    // Remove overlapping marks (keep first/higher priority)
+    var filtered = [];
+    var lastEnd = -1;
+    marks.forEach(function (m) {
+      if (m.start >= lastEnd) {
+        filtered.push(m);
+        lastEnd = m.end;
+      }
+    });
+
+    // Build fragments
+    var frag = document.createDocumentFragment();
+    var pos = 0;
+
+    filtered.forEach(function (m) {
+      if (m.start < pos || m.start >= text.length || m.end > text.length) return;
+
+      // Text before this mark
+      if (m.start > pos) {
+        frag.appendChild(document.createTextNode(text.substring(pos, m.start)));
+      }
+
+      // The underlined mark
+      var mark = document.createElement('mark');
+      var catClass = getCategoryClass(m);
+      mark.className = 'issue-underline ' + catClass;
+      mark.textContent = text.substring(m.start, m.end);
+      mark.title = m.title || m.message || '';
+      mark.dataset.issueId = m.id || '';
+
+      mark.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (underlineCallback) underlineCallback(m);
+      });
+
+      frag.appendChild(mark);
+      pos = m.end;
+    });
+
+    // Remaining text after last mark
+    if (pos < text.length) {
+      frag.appendChild(document.createTextNode(text.substring(pos)));
+    }
+
+    // Save cursor position
+    var savedOffset = saveCaretOffset();
+
+    // Replace editor content
+    editorEl.innerHTML = '';
+    editorEl.appendChild(frag);
+
+    // Restore cursor position
+    if (savedOffset !== null) {
+      restoreCaretOffset(savedOffset);
+    }
+  }
+
+  function getCategoryClass(mark) {
+    var group = mark.group;
+    if (group === 'correctness') return 'underline-correctness';
+    if (group === 'clarity') return 'underline-clarity';
+    if (group === 'style') return 'underline-style';
+    // Fallback: try to infer from ruleId
+    var styleRules = ['contractions', 'numbers', 'date-format', 'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'];
+    var clarityRules = ['sentence-length', 'passive-voice'];
+    if (styleRules.indexOf(mark.ruleId) !== -1) return 'underline-style';
+    if (clarityRules.indexOf(mark.ruleId) !== -1) return 'underline-clarity';
+    return 'underline-correctness';
+  }
+
+  /**
+   * Save the caret offset as a character position.
+   */
+  function saveCaretOffset() {
+    var sel = window.getSelection();
+    if (!sel.rangeCount || !editorEl.contains(sel.anchorNode)) return null;
+    var range = sel.getRangeAt(0);
+    var preRange = document.createRange();
+    preRange.selectNodeContents(editorEl);
+    preRange.setEnd(range.startContainer, range.startOffset);
+    return preRange.toString().length;
+  }
+
+  /**
+   * Restore the caret to a character offset position.
+   */
+  function restoreCaretOffset(offset) {
+    var info = getNodeOffset(editorEl, offset);
+    if (!info) return;
+    var sel = window.getSelection();
+    var range = document.createRange();
+    range.setStart(info.node, info.offset);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
+
+  function clearUnderlines() {
+    currentUnderlines = [];
+    if (!editorEl) return;
+    if (editorEl.querySelector('.issue-underline')) {
+      var text = editorEl.innerText || '';
+      editorEl.textContent = text;
+    }
+  }
+
   return {
     init: init,
     getText: getText,
@@ -259,6 +402,8 @@ const Editor = (function () {
     highlightRange: highlightRange,
     clearHighlights: clearHighlights,
     showInlineMarks: showInlineMarks,
-    clearInlineMarks: clearInlineMarks
+    clearInlineMarks: clearInlineMarks,
+    showUnderlines: showUnderlines,
+    clearUnderlines: clearUnderlines
   };
 })();

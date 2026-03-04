@@ -13,7 +13,8 @@
       <span class="save-status" id="saveStatus">Saved</span>
     </div>
     <div class="header-right">
-      <button type="button" class="btn btn-secondary" id="draftsBtn">Recent drafts</button>
+      <button type="button" class="btn btn-secondary" id="newDraftBtn">New draft</button>
+      <button type="button" class="btn btn-secondary" id="draftsBtn">My documents</button>
       <button type="button" class="btn btn-secondary" id="historyBtn">Version history</button>
     </div>
   </header>
@@ -115,16 +116,14 @@
     </aside>
   </main>
 
-  <!-- Drafts modal -->
-  <div class="modal-overlay" id="draftsModal" hidden>
-    <div class="modal" role="dialog" aria-label="Recent drafts">
-      <div class="modal-header">
-        <h2>Recent drafts</h2>
-        <button type="button" class="btn btn-close" id="closeDraftsModal">Close</button>
-      </div>
-      <div class="modal-body" id="draftsList">
-        <p class="empty-state">No saved drafts</p>
-      </div>
+  <!-- Documents view (replaces editor when visible) -->
+  <div class="documents-view" id="documentsView" hidden>
+    <div class="documents-header">
+      <h2>My documents</h2>
+      <button type="button" class="btn btn-primary" id="docsNewDraftBtn">New draft</button>
+    </div>
+    <div class="documents-list" id="documentsList">
+      <p class="empty-state">No documents yet. Click "New draft" to get started.</p>
     </div>
   </div>
 

@@ -504,6 +504,39 @@ const Suggestions = (function () {
     return div.innerHTML;
   }
 
+  /**
+   * Select and expand a suggestion by its ID (used when clicking inline underlines).
+   */
+  function selectById(id) {
+    // Find the suggestion
+    var all = correctnessSuggestions.concat(claritySuggestions);
+    var found = null;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].id === id) { found = all[i]; break; }
+    }
+    if (!found) return;
+
+    // Find the deduplication group key for this suggestion
+    var groupKey = getSiblingKey(found);
+
+    // Find the representative (first in group) which is what the card is keyed on
+    var representative = null;
+    for (var j = 0; j < all.length; j++) {
+      if (getSiblingKey(all[j]) === groupKey) { representative = all[j]; break; }
+    }
+    if (!representative) return;
+
+    activeSuggestionId = representative.id;
+    expandedCardId = representative.id;
+    render();
+
+    // Scroll the card into view
+    var cardEl = listEl.querySelector('[data-id="' + representative.id + '"]');
+    if (cardEl) {
+      cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
   function clearAll() {
     correctnessSuggestions = [];
     claritySuggestions = [];
@@ -521,6 +554,7 @@ const Suggestions = (function () {
     dismiss: dismiss,
     getAll: getAll,
     clearAll: clearAll,
+    selectById: selectById,
     render: render
   };
 })();

@@ -12,19 +12,22 @@
   var sensitivityText = document.getElementById('sensitivityText');
   var checkNowBtn = document.getElementById('checkNowBtn');
   var draftsBtn = document.getElementById('draftsBtn');
+  var newDraftBtn = document.getElementById('newDraftBtn');
   var historyBtn = document.getElementById('historyBtn');
-  var draftsModal = document.getElementById('draftsModal');
+  var documentsView = document.getElementById('documentsView');
+  var documentsList = document.getElementById('documentsList');
+  var docsNewDraftBtn = document.getElementById('docsNewDraftBtn');
   var historyModal = document.getElementById('historyModal');
   var restoreConfirmModal = document.getElementById('restoreConfirmModal');
-  var closeDraftsModal = document.getElementById('closeDraftsModal');
   var closeHistoryModal = document.getElementById('closeHistoryModal');
   var cancelRestore = document.getElementById('cancelRestore');
   var confirmRestore = document.getElementById('confirmRestore');
-  var draftsList = document.getElementById('draftsList');
   var historyList = document.getElementById('historyList');
   var modeSelect = document.getElementById('modeSelect');
   var uploadFile = document.getElementById('uploadFile');
   var exportBtn = document.getElementById('exportBtn');
+  var editorPane = document.querySelector('.editor-pane');
+  var sidebar = document.getElementById('sidebar');
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
@@ -127,12 +130,10 @@
       }
     });
 
-    // Drafts modal
-    draftsBtn.addEventListener('click', openDraftsModal);
-    closeDraftsModal.addEventListener('click', function () { draftsModal.hidden = true; });
-    draftsModal.addEventListener('click', function (e) {
-      if (e.target === draftsModal) draftsModal.hidden = true;
-    });
+    // Documents view
+    draftsBtn.addEventListener('click', showDocumentsView);
+    newDraftBtn.addEventListener('click', createNewDraftAndEdit);
+    docsNewDraftBtn.addEventListener('click', createNewDraftAndEdit);
 
     // History modal
     historyBtn.addEventListener('click', openHistoryModal);
@@ -225,30 +226,17 @@
     });
   }
 
-  // Rules that show as inline underlines in the editor rather than sidebar cards
-  var INLINE_RULES = { 'double-space': true, 'punctuation-spacing': true };
-
   /**
-   * Split quick check results: inline issues go to editor overlay,
-   * the rest go to the suggestions sidebar.
+   * Process quick check results: all issues go to both
+   * the sidebar AND show as inline underlines in the editor.
    */
   function processQuickCheckResults(results) {
-    var sidebarResults = [];
-    var inlineResults = [];
+    Suggestions.setCorrectness(results);
 
-    results.forEach(function (r) {
-      if (INLINE_RULES[r.ruleId] && r.replacement !== undefined) {
-        inlineResults.push(r);
-      } else {
-        sidebarResults.push(r);
-      }
-    });
-
-    Suggestions.setCorrectness(sidebarResults);
-
-    // Show inline marks in editor overlay
-    Editor.showInlineMarks(inlineResults, function (mark) {
-      Editor.applyReplacement(mark.start, mark.end, mark.replacement);
+    // Show all issues as inline underlines in the editor
+    Editor.showUnderlines(results, function (mark) {
+      // Clicking an underline expands the corresponding sidebar card
+      Suggestions.selectById(mark.id);
     });
   }
 
@@ -419,91 +407,168 @@
 
   // ========== Modals ==========
 
-  function openDraftsModal() {
-    // Save current first
-    Documents.saveText(Editor.getText());
+  /**
+   * Show the documents list view (hides editor).
+   */
+  function showDocumentsView() {
+    // Save current draft first
+    var text = Editor.getText();
+    if (text && text.trim().length > 0) {
+      Documents.saveText(text);
+    }
 
+    // Hide editor + sidebar, show documents view
+    editorPane.hidden = true;
+    if (sidebar) sidebar.hidden = true;
+    documentsView.hidden = false;
+
+    renderDocumentsList();
+  }
+
+  /**
+   * Hide documents view and return to editor.
+   */
+  function showEditorView() {
+    documentsView.hidden = true;
+    editorPane.hidden = false;
+    if (sidebar) sidebar.hidden = false;
+  }
+
+  /**
+   * Create a new draft and switch to the editor.
+   */
+  function createNewDraftAndEdit() {
+    // Save current work first
+    var text = Editor.getText();
+    if (text && text.trim().length > 0) {
+      Documents.saveText(text);
+    }
+    Documents.newDraft(text);
+    Editor.setText('');
+    Suggestions.clearAll();
+    Editor.clearUnderlines();
+    Stats.update('');
+    updateSensitivityUI(Documents.getSensitivity());
+    updateModeUI(Documents.getMode());
+    showEditorView();
+  }
+
+  /**
+   * Open a document by ID and switch to the editor.
+   */
+  function openDocument(docId) {
+    Documents.saveText(Editor.getText());
+    var switched = Documents.switchDoc(docId);
+    if (switched) {
+      Editor.setText(switched.text || '');
+      Suggestions.clearAll();
+      Editor.clearUnderlines();
+      Stats.update(switched.text || '');
+      updateSensitivityUI(switched.sensitivity || 'safe');
+      updateModeUI(switched.mode || 'govuk');
+      QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
+        lastCheckVersion = v;
+        processQuickCheckResults(results);
+      });
+    }
+    showEditorView();
+  }
+
+  /**
+   * Delete a document with confirmation.
+   */
+  function deleteDocument(docId, docTitle) {
+    if (!confirm('Delete "' + (docTitle || 'Untitled draft') + '"?\n\nThis cannot be undone.')) return;
+    var wasCurrent = (docId === Documents.getCurrentId());
+    Documents.deleteDoc(docId);
+    if (wasCurrent) {
+      // Load whatever doc is now current
+      var doc = Documents.loadCurrent();
+      Editor.setText(doc.text || '');
+      Suggestions.clearAll();
+      Stats.update(doc.text || '');
+      updateSensitivityUI(Documents.getSensitivity());
+      updateModeUI(Documents.getMode());
+    }
+    renderDocumentsList();
+  }
+
+  /**
+   * Render the documents list.
+   */
+  function renderDocumentsList() {
     var drafts = Documents.getRecentDrafts();
-    draftsList.innerHTML = '';
+    documentsList.innerHTML = '';
 
     if (drafts.length === 0) {
-      draftsList.innerHTML = '<p class="empty-state">No saved drafts</p>';
-      draftsModal.hidden = false;
+      documentsList.innerHTML = '<p class="empty-state">No documents yet. Click "New draft" to get started.</p>';
       return;
     }
 
-    // New draft button
-    var newBtn = document.createElement('button');
-    newBtn.type = 'button';
-    newBtn.className = 'btn btn-secondary';
-    newBtn.textContent = 'New draft';
-    newBtn.style.marginBottom = '16px';
-    newBtn.addEventListener('click', function () {
-      var doc = Documents.newDraft(Editor.getText());
-      Editor.setText('');
-      Suggestions.clearAll();
-      Stats.update('');
-      updateSensitivityUI(Documents.getSensitivity());
-      updateModeUI(Documents.getMode());
-      draftsModal.hidden = true;
-    });
-    draftsList.appendChild(newBtn);
-
     var currentId = Documents.getCurrentId();
+    var modeLabels = { govuk: 'GOV.UK', email: 'Email', chat: 'Teams/Slack' };
 
     drafts.forEach(function (doc) {
-      var item = document.createElement('div');
-      item.className = 'draft-item' + (doc.id === currentId ? ' current' : '');
+      var card = document.createElement('div');
+      card.className = 'doc-card' + (doc.id === currentId ? ' current' : '');
 
       var info = document.createElement('div');
+      info.className = 'doc-card-info';
+
       var titleEl = document.createElement('div');
-      titleEl.className = 'draft-title';
+      titleEl.className = 'doc-card-title';
       titleEl.textContent = doc.title || 'Untitled draft';
       info.appendChild(titleEl);
 
       var metaEl = document.createElement('div');
-      metaEl.className = 'draft-meta';
-      var modeLabels = { govuk: 'GOV.UK', email: 'Email', chat: 'Teams/Slack' };
-      metaEl.textContent = formatDate(doc.updatedAt) + (doc.mode ? ' · ' + (modeLabels[doc.mode] || doc.mode) : '');
+      metaEl.className = 'doc-card-meta';
+      metaEl.textContent = formatDate(doc.updatedAt) + (doc.mode ? ' \u00b7 ' + (modeLabels[doc.mode] || doc.mode) : '');
       info.appendChild(metaEl);
 
-      item.appendChild(info);
-
-      if (doc.id !== currentId) {
-        var openBtn = document.createElement('button');
-        openBtn.type = 'button';
-        openBtn.className = 'btn btn-secondary btn-sm';
-        openBtn.textContent = 'Open';
-        openBtn.addEventListener('click', function (e) {
-          e.stopPropagation();
-          // Save current before switching
-          Documents.saveText(Editor.getText());
-          var switched = Documents.switchDoc(doc.id);
-          if (switched) {
-            Editor.setText(switched.text || '');
-            Suggestions.clearAll();
-            Stats.update(switched.text || '');
-            updateSensitivityUI(switched.sensitivity || 'safe');
-            updateModeUI(switched.mode || 'govuk');
-            // Run quick checks
-            QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
-              lastCheckVersion = v;
-              processQuickCheckResults(results);
-            });
-          }
-          draftsModal.hidden = true;
-        });
-
-        var actions = document.createElement('div');
-        actions.className = 'draft-actions';
-        actions.appendChild(openBtn);
-        item.appendChild(actions);
+      // Show preview of content
+      var preview = (doc.text || '').trim();
+      if (preview.length > 0) {
+        var previewEl = document.createElement('div');
+        previewEl.className = 'doc-card-preview';
+        previewEl.textContent = preview.substring(0, 120) + (preview.length > 120 ? '...' : '');
+        info.appendChild(previewEl);
       }
 
-      draftsList.appendChild(item);
-    });
+      card.appendChild(info);
 
-    draftsModal.hidden = false;
+      // Actions
+      var actions = document.createElement('div');
+      actions.className = 'doc-card-actions';
+
+      var openBtn = document.createElement('button');
+      openBtn.type = 'button';
+      openBtn.className = 'btn btn-secondary btn-sm';
+      openBtn.textContent = doc.id === currentId ? 'Continue editing' : 'Open';
+      openBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        openDocument(doc.id);
+      });
+      actions.appendChild(openBtn);
+
+      var deleteBtn = document.createElement('button');
+      deleteBtn.type = 'button';
+      deleteBtn.className = 'btn btn-danger btn-sm';
+      deleteBtn.textContent = 'Delete';
+      deleteBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        deleteDocument(doc.id, doc.title);
+      });
+      actions.appendChild(deleteBtn);
+
+      card.appendChild(actions);
+
+      // Click the card to open
+      card.addEventListener('click', function () {
+        openDocument(doc.id);
+      });
+
+      documentsList.appendChild(card);
+    });
   }
 
   function openHistoryModal() {
