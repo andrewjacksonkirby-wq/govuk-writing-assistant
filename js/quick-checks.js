@@ -309,12 +309,20 @@ const QuickChecks = (function () {
 
   /**
    * Check for repeated words (e.g., "the the").
+   * Skips valid doubled constructions like "had had", "that that".
    */
+  var VALID_DOUBLES = new Set([
+    'had', 'that', 'is', 'was', 'do', 'can', 'will', 'so'
+  ]);
+
   function checkRepeatedWords(text) {
     var results = [];
     var regex = /\b(\w+)\s+\1\b/gi;
     var match;
     while ((match = regex.exec(text)) !== null) {
+      // Skip words that are commonly valid when doubled
+      if (VALID_DOUBLES.has(match[1].toLowerCase())) continue;
+
       results.push({
         id: makeId(),
         ruleId: 'repeated-word',
@@ -411,13 +419,47 @@ const QuickChecks = (function () {
   /**
    * Check for missing capitalisation at start of sentences.
    */
+  // Common abbreviations whose trailing period should NOT trigger a capital-letter check
+  var ABBREVIATIONS = new Set([
+    'e.g', 'i.e', 'etc', 'vs', 'dr', 'mr', 'mrs', 'ms', 'prof', 'sr', 'jr',
+    'no', 'nos', 'vol', 'dept', 'govt', 'approx', 'inc', 'ltd', 'st', 'ave',
+    'ref', 'fig', 'gen', 'corp', 'est', 'jan', 'feb', 'mar', 'apr', 'jun',
+    'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'mon', 'tue', 'wed', 'thu',
+    'fri', 'sat', 'sun'
+  ]);
+
   function checkCapitalisation(text) {
     var results = [];
-    // Match sentence starters: beginning of text, or after ". " / "? " / "! "
-    var regex = /(?:^|[.!?]\s+)([a-z])/gm;
+    // Match after sentence-ending punctuation followed by whitespace, then a lowercase letter
+    // Uses a more targeted approach to avoid false positives
+    var regex = /([.!?][\s]+)([a-z])/g;
     var match;
     while ((match = regex.exec(text)) !== null) {
-      var charIndex = match.index + match[0].length - 1;
+      var punctIndex = match.index;
+
+      // Skip ellipsis: three or more dots (e.g. "wait... let me")
+      if (text[punctIndex] === '.') {
+        // Check if this period is part of an ellipsis
+        var dotStart = punctIndex;
+        while (dotStart > 0 && text[dotStart - 1] === '.') dotStart--;
+        if (punctIndex - dotStart >= 1) continue; // 2+ dots = ellipsis, skip
+      }
+
+      // Skip abbreviations: look back from the period to find the preceding word
+      if (text[punctIndex] === '.') {
+        var before = text.substring(Math.max(0, punctIndex - 15), punctIndex);
+        var abbrevMatch = before.match(/(\w+(?:\.\w+)?)$/);
+        if (abbrevMatch) {
+          // Check with and without trailing dots (e.g. "e.g" from "e.g.")
+          var candidate = abbrevMatch[1].toLowerCase().replace(/\.$/, '');
+          if (ABBREVIATIONS.has(candidate)) continue;
+          // Also check the full dotted form (e.g. "i.e")
+          var dottedCandidate = candidate.replace(/\./g, '');
+          if (ABBREVIATIONS.has(dottedCandidate)) continue;
+        }
+      }
+
+      var charIndex = match.index + match[1].length;
       var theChar = text[charIndex];
       results.push({
         id: makeId(),
@@ -433,6 +475,26 @@ const QuickChecks = (function () {
         original: theChar
       });
     }
+
+    // Also check start of text (first non-whitespace character)
+    var startMatch = text.match(/^\s*([a-z])/);
+    if (startMatch) {
+      var idx = text.indexOf(startMatch[1]);
+      results.push({
+        id: makeId(),
+        ruleId: 'capitalisation',
+        source: 'regex',
+        group: 'correctness',
+        category: 'Grammar',
+        start: idx,
+        end: idx + 1,
+        message: 'Sentences should start with a capital letter',
+        title: 'Missing capital letter',
+        replacement: startMatch[1].toUpperCase(),
+        original: startMatch[1]
+      });
+    }
+
     return results;
   }
 
@@ -515,24 +577,28 @@ const QuickChecks = (function () {
 
       var match;
       while ((match = pat.regex.exec(text)) !== null) {
+        var matched = match[1] || match[0];
         var replacement = pat.fix;
-        // Preserve capitalisation
-        if (match[1][0] === match[1][0].toUpperCase()) {
+        // Preserve capitalisation (only if there's a fix)
+        if (replacement && matched[0] === matched[0].toUpperCase()) {
           replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
         }
-        results.push({
+        var suggestion = {
           id: makeId(),
           ruleId: 'common-grammar',
           source: 'regex',
           group: 'correctness',
           category: 'Grammar',
           start: match.index,
-          end: match.index + match[1].length,
+          end: match.index + matched.length,
           message: pat.msg,
           title: 'Grammar',
-          replacement: replacement,
-          original: match[1]
-        });
+          original: matched
+        };
+        if (replacement) {
+          suggestion.replacement = replacement;
+        }
+        results.push(suggestion);
       }
     });
     return results;
@@ -904,9 +970,13 @@ const QuickChecks = (function () {
     var DIGIT_TO_WORD = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine' };
 
     // Standalone digits 1-9 (not part of a larger number, date, or measurement)
-    var digitRegex = /(?<!\d)(\b[1-9]\b)(?!\d|\/|\.|,\d|%|st|nd|rd|th|:|pm|am)/g;
+    // Avoids lookbehind for browser compatibility
+    var digitRegex = /\b([1-9])\b(?!\d|\/|\.|,\d|%|st|nd|rd|th|:|pm|am)/g;
     var match;
     while ((match = digitRegex.exec(text)) !== null) {
+      // Skip if preceded by a digit (e.g. "12" — \b doesn't prevent this for digits)
+      if (match.index > 0 && /\d/.test(text[match.index - 1])) continue;
+
       // Skip if part of a range like "5 to 10" or list with larger numbers
       var after = text.substring(match.index + match[0].length, match.index + match[0].length + 10);
       if (/^\s*(-|to|–)\s*\d{2,}/.test(after)) continue;
