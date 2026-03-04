@@ -465,7 +465,7 @@ const QuickChecks = (function () {
 
       // Skip if the word is a known missing-letter pattern (e.g. "nternal" -> "internal")
       var wordAfter = text.substring(charIndex).match(/^([a-z]+)/i);
-      var isMissingWord = wordAfter && MISSING_FIRST_LETTER[wordAfter[1].toLowerCase()];
+      var isMissingWord = wordAfter && findMissingLetterMatch(wordAfter[1].toLowerCase());
       if (!isMissingWord) {
         results.push({
           id: makeId(),
@@ -489,7 +489,7 @@ const QuickChecks = (function () {
       var idx = text.indexOf(startMatch[1]);
       // Skip if the first word is a known missing-letter pattern (e.g. "nternal" -> "internal")
       var firstWordMatch = text.substring(idx).match(/^([a-z]+)/i);
-      var isMissingLetter = firstWordMatch && MISSING_FIRST_LETTER[firstWordMatch[1].toLowerCase()];
+      var isMissingLetter = firstWordMatch && findMissingLetterMatch(firstWordMatch[1].toLowerCase());
       if (!isMissingLetter) {
       results.push({
         id: makeId(),
@@ -747,6 +747,36 @@ const QuickChecks = (function () {
     'ithin': 'within', 'ithout': 'without'
   };
 
+  // Build a list of missing-letter roots sorted longest first (for prefix matching)
+  var MISSING_LETTER_ROOTS = Object.keys(MISSING_FIRST_LETTER).sort(function (a, b) {
+    return b.length - a.length;
+  });
+
+  /**
+   * Check if a word starts with a known missing-letter root.
+   * Returns { root, fix } or null.
+   * Handles exact matches ("nternal" -> "internal") and
+   * suffixed forms ("nternalising" -> "internalising").
+   */
+  function findMissingLetterMatch(lower) {
+    // Exact match first
+    if (MISSING_FIRST_LETTER[lower]) {
+      return { root: lower, fix: MISSING_FIRST_LETTER[lower] };
+    }
+    // Prefix match: check if word starts with a known root + has a suffix
+    for (var i = 0; i < MISSING_LETTER_ROOTS.length; i++) {
+      var root = MISSING_LETTER_ROOTS[i];
+      if (lower.length > root.length && lower.indexOf(root) === 0) {
+        var suffix = lower.substring(root.length);
+        // Only match if suffix looks like a real English suffix
+        if (/^(s|ed|er|es|ing|ly|tion|sion|ment|ness|ise|ize|ised|ized|ising|izing|isation|ization|able|ible|ful|less|ous|ive|al|ial|ary|ery|ory|ity|ity|ance|ence|ant|ent|ist|ism)$/.test(suffix)) {
+          return { root: root, fix: MISSING_FIRST_LETTER[root] + suffix };
+        }
+      }
+    }
+    return null;
+  }
+
   function checkMissingLetters(text) {
     var results = [];
     var wordRegex = /\b([a-zA-Z]{4,})\b/g;
@@ -756,8 +786,9 @@ const QuickChecks = (function () {
       var lower = word.toLowerCase();
 
       // Check if this looks like a word with a missing first letter
-      if (MISSING_FIRST_LETTER[lower]) {
-        var replacement = MISSING_FIRST_LETTER[lower];
+      var found = findMissingLetterMatch(lower);
+      if (found) {
+        var replacement = found.fix;
         // Preserve case
         if (word[0] === word[0].toUpperCase()) {
           replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
@@ -1023,15 +1054,54 @@ const QuickChecks = (function () {
    * Run all quick checks on the given text.
    * Returns an array of suggestion objects.
    */
+  // Priority for deduplication: more specific checks win over generic ones
+  var RULE_PRIORITY = {
+    'missing-letter': 10,
+    'confused-words': 9,
+    'spelling': 8,
+    'common-grammar': 7,
+    'repeated-word': 6,
+    'capitalisation': 3,
+    'double-space': 2,
+    'punctuation-spacing': 2
+  };
+
   function runAll(text) {
     var allResults = [];
     rules.forEach(function (rule) {
       var results = rule.run(text);
       allResults = allResults.concat(results);
     });
-    // Sort by document order
-    allResults.sort(function (a, b) { return a.start - b.start; });
-    return allResults;
+
+    // Deduplicate: if two results overlap the same text range, keep the
+    // higher-priority (more specific) one. E.g. missing-letter beats capitalisation.
+    allResults.sort(function (a, b) {
+      return a.start - b.start || (RULE_PRIORITY[b.ruleId] || 5) - (RULE_PRIORITY[a.ruleId] || 5);
+    });
+
+    var deduped = [];
+    for (var i = 0; i < allResults.length; i++) {
+      var current = allResults[i];
+      var dominated = false;
+      for (var j = 0; j < deduped.length; j++) {
+        var kept = deduped[j];
+        // Check if ranges overlap
+        if (current.start < kept.end && current.end > kept.start) {
+          // Overlapping — keep the higher priority one
+          var currentPri = RULE_PRIORITY[current.ruleId] || 5;
+          var keptPri = RULE_PRIORITY[kept.ruleId] || 5;
+          if (currentPri <= keptPri) {
+            dominated = true;
+            break;
+          }
+        }
+      }
+      if (!dominated) {
+        deduped.push(current);
+      }
+    }
+
+    return deduped;
   }
 
   /**
