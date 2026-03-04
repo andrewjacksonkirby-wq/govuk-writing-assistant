@@ -37,8 +37,8 @@ const Suggestions = (function () {
     var group = suggestion.group;
     var ruleId = suggestion.ruleId;
 
-    // Style category: GOV.UK style, contractions, numbers, date format
-    if (['contractions', 'numbers', 'date-format', 'govuk-style'].indexOf(ruleId) !== -1) {
+    // Style category: GOV.UK style, contractions, numbers, date format, time, punctuation, capitalisation
+    if (['contractions', 'numbers', 'date-format', 'govuk-style', 'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'].indexOf(ruleId) !== -1) {
       return 'style';
     }
     // Clarity: sentence length, passive voice, overused words, tone

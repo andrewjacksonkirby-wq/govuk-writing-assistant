@@ -265,6 +265,26 @@ const QuickChecks = (function () {
       id: 'numbers',
       category: 'Style',
       run: checkNumbers
+    },
+    {
+      id: 'number-formatting',
+      category: 'Style',
+      run: checkNumberFormatting
+    },
+    {
+      id: 'time-formatting',
+      category: 'Style',
+      run: checkTimeFormatting
+    },
+    {
+      id: 'govuk-punctuation',
+      category: 'Style',
+      run: checkGovukPunctuation
+    },
+    {
+      id: 'govuk-capitalisation',
+      category: 'Style',
+      run: checkGovukCapitalisation
     }
   ];
 
@@ -573,7 +593,7 @@ const QuickChecks = (function () {
       // --- GOV.UK style patterns ---
       { regex: /\bplease\b/gi, fix: null, msg: 'GOV.UK style: avoid "please" — be direct', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bkindly\b/gi, fix: null, msg: 'GOV.UK style: avoid "kindly" — be direct', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bgoing forward\b/gi, fix: null, msg: 'Avoid "going forward" — be specific about timing', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      // "going forward" handled below with "moving forward"
       { regex: /\bat this point in time\b/gi, fix: 'now', msg: 'Use "now" or "currently" instead', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bin the event that\b/gi, fix: 'if', msg: 'Use "if" instead of "in the event that"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bwith regards to\b/gi, fix: 'about', msg: 'Use "about" instead of "with regards to"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
@@ -584,7 +604,63 @@ const QuickChecks = (function () {
       { regex: /\beg\b/gi, fix: 'for example', msg: 'Write "for example" instead of "eg"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bvia\b/gi, fix: 'through', msg: 'GOV.UK style: use "through" or "by" instead of "via"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bi\.e\.\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "i.e."', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\be\.g\.\b/gi, fix: 'for example', msg: 'Write "for example" instead of "e.g."', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] }
+      { regex: /\be\.g\.\b/gi, fix: 'for example', msg: 'Write "for example" instead of "e.g."', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+
+      // --- GOV.UK words to avoid (jargon/buzzwords) ---
+      { regex: /\b(agenda)(?!\s+item|\s+for\s+the\s+meeting)\b/gi, fix: null, msg: 'Avoid "agenda" (unless for a meeting) — say what you mean: plan, approach', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(collaborat(?:e|ing|ion))\b/gi, fix: null, msg: 'Avoid "collaborate" — try "work with" or "work together"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(combat(?:ing|ted)?)\b(?!\s+(?:troops|forces|zone|aircraft|training))/gi, fix: null, msg: 'Avoid "combat" (unless military) — try "reduce", "stop", "prevent"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(deliver(?:ing|ed|s|y)?)\b(?!\s+(?:mail|post|parcel|package|letter|goods|baby))/gi, fix: null, msg: 'Avoid "deliver" (unless physical delivery) — try "provide", "create", "run"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(deploy(?:ing|ed|ment|s)?)\b(?!\s+(?:troops|forces|soldiers|software|code|server|application))/gi, fix: null, msg: 'Avoid "deploy" (unless military or software) — try "use", "introduce"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(dialogue)\b/gi, fix: null, msg: 'Avoid "dialogue" — try "conversation", "discussion", "spoke to"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(disincentivise)\b/gi, fix: 'discourage', msg: 'Avoid "disincentivise" — use "discourage"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(empower(?:ing|ed|ment|s)?)\b/gi, fix: null, msg: 'Avoid "empower" — try "allow", "enable", "let"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(foster(?:ing|ed|s)?)\b(?!\s+(?:care|child|parent|home|family|carer))/gi, fix: null, msg: 'Avoid "foster" (unless about children) — try "encourage", "support"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b((?:going|moving)\s+forward)\b/gi, fix: null, msg: 'Avoid "going forward" — say "from now on" or be specific about timing', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(incentivise)\b/gi, fix: 'encourage', msg: 'Avoid "incentivise" — use "encourage"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(impact(?:ing|ed|s)?)\b(?=\s+(?:on|upon|the|our|their|your))/gi, fix: null, msg: 'Avoid "impact" as a verb — try "affect", "influence", "change"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(key)\b(?=\s+(?:is|are|was|were|will|priorities|objectives|themes|aims|goals|issues|challenges|deliverables|stakeholders|findings|messages))/gi, fix: null, msg: 'Avoid "key" (overused) — try "important", "main", "significant"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(land)\b(?=\s+(?:a|the|this|our|your|their)\s+(?:deal|contract|agreement|role|job|funding|investment))/gi, fix: null, msg: 'Avoid "land" as a verb (unless about aircraft) — try "get", "secure", "achieve"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(leverage)\b(?!\s+(?:ratio|buyout))/gi, fix: null, msg: 'Avoid "leverage" (unless financial) — try "use", "take advantage of"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(liaise)\b/gi, fix: null, msg: 'Avoid "liaise" — try "work with", "contact", "talk to"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\bone[- ]stop[- ]shop\b/gi, fix: null, msg: 'Avoid "one-stop shop" — describe what the service actually does', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(overarching)\b/gi, fix: null, msg: 'Avoid "overarching" — try "overall" or just remove it', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(portal)\b/gi, fix: null, msg: 'Avoid "portal" — use "website" or "service" or the service name', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(ring[- ]?fenc(?:e|ed|ing))\b/gi, fix: null, msg: 'Avoid "ring-fencing" — try "separate", "protect", "keep aside"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(robust)\b/gi, fix: null, msg: 'Avoid "robust" — try "strong", "effective", "thorough"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(signpost(?:ing|ed|s)?)\b/gi, fix: null, msg: 'Avoid "signposting" — try "directing", "linking", "tell users about"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\bslimming\s+down\b/gi, fix: null, msg: 'Avoid "slimming down" — try "reducing" or "removing"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(streamlin(?:e|ing|ed))\b/gi, fix: null, msg: 'Avoid "streamline" — try "simplify" or "improve"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(tackl(?:e|ing|ed|es))\b(?!\s+(?:football|rugby|player|opponent))/gi, fix: null, msg: 'Avoid "tackle" (unless sports) — try "solve", "reduce", "deal with"', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+      { regex: /\b(transform(?:ing|ed|ation|s)?)\b/gi, fix: null, msg: 'Avoid "transform" — be specific: what is actually changing?', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
+
+      // --- More plain English ---
+      { regex: /\b(proforma)\b/gi, fix: 'form', msg: 'Use "form" or "template" instead of "proforma"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(henceforth)\b/gi, fix: 'from now on', msg: 'Use "from now on" instead of "henceforth"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(herewith)\b/gi, fix: null, msg: 'Avoid "herewith" — just say what you are including', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(aforementioned)\b/gi, fix: null, msg: 'Avoid "aforementioned" — name the thing directly', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(forthwith)\b/gi, fix: 'immediately', msg: 'Use "immediately" or "now" instead of "forthwith"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(whatsoever)\b/gi, fix: null, msg: 'Avoid "whatsoever" — it rarely adds meaning', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in lieu of)\b/gi, fix: 'instead of', msg: 'Use "instead of" instead of "in lieu of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(pertaining to)\b/gi, fix: 'about', msg: 'Use "about" instead of "pertaining to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(pursuant to)\b/gi, fix: 'under', msg: 'Use "under" or "in line with" instead of "pursuant to"', cat: 'Plain English', title: 'Use plain English' },
+
+      // --- Gender-neutral language ---
+      { regex: /\b(he or she)\b/gi, fix: 'they', msg: 'Use "they" instead of "he or she" for gender-neutral language', cat: 'GOV.UK style', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(his or her)\b/gi, fix: 'their', msg: 'Use "their" instead of "his or her" for gender-neutral language', cat: 'GOV.UK style', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(him or her)\b/gi, fix: 'them', msg: 'Use "them" instead of "him or her" for gender-neutral language', cat: 'GOV.UK style', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(he\/she)\b/gi, fix: 'they', msg: 'Use "they" instead of "he/she" for gender-neutral language', cat: 'GOV.UK style', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(his\/her)\b/gi, fix: 'their', msg: 'Use "their" instead of "his/her" for gender-neutral language', cat: 'GOV.UK style', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+
+      // --- "simply" minimises user difficulty ---
+      { regex: /\b(simply)\b/gi, fix: null, msg: 'Avoid "simply" — it can make users feel bad if they find it difficult', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+
+      // --- Specific GOV.UK term corrections ---
+      { regex: /\b(e-mail)\b/gi, fix: 'email', msg: 'GOV.UK style: use "email" not "e-mail"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\bfill\s+out\b/gi, fix: 'fill in', msg: 'GOV.UK style: use "fill in" not "fill out"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\bFAQs?\b/g, fix: null, msg: 'GOV.UK style: do not use FAQs — present information in a user-centred way', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\b(percent)\b/gi, fix: 'per cent', msg: 'GOV.UK style: use "per cent" not "percent"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\bfinancial\s+penalt(?:y|ies)\b/gi, fix: null, msg: 'GOV.UK style: use "fine" instead of "financial penalty"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] }
     ];
 
     patterns.forEach(function (pat) {
@@ -950,37 +1026,39 @@ const QuickChecks = (function () {
   }
 
   /**
-   * GOV.UK encourages contractions for a friendlier tone.
-   * Flag formal non-contracted forms and suggest contractions.
+   * GOV.UK contractions guidance:
+   * - Negative contractions (can't, don't, won't etc.) should NOT be used
+   *   → use "cannot", "do not", "will not" instead
+   * - Positive contractions (it's, you'll, we're etc.) ARE allowed
+   * - Complex tense contractions (should've, could've, would've, they've) should be avoided
    */
   function checkContractions(text) {
     if (currentMode !== 'govuk') return [];
 
     var results = [];
     var patterns = [
-      { regex: /\b(do not)\b/gi, fix: "don't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(does not)\b/gi, fix: "doesn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(did not)\b/gi, fix: "didn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(cannot)\b/gi, fix: "can't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(can not)\b/gi, fix: "can't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(will not)\b/gi, fix: "won't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(would not)\b/gi, fix: "wouldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(should not)\b/gi, fix: "shouldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(could not)\b/gi, fix: "couldn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(is not)\b/gi, fix: "isn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(are not)\b/gi, fix: "aren't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(was not)\b/gi, fix: "wasn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(were not)\b/gi, fix: "weren't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(has not)\b/gi, fix: "hasn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(have not)\b/gi, fix: "haven't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(had not)\b/gi, fix: "hadn't", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(you will)\b/gi, fix: "you'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(we will)\b/gi, fix: "we'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(they will)\b/gi, fix: "they'll", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(it is)\b/gi, fix: "it's", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(you are)\b/gi, fix: "you're", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(we are)\b/gi, fix: "we're", msg: 'GOV.UK style: use contractions for a friendlier tone' },
-      { regex: /\b(they are)\b/gi, fix: "they're", msg: 'GOV.UK style: use contractions for a friendlier tone' }
+      // Negative contractions: GOV.UK says use the full form
+      { regex: /\b(can't)\b/gi, fix: 'cannot', msg: 'GOV.UK style: use "cannot" instead of "can\'t"' },
+      { regex: /\b(don't)\b/gi, fix: 'do not', msg: 'GOV.UK style: use "do not" instead of "don\'t"' },
+      { regex: /\b(doesn't)\b/gi, fix: 'does not', msg: 'GOV.UK style: use "does not" instead of "doesn\'t"' },
+      { regex: /\b(didn't)\b/gi, fix: 'did not', msg: 'GOV.UK style: use "did not" instead of "didn\'t"' },
+      { regex: /\b(won't)\b/gi, fix: 'will not', msg: 'GOV.UK style: use "will not" instead of "won\'t"' },
+      { regex: /\b(wouldn't)\b/gi, fix: 'would not', msg: 'GOV.UK style: use "would not" instead of "wouldn\'t"' },
+      { regex: /\b(shouldn't)\b/gi, fix: 'should not', msg: 'GOV.UK style: use "should not" instead of "shouldn\'t"' },
+      { regex: /\b(couldn't)\b/gi, fix: 'could not', msg: 'GOV.UK style: use "could not" instead of "couldn\'t"' },
+      { regex: /\b(isn't)\b/gi, fix: 'is not', msg: 'GOV.UK style: use "is not" instead of "isn\'t"' },
+      { regex: /\b(aren't)\b/gi, fix: 'are not', msg: 'GOV.UK style: use "are not" instead of "aren\'t"' },
+      { regex: /\b(wasn't)\b/gi, fix: 'was not', msg: 'GOV.UK style: use "was not" instead of "wasn\'t"' },
+      { regex: /\b(weren't)\b/gi, fix: 'were not', msg: 'GOV.UK style: use "were not" instead of "weren\'t"' },
+      { regex: /\b(hasn't)\b/gi, fix: 'has not', msg: 'GOV.UK style: use "has not" instead of "hasn\'t"' },
+      { regex: /\b(haven't)\b/gi, fix: 'have not', msg: 'GOV.UK style: use "have not" instead of "haven\'t"' },
+      { regex: /\b(hadn't)\b/gi, fix: 'had not', msg: 'GOV.UK style: use "had not" instead of "hadn\'t"' },
+      // Complex tense contractions: avoid these
+      { regex: /\b(should've)\b/gi, fix: 'should have', msg: 'GOV.UK style: use "should have" instead of "should\'ve"' },
+      { regex: /\b(could've)\b/gi, fix: 'could have', msg: 'GOV.UK style: use "could have" instead of "could\'ve"' },
+      { regex: /\b(would've)\b/gi, fix: 'would have', msg: 'GOV.UK style: use "would have" instead of "would\'ve"' },
+      { regex: /\b(they've)\b/gi, fix: 'they have', msg: 'GOV.UK style: use "they have" instead of "they\'ve"' }
+      // Note: positive contractions (it's, you'll, we'll, we're, they're, you're) are allowed
     ];
 
     patterns.forEach(function (pat) {
@@ -1000,7 +1078,7 @@ const QuickChecks = (function () {
           start: match.index,
           end: match.index + match[1].length,
           message: pat.msg,
-          title: 'Use contraction',
+          title: 'Avoid contraction',
           replacement: replacement,
           original: match[1]
         });
@@ -1047,6 +1125,492 @@ const QuickChecks = (function () {
         });
       }
     }
+    return results;
+  }
+
+  /**
+   * GOV.UK number formatting rules beyond simple digit spelling.
+   * Covers: commas in large numbers, number ranges with hyphens,
+   * sentence-starting digits, missing leading zero, measurement spacing,
+   * abbreviated millions/billions.
+   */
+  function checkNumberFormatting(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+    var match;
+
+    // Numbers over 999 without commas (e.g. 1234 should be 1,234)
+    // Skip years (1900-2099), postcodes, and common non-comma numbers
+    var bigNumRegex = /\b(\d{4,})\b/g;
+    while ((match = bigNumRegex.exec(text)) !== null) {
+      var num = match[1];
+      // Skip years (1900-2099)
+      if (/^(19|20)\d{2}$/.test(num)) continue;
+      // Skip if already has commas nearby or is part of a decimal
+      if (match.index > 0 && text[match.index - 1] === ',') continue;
+      if (text[match.index + num.length] === '.') continue;
+      // Skip phone numbers, postcodes
+      if (match.index > 0 && /[+\-()]/.test(text[match.index - 1])) continue;
+      // Only flag if it should have commas
+      var numVal = parseInt(num, 10);
+      if (numVal >= 10000) {
+        var formatted = numVal.toLocaleString('en-GB');
+        results.push({
+          id: makeId(),
+          ruleId: 'number-formatting',
+          source: 'regex',
+          group: 'style',
+          category: 'Number formatting',
+          start: match.index,
+          end: match.index + num.length,
+          message: 'GOV.UK style: use commas in numbers over 999 — "' + formatted + '"',
+          title: 'Number formatting',
+          replacement: formatted,
+          original: num
+        });
+      }
+    }
+
+    // Number ranges with hyphens: "500-900" should be "500 to 900"
+    var rangeRegex = /\b(\d+)\s*[-–—]\s*(\d+)\b/g;
+    while ((match = rangeRegex.exec(text)) !== null) {
+      // Skip time ranges like "9-5" that look like times, or years
+      var left = parseInt(match[1], 10);
+      var right = parseInt(match[2], 10);
+      if (right <= left) continue; // Not a range
+      // Skip year ranges handled by date check
+      if (left >= 1900 && left <= 2099 && right >= 1900 && right <= 2099) continue;
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use "to" in ranges, not hyphens — "' + match[1] + ' to ' + match[2] + '"',
+        title: 'Number formatting',
+        replacement: match[1] + ' to ' + match[2],
+        original: match[0]
+      });
+    }
+
+    // Sentence starting with a digit
+    var sentenceDigit = /(?:^|[.!?]\s+)(\d+)\s+[a-zA-Z]/gm;
+    while ((match = sentenceDigit.exec(text)) !== null) {
+      var digitStart = match.index + match[0].indexOf(match[1]);
+      // Only flag if it's not a heading-like context
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: digitStart,
+        end: digitStart + match[1].length,
+        message: 'GOV.UK style: do not start a sentence with a numeral — write it out in full',
+        title: 'Number formatting',
+        original: match[1]
+      });
+    }
+
+    // Missing leading zero before decimal: .5 should be 0.5
+    var leadingZero = /(?:^|[^0-9])(\.\d+)\b/g;
+    while ((match = leadingZero.exec(text)) !== null) {
+      var dotNum = match[1];
+      var dotStart = match.index + match[0].indexOf(dotNum);
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: dotStart,
+        end: dotStart + dotNum.length,
+        message: 'GOV.UK style: use a leading zero before decimals — "0' + dotNum + '"',
+        title: 'Number formatting',
+        replacement: '0' + dotNum,
+        original: dotNum
+      });
+    }
+
+    // Space between number and measurement abbreviation: "3,500 kg" should be "3,500kg"
+    var measureSpace = /(\d)\s+(kg|km|mm|cm|m|lb|oz|mg|g|ml|mph|kph)\b/g;
+    while ((match = measureSpace.exec(text)) !== null) {
+      // Avoid flagging "5 m" where m could be a word; only flag clear measurement abbreviations
+      if (match[2] === 'm' || match[2] === 'g') continue; // Too ambiguous as standalone
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: no space between number and unit — "' + match[1] + match[2] + '"',
+        title: 'Number formatting',
+        replacement: match[1] + match[2],
+        original: match[0]
+      });
+    }
+
+    // Abbreviated millions/billions with currency: £138m should be £138 million
+    var abbrMillion = /£(\d+(?:,\d{3})*)m\b/g;
+    while ((match = abbrMillion.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: write "million" in full — "£' + match[1] + ' million"',
+        title: 'Number formatting',
+        replacement: '£' + match[1] + ' million',
+        original: match[0]
+      });
+    }
+
+    var abbrBillion = /£(\d+(?:,\d{3})*)bn?\b/g;
+    while ((match = abbrBillion.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: write "billion" in full — "£' + match[1] + ' billion"',
+        title: 'Number formatting',
+        replacement: '£' + match[1] + ' billion',
+        original: match[0]
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * GOV.UK time formatting rules.
+   * - 5:30pm not 5:30 pm (no space before am/pm)
+   * - 5:30pm not 5.30pm (colon not dot)
+   * - 5pm not 5:00pm (no trailing zeros)
+   * - 12-hour clock not 24-hour
+   * - "to" not hyphens in time ranges
+   * - Avoid 12am/12pm (use midnight/midday)
+   */
+  function checkTimeFormatting(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+    var match;
+
+    // Space before am/pm: "5:30 pm" → "5:30pm"
+    var spaceAmPm = /\b(\d{1,2}(?::\d{2})?)\s+(am|pm)\b/gi;
+    while ((match = spaceAmPm.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'time-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Time formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: no space before am/pm — "' + match[1] + match[2].toLowerCase() + '"',
+        title: 'Time formatting',
+        replacement: match[1] + match[2].toLowerCase(),
+        original: match[0]
+      });
+    }
+
+    // Dot instead of colon in times: "5.30pm" → "5:30pm"
+    var dotTime = /\b(\d{1,2})\.(\d{2})\s*(am|pm)\b/gi;
+    while ((match = dotTime.exec(text)) !== null) {
+      var fixed = match[1] + ':' + match[2] + match[3].toLowerCase();
+      results.push({
+        id: makeId(),
+        ruleId: 'time-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Time formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use a colon in times, not a dot — "' + fixed + '"',
+        title: 'Time formatting',
+        replacement: fixed,
+        original: match[0]
+      });
+    }
+
+    // Trailing :00 in times: "5:00pm" → "5pm"
+    var trailingZero = /\b(\d{1,2}):00\s*(am|pm)\b/gi;
+    while ((match = trailingZero.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'time-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Time formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: remove trailing zeros — "' + match[1] + match[2].toLowerCase() + '"',
+        title: 'Time formatting',
+        replacement: match[1] + match[2].toLowerCase(),
+        original: match[0]
+      });
+    }
+
+    // 24-hour clock: "17:30" or "15:00" → suggest 12-hour format
+    var twentyFour = /\b([1-2][0-9]):([0-5][0-9])\b(?!\s*(am|pm))/gi;
+    while ((match = twentyFour.exec(text)) !== null) {
+      var hour = parseInt(match[1], 10);
+      if (hour < 13) continue; // Could be 12-hour format
+      var hour12 = hour > 12 ? hour - 12 : hour;
+      var mins = match[2];
+      var suffix = hour >= 12 ? 'pm' : 'am';
+      var replacement = mins === '00' ? hour12 + suffix : hour12 + ':' + mins + suffix;
+      results.push({
+        id: makeId(),
+        ruleId: 'time-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Time formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use 12-hour clock — "' + replacement + '"',
+        title: 'Time formatting',
+        replacement: replacement,
+        original: match[0]
+      });
+    }
+
+    // 12am / 12pm (confusing): suggest midnight/midday
+    var noon = /\b12\s*(am|pm)\b/gi;
+    while ((match = noon.exec(text)) !== null) {
+      var suggest = match[1].toLowerCase() === 'am' ? 'midnight' : 'midday';
+      results.push({
+        id: makeId(),
+        ruleId: 'time-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Time formatting',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use "' + suggest + '" instead of "12' + match[1].toLowerCase() + '" to avoid confusion',
+        title: 'Time formatting',
+        replacement: suggest,
+        original: match[0]
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * GOV.UK punctuation rules.
+   * - No ampersand (&) in prose
+   * - No exclamation marks (unless in quotes)
+   * - No block capitals (3+ words in ALL CAPS)
+   * - No dots in abbreviations (B.B.C. → BBC)
+   */
+  function checkGovukPunctuation(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+    var match;
+
+    // Ampersand in prose (not in HTML entities like &amp;)
+    var ampRegex = /\s(&)\s/g;
+    while ((match = ampRegex.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-punctuation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: match.index + 1,
+        end: match.index + 2,
+        message: 'GOV.UK style: use "and" not "&" in text',
+        title: 'GOV.UK style',
+        replacement: 'and',
+        original: '&'
+      });
+    }
+
+    // Exclamation marks (not inside quotes)
+    var exclRegex = /[^"'"](!)/g;
+    while ((match = exclRegex.exec(text)) !== null) {
+      // Simple heuristic: skip if preceded by a closing quote
+      var before = text.substring(Math.max(0, match.index - 50), match.index + 1);
+      var openQuotes = (before.match(/[""\u201C]/g) || []).length;
+      var closeQuotes = (before.match(/[""\u201D]/g) || []).length;
+      if (openQuotes > closeQuotes) continue; // Inside quotes
+
+      var exclIdx = match.index + 1;
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-punctuation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: exclIdx,
+        end: exclIdx + 1,
+        message: 'GOV.UK style: do not use exclamation marks',
+        title: 'GOV.UK style',
+        replacement: '.',
+        original: '!'
+      });
+    }
+
+    // Block capitals: 3+ consecutive uppercase words
+    var blockCaps = /\b([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})\b/g;
+    while ((match = blockCaps.exec(text)) !== null) {
+      // Skip known all-caps acronyms/abbreviations
+      if (/^[A-Z]{2,4}$/.test(match[1])) continue;
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-punctuation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: do not use block capitals — they are harder to read',
+        title: 'GOV.UK style',
+        original: match[0]
+      });
+    }
+
+    // Dotted abbreviations: B.B.C. → BBC, U.K. → UK
+    var dottedAbbr = /(?:^|[^A-Za-z])([A-Z]\.(?:[A-Z]\.)+[A-Z]?)/g;
+    while ((match = dottedAbbr.exec(text)) !== null) {
+      var abbr = match[1];
+      var clean = abbr.replace(/\./g, '');
+      var abbrStart = match.index + match[0].indexOf(abbr);
+      // If abbreviation ends with dot and is followed by a space+capital (sentence boundary),
+      // keep the trailing dot as a full stop
+      var afterAbbr = text[abbrStart + abbr.length];
+      var endsWithDot = abbr[abbr.length - 1] === '.';
+      if (endsWithDot && afterAbbr && /\s/.test(afterAbbr)) {
+        // Check if next non-space char is uppercase (sentence boundary)
+        var nextChars = text.substring(abbrStart + abbr.length).match(/^\s+([A-Z])/);
+        if (nextChars) {
+          clean = clean + '.'; // Preserve sentence-ending period
+        }
+      }
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-punctuation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: abbrStart,
+        end: abbrStart + abbr.length,
+        message: 'GOV.UK style: no dots in abbreviations — "' + clean + '"',
+        title: 'GOV.UK style',
+        replacement: clean,
+        original: abbr
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * GOV.UK capitalisation rules.
+   * - "internet" not "Internet" mid-sentence
+   * - "web" not "Web" mid-sentence
+   * - Seasons lower case mid-sentence
+   * - "government" lower case when generic
+   */
+  function checkGovukCapitalisation(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+    var match;
+
+    // Words that should be lower case mid-sentence
+    var lcWords = [
+      { regex: /(?:^.|\.\s+.{0,50}?).*?\b(Internet)\b/g, word: 'Internet', fix: 'internet', msg: 'GOV.UK style: "internet" is lower case' },
+      { regex: /(?:[.!?]\s+\w.*?\b|\w.*?\b)(Internet)\b/g, word: 'Internet', fix: 'internet', msg: 'GOV.UK style: "internet" is lower case' },
+      { regex: /(?:[.!?]\s+\w.*?\b|\w.*?\b)(Web)\b(?!\s*(?:site|page|browser|server|developer|design|application|service|standard))/g, word: 'Web', fix: 'web', msg: 'GOV.UK style: "web" is lower case' }
+    ];
+
+    // Simpler approach: find mid-sentence occurrences
+    var internetMid = /[a-z,;:]\s+(Internet)\b/g;
+    while ((match = internetMid.exec(text)) !== null) {
+      var wordStart = match.index + match[0].indexOf('Internet');
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-capitalisation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: wordStart,
+        end: wordStart + 8,
+        message: 'GOV.UK style: "internet" is lower case',
+        title: 'GOV.UK style',
+        replacement: 'internet',
+        original: 'Internet'
+      });
+    }
+
+    var webMid = /[a-z,;:]\s+(Web)\b(?!\s*(?:site|page|browser|server|developer|design))/g;
+    while ((match = webMid.exec(text)) !== null) {
+      var wStart = match.index + match[0].indexOf('Web');
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-capitalisation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: wStart,
+        end: wStart + 3,
+        message: 'GOV.UK style: "web" is lower case',
+        title: 'GOV.UK style',
+        replacement: 'web',
+        original: 'Web'
+      });
+    }
+
+    // Capitalised seasons mid-sentence
+    var seasons = /[a-z,;:]\s+(Spring|Summer|Autumn|Winter)\b/g;
+    while ((match = seasons.exec(text)) !== null) {
+      var seasonWord = match[1];
+      var sStart = match.index + match[0].indexOf(seasonWord);
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-capitalisation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: sStart,
+        end: sStart + seasonWord.length,
+        message: 'GOV.UK style: seasons are lower case — "' + seasonWord.toLowerCase() + '"',
+        title: 'GOV.UK style',
+        replacement: seasonWord.toLowerCase(),
+        original: seasonWord
+      });
+    }
+
+    // "Government" when used generically mid-sentence (not at start, not part of a name)
+    var govMid = /[a-z,;:]\s+(Government)\b(?!\s+(?:of|Digital|Communication|Statistical|Legal|Property|Actuary))/g;
+    while ((match = govMid.exec(text)) !== null) {
+      var gStart = match.index + match[0].indexOf('Government');
+      results.push({
+        id: makeId(),
+        ruleId: 'govuk-capitalisation',
+        source: 'regex',
+        group: 'style',
+        category: 'GOV.UK style',
+        start: gStart,
+        end: gStart + 10,
+        message: 'GOV.UK style: "government" is lower case when used generically',
+        title: 'GOV.UK style',
+        replacement: 'government',
+        original: 'Government'
+      });
+    }
+
     return results;
   }
 
