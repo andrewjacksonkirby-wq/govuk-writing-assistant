@@ -289,9 +289,9 @@ const Suggestions = (function () {
       var emptyP = document.createElement('p');
       emptyP.className = 'empty-state';
       if (all.length === 0) {
-        emptyP.textContent = 'No issues found. Looking good!';
+        emptyP.textContent = 'No issues found';
       } else {
-        emptyP.textContent = 'No issues in this category';
+        emptyP.textContent = 'No issues in this category.';
       }
       listEl.appendChild(emptyP);
       return;
@@ -461,7 +461,7 @@ const Suggestions = (function () {
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
         applyAllBtn.className = 'btn btn-primary btn-sm';
-        applyAllBtn.textContent = 'Accept all (' + siblings.length + ')';
+        applyAllBtn.textContent = 'Fix all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           applyAll(suggestion);
@@ -471,7 +471,7 @@ const Suggestions = (function () {
         var applyBtn = document.createElement('button');
         applyBtn.type = 'button';
         applyBtn.className = 'btn btn-primary btn-sm';
-        applyBtn.textContent = 'Accept';
+        applyBtn.textContent = 'Fix';
         applyBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           if (onApply) onApply(suggestion);
@@ -484,7 +484,7 @@ const Suggestions = (function () {
     var dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
     dismissBtn.className = 'btn btn-secondary btn-sm';
-    dismissBtn.textContent = hasSiblings ? 'Dismiss all' : 'Dismiss';
+    dismissBtn.textContent = hasSiblings ? 'Ignore all' : 'Ignore';
     dismissBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       if (hasSiblings) dismissAll(suggestion);

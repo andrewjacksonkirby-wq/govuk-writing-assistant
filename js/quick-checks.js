@@ -318,8 +318,8 @@ const QuickChecks = (function () {
           category: 'Spelling',
           start: match.index,
           end: match.index + word.length,
-          message: '"' + word + '" may be misspelt',
-          title: 'Possible misspelling',
+          message: 'Check the spelling of "' + word + '"',
+          title: 'Possible spelling mistake',
           replacement: replacement,
           original: word
         });
@@ -352,7 +352,7 @@ const QuickChecks = (function () {
         category: 'Grammar',
         start: match.index,
         end: match.index + match[0].length,
-        message: '"' + match[1] + '" is repeated',
+        message: '"' + match[1] + '" appears twice in a row',
         title: 'Repeated word',
         replacement: match[1],
         original: match[0]
@@ -380,8 +380,8 @@ const QuickChecks = (function () {
         category: 'Punctuation',
         start: spacesStart,
         end: spacesEnd,
-        message: 'Multiple spaces found',
-        title: 'Extra spaces',
+        message: 'Remove the extra space',
+        title: 'Extra space',
         replacement: ' ',
         original: match[0].substring(1)
       });
@@ -519,8 +519,8 @@ const QuickChecks = (function () {
         category: 'Capitalisation',
         start: idx,
         end: idx + 1,
-        message: 'Sentences should start with a capital letter',
-        title: 'Missing capital letter',
+        message: 'Start sentences with a capital letter',
+        title: 'Missing capital',
         replacement: startMatch[1].toUpperCase(),
         original: startMatch[1]
       });
@@ -877,7 +877,7 @@ const QuickChecks = (function () {
           category: 'Spelling',
           start: match.index,
           end: match.index + word.length,
-          message: '"' + word + '" looks like "' + replacement + '" with a missing first letter',
+          message: 'Did you mean "' + replacement + '"?',
           title: 'Missing letter',
           replacement: replacement,
           original: word
@@ -908,8 +908,8 @@ const QuickChecks = (function () {
           category: 'Sentence length',
           start: match.index,
           end: match.index + match[0].length,
-          message: 'This sentence has ' + words.length + ' words. Try splitting at a natural break \u2014 look for "and", "but", "which", or commas where you could start a new sentence.',
-          title: 'Long sentence (' + words.length + ' words)',
+          message: 'This sentence is ' + words.length + ' words. Try breaking it at a comma, "and", "but" or "which".',
+          title: 'Sentence too long (' + words.length + ' words)',
           original: sentence
         });
       }
@@ -998,16 +998,11 @@ const QuickChecks = (function () {
 
     if (byAgent) {
       // "was approved by the manager" -> tip: put "the manager" first
-      return 'This is passive voice. The doer ("' + byAgent[1] + '") is hidden at the end. ' +
-        'Try flipping: put "' + byAgent[1] + '" at the start as the subject, then use an active verb. ' +
-        'Pattern: [who did it] + [active verb] + [what was done].';
+      return 'Try putting "' + byAgent[1] + '" at the start as the subject, followed by an active verb.';
     }
 
     // No "by" agent — the doer is missing entirely
-    return 'This is passive voice \u2014 the sentence hides who is doing the action. ' +
-      'Ask yourself: who or what "' + participle + '"? ' +
-      'Put that person or thing at the start of the sentence as the subject, ' +
-      'then follow with the action. Pattern: [who did it] + [active verb] + [what].';
+    return 'Consider rewriting in active voice. Who or what "' + participle + '"? Lead with that.';
   }
 
   /**

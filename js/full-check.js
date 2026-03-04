@@ -110,7 +110,7 @@ const FullCheck = (function () {
             category: 'Word choice',
             start: positions[i].start,
             end: positions[i].end,
-            message: '"' + word + '" appears ' + positions.length + ' times. Consider using a synonym or restructuring.',
+            message: '"' + word + '" appears ' + positions.length + ' times. Try a synonym or rephrase.',
             title: 'Overused word',
             original: positions[i].original
           });
@@ -169,8 +169,8 @@ const FullCheck = (function () {
             category: 'GOV.UK style',
             start: fpMatch.index,
             end: fpMatch.index + 1,
-            message: 'GOV.UK style: avoid first person. Use "we" for the organisation or restructure.',
-            title: 'First person',
+            message: 'Avoid "I" in GOV.UK content. Use "we" for the organisation, or rephrase.',
+            title: 'Avoid first person',
             original: 'I'
           });
         }
@@ -179,12 +179,12 @@ const FullCheck = (function () {
       // Email/chat tone checks (only in email/chat modes)
       if (currentMode === 'email' || currentMode === 'chat') {
         var emailTonePatterns = [
-          { regex: /\b(pursuant to|hereunder|herewith|aforementioned|hereinafter)\b/gi, msg: 'This sounds overly formal for ' + (currentMode === 'chat' ? 'a message' : 'an email') + '. Use simpler language.', title: 'Overly formal' },
-          { regex: /\b(I would like to take this opportunity to)\b/gi, msg: 'Get to the point — just say what you want to say', title: 'Filler phrase' },
-          { regex: /\b(it has come to my attention that)\b/gi, msg: 'Sounds bureaucratic. Just state what you noticed.', title: 'Stiff phrasing' },
+          { regex: /\b(pursuant to|hereunder|herewith|aforementioned|hereinafter)\b/gi, msg: 'Too formal for ' + (currentMode === 'chat' ? 'a message' : 'an email') + '. Use simpler language.', title: 'Overly formal' },
+          { regex: /\b(I would like to take this opportunity to)\b/gi, msg: 'This is filler. Get straight to the point.', title: 'Filler phrase' },
+          { regex: /\b(it has come to my attention that)\b/gi, msg: 'Sounds bureaucratic. Just say what you noticed.', title: 'Stiff phrasing' },
           { regex: /\b(I regret to inform you that)\b/gi, msg: 'Be direct but kind. Try "Unfortunately" or just state the situation.', title: 'Overly formal' },
-          { regex: /\b(at your earliest convenience)\b/gi, msg: 'Give a specific timeframe instead', title: 'Vague timing' },
-          { regex: /\b(to whom it may concern)\b/gi, msg: 'Use the person\'s name if possible', title: 'Impersonal' }
+          { regex: /\b(at your earliest convenience)\b/gi, msg: 'Give a specific date or timeframe instead.', title: 'Vague timing' },
+          { regex: /\b(to whom it may concern)\b/gi, msg: 'Use the person\'s name if you can.', title: 'Impersonal greeting' }
         ];
         emailTonePatterns.forEach(function (pat) {
           var match;
@@ -216,7 +216,7 @@ const FullCheck = (function () {
               category: 'Length',
               start: 0,
               end: Math.min(text.length, 50),
-              message: 'This is ' + wordCount + ' words. Teams/Slack messages work best under 150 words. Consider breaking it up or sending as an email.',
+              message: 'This is ' + wordCount + ' words. Messages work best under 150 words \u2014 break it up or send it as an email instead.',
               title: 'Message too long',
               original: text.substring(0, 40) + '...'
             });
