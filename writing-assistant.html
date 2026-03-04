@@ -251,6 +251,14 @@ body {
   color: var(--color-sensitive);
 }
 
+.editor-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .editor {
   flex: 1;
   padding: var(--spacing-lg);
@@ -263,6 +271,30 @@ body {
   white-space: pre-wrap;
   word-wrap: break-word;
   min-height: 200px;
+}
+
+.inline-marks-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.inline-mark {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  border-bottom: 2px dotted var(--color-correctness);
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.inline-mark:hover {
+  background: var(--color-correctness-bg);
+  border-bottom-style: solid;
 }
 
 .editor:focus {
@@ -399,7 +431,10 @@ body {
 
 /* ===== Category sub-groups ===== */
 .category-group {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .category-header {
@@ -407,29 +442,71 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-sm);
   border: none;
-  background: none;
+  background: var(--color-bg);
   cursor: pointer;
   font-family: var(--font-main);
   font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: var(--color-text);
   text-align: left;
-  border-radius: var(--radius);
+  border-radius: 0;
+  gap: var(--spacing-xs);
+}
+
+.category-header::before {
+  content: '\25B6';
+  font-size: 9px;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.category-header[aria-expanded="true"]::before {
+  transform: rotate(90deg);
 }
 
 .category-header:hover {
-  background: var(--color-bg);
+  background: var(--color-border-light);
 }
 
 .category-header[aria-expanded="false"] + .category-body {
   display: none;
 }
 
-.category-count {
+.category-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.category-name {
+  font-weight: 600;
+}
+
+.category-peek {
   font-size: 12px;
+  font-weight: 400;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-header[aria-expanded="true"] .category-peek {
+  display: none;
+}
+
+.category-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-radius: 10px;
+  padding: 1px 8px;
+  flex-shrink: 0;
 }
 
 /* ===== Suggestion cards ===== */
@@ -466,6 +543,16 @@ body {
   font-weight: 600;
   margin-bottom: 2px;
   color: var(--color-text);
+}
+
+.occurrence-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 1px 8px;
+  vertical-align: middle;
 }
 
 .suggestion-context {
@@ -851,15 +938,18 @@ body {
           <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
         </div>
       </div>
-      <div
-        class="editor"
-        id="editor"
-        contenteditable="true"
-        role="textbox"
-        aria-multiline="true"
-        aria-label="Writing editor"
-        spellcheck="false"
-      ></div>
+      <div class="editor-wrapper" id="editorWrapper">
+        <div
+          class="editor"
+          id="editor"
+          contenteditable="true"
+          role="textbox"
+          aria-multiline="true"
+          aria-label="Writing editor"
+          spellcheck="false"
+        ></div>
+        <div class="inline-marks-overlay" id="inlineMarksOverlay" aria-hidden="true"></div>
+      </div>
       <div class="stats-bar" id="statsBar">
         <span class="stat-item"><span class="stat-label">Words</span> <span class="stat-value" id="statWords">0</span></span>
         <span class="stat-item"><span class="stat-label">Sentences</span> <span class="stat-value" id="statSentences">0</span></span>
@@ -978,6 +1068,7 @@ const Editor = (function () {
 
   function handleInput() {
     clearHighlights();
+    clearInlineMarks();
     documentVersion++;
     notifyChange();
   }
@@ -1141,6 +1232,73 @@ const Editor = (function () {
     }
   }
 
+  // ===== Inline marks overlay (for spacing issues etc.) =====
+  let overlayEl = null;
+  let inlineMarkCallback = null;
+
+  /**
+   * Show inline underline marks in the editor overlay.
+   * marks: array of {start, end, replacement, title}
+   * onClick: callback(mark) when user clicks a mark
+   */
+  function showInlineMarks(marks, onClick) {
+    if (!overlayEl) {
+      overlayEl = document.getElementById('inlineMarksOverlay');
+    }
+    if (!overlayEl || !editorEl) return;
+    inlineMarkCallback = onClick;
+    overlayEl.innerHTML = '';
+
+    if (!marks || marks.length === 0) return;
+
+    const text = getText();
+    if (!text) return;
+
+    // We need to map text offsets to screen positions using Range API
+    // First, ensure editor has a single text node (no marks)
+    clearHighlights();
+
+    marks.forEach(function (m) {
+      if (m.start < 0 || m.end > text.length) return;
+
+      const startInfo = getNodeOffset(editorEl, m.start);
+      const endInfo = getNodeOffset(editorEl, m.end);
+      if (!startInfo || !endInfo) return;
+
+      const range = document.createRange();
+      range.setStart(startInfo.node, startInfo.offset);
+      range.setEnd(endInfo.node, endInfo.offset);
+
+      const rects = range.getClientRects();
+      const editorRect = editorEl.getBoundingClientRect();
+
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const span = document.createElement('span');
+        span.className = 'inline-mark';
+        span.style.left = (rect.left - editorRect.left + editorEl.scrollLeft) + 'px';
+        span.style.top = (rect.top - editorRect.top + editorEl.scrollTop) + 'px';
+        span.style.width = rect.width + 'px';
+        span.style.height = rect.height + 'px';
+        span.title = m.title || 'Click to fix';
+        span.addEventListener('click', function () {
+          if (inlineMarkCallback) inlineMarkCallback(m);
+        });
+        overlayEl.appendChild(span);
+      }
+    });
+  }
+
+  /**
+   * Clear inline marks overlay.
+   */
+  function clearInlineMarks() {
+    if (!overlayEl) {
+      overlayEl = document.getElementById('inlineMarksOverlay');
+    }
+    if (overlayEl) overlayEl.innerHTML = '';
+  }
+
   return {
     init: init,
     getText: getText,
@@ -1150,7 +1308,9 @@ const Editor = (function () {
     getElement: getElement,
     applyReplacement: applyReplacement,
     highlightRange: highlightRange,
-    clearHighlights: clearHighlights
+    clearHighlights: clearHighlights,
+    showInlineMarks: showInlineMarks,
+    clearInlineMarks: clearInlineMarks
   };
 })();
 
@@ -2834,6 +2994,28 @@ const Suggestions = (function () {
     renderClarityGroup(clarityBody, clar);
   }
 
+  /**
+   * Deduplicate suggestions: merge items with the same ruleId + original text
+   * into a single representative item with a siblings count.
+   * Returns array of { suggestion, siblings } objects.
+   */
+  function deduplicateSuggestions(suggestions) {
+    var groups = {};
+    var order = [];
+    suggestions.forEach(function (s) {
+      var key = getSiblingKey(s);
+      if (!groups[key]) {
+        groups[key] = [];
+        order.push(key);
+      }
+      groups[key].push(s);
+    });
+
+    return order.map(function (key) {
+      return { suggestion: groups[key][0], siblings: groups[key] };
+    });
+  }
+
   function renderGroup(container, suggestions, groupClass) {
     container.innerHTML = '';
 
@@ -2845,42 +3027,83 @@ const Suggestions = (function () {
       return;
     }
 
+    // Deduplicate: group same rule+original into single cards
+    var deduped = deduplicateSuggestions(suggestions);
+
     // Group by category
     var categories = {};
-    suggestions.forEach(function (s) {
-      var cat = s.category || 'Other';
+    deduped.forEach(function (d) {
+      var cat = d.suggestion.category || 'Other';
       if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(s);
+      categories[cat].push(d);
     });
 
-    Object.keys(categories).forEach(function (cat) {
+    var catKeys = Object.keys(categories);
+    var singleCategory = catKeys.length === 1;
+
+    catKeys.forEach(function (cat) {
       var items = categories[cat];
-      var catGroup = document.createElement('div');
-      catGroup.className = 'category-group';
 
-      var catHeader = document.createElement('button');
-      catHeader.type = 'button';
-      catHeader.className = 'category-header';
-      catHeader.setAttribute('aria-expanded', 'true');
-      catHeader.innerHTML =
-        '<span>' + escapeHtml(cat) + '</span>' +
-        '<span class="category-count">' + items.length + '</span>';
-      catHeader.addEventListener('click', function () {
-        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
-        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-      });
-      catGroup.appendChild(catHeader);
+      if (singleCategory) {
+        items.forEach(function (d) {
+          container.appendChild(createCard(d.suggestion, groupClass, d.siblings));
+        });
+        return;
+      }
 
-      var catBody = document.createElement('div');
-      catBody.className = 'category-body';
-
-      items.forEach(function (s) {
-        catBody.appendChild(createCard(s, groupClass));
-      });
-
-      catGroup.appendChild(catBody);
-      container.appendChild(catGroup);
+      container.appendChild(buildCategoryGroup(cat, items, groupClass));
     });
+  }
+
+  /**
+   * Build a collapsible category sub-group.
+   * Starts collapsed — click the header to expand.
+   */
+  function buildCategoryGroup(cat, items, groupClass) {
+    var catGroup = document.createElement('div');
+    catGroup.className = 'category-group';
+
+    // Count total individual issues (items are deduped groups)
+    var totalIssues = 0;
+    items.forEach(function (d) {
+      totalIssues += d.siblings.length;
+    });
+
+    // Peek text: first item's title, e.g. "Missing capital letter, ..."
+    var peekTitles = [];
+    var seen = {};
+    items.forEach(function (d) {
+      var t = d.suggestion.title || '';
+      if (t && !seen[t]) { seen[t] = true; peekTitles.push(t); }
+    });
+    var peek = peekTitles.slice(0, 2).join(', ');
+    if (peekTitles.length > 2) peek += ', ...';
+
+    var catHeader = document.createElement('button');
+    catHeader.type = 'button';
+    catHeader.className = 'category-header';
+    catHeader.setAttribute('aria-expanded', 'false');
+    catHeader.innerHTML =
+      '<span class="category-label">' +
+        '<span class="category-name">' + escapeHtml(cat) + '</span>' +
+        '<span class="category-peek">' + escapeHtml(peek) + '</span>' +
+      '</span>' +
+      '<span class="category-count">' + totalIssues + '</span>';
+    catHeader.addEventListener('click', function () {
+      var expanded = catHeader.getAttribute('aria-expanded') === 'true';
+      catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    });
+    catGroup.appendChild(catHeader);
+
+    var catBody = document.createElement('div');
+    catBody.className = 'category-body';
+
+    items.forEach(function (d) {
+      catBody.appendChild(createCard(d.suggestion, groupClass, d.siblings));
+    });
+
+    catGroup.appendChild(catBody);
+    return catGroup;
   }
 
   function renderClarityGroup(container, suggestions) {
@@ -2902,41 +3125,31 @@ const Suggestions = (function () {
       return;
     }
 
+    // Deduplicate
+    var deduped = deduplicateSuggestions(suggestions);
+
     // Group by category
     var categories = {};
-    suggestions.forEach(function (s) {
-      var cat = s.category || 'Other';
+    deduped.forEach(function (d) {
+      var cat = d.suggestion.category || 'Other';
       if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(s);
+      categories[cat].push(d);
     });
 
-    Object.keys(categories).forEach(function (cat) {
+    var catKeys = Object.keys(categories);
+    var singleCategory = catKeys.length === 1;
+
+    catKeys.forEach(function (cat) {
       var items = categories[cat];
-      var catGroup = document.createElement('div');
-      catGroup.className = 'category-group';
 
-      var catHeader = document.createElement('button');
-      catHeader.type = 'button';
-      catHeader.className = 'category-header';
-      catHeader.setAttribute('aria-expanded', 'true');
-      catHeader.innerHTML =
-        '<span>' + escapeHtml(cat) + '</span>' +
-        '<span class="category-count">' + items.length + '</span>';
-      catHeader.addEventListener('click', function () {
-        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
-        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-      });
-      catGroup.appendChild(catHeader);
+      if (singleCategory) {
+        items.forEach(function (d) {
+          container.appendChild(createCard(d.suggestion, 'clarity', d.siblings));
+        });
+        return;
+      }
 
-      var catBody = document.createElement('div');
-      catBody.className = 'category-body';
-
-      items.forEach(function (s) {
-        catBody.appendChild(createCard(s, 'clarity'));
-      });
-
-      catGroup.appendChild(catBody);
-      container.appendChild(catGroup);
+      container.appendChild(buildCategoryGroup(cat, items, 'clarity'));
     });
   }
 
@@ -2988,10 +3201,14 @@ const Suggestions = (function () {
     return { before: ctxBefore, target: ctxTarget, after: ctxAfter };
   }
 
-  function createCard(suggestion, groupClass) {
+  function createCard(suggestion, groupClass, siblings) {
     var card = document.createElement('div');
     card.className = 'suggestion-card ' + groupClass;
     card.dataset.id = suggestion.id;
+
+    // siblings is the deduped group (defaults to just this suggestion)
+    if (!siblings) siblings = [suggestion];
+    var hasSiblings = siblings.length > 1;
 
     if (suggestion.id === activeSuggestionId) {
       card.classList.add('active');
@@ -3005,9 +3222,13 @@ const Suggestions = (function () {
       if (onSelect) onSelect(suggestion);
     });
 
+    // Title row with occurrence count badge
     var titleEl = document.createElement('div');
     titleEl.className = 'suggestion-title';
-    titleEl.textContent = suggestion.title;
+    titleEl.innerHTML = escapeHtml(suggestion.title);
+    if (hasSiblings) {
+      titleEl.innerHTML += ' <span class="occurrence-badge">' + siblings.length + ' occurrences</span>';
+    }
     card.appendChild(titleEl);
 
     // Context snippet — shows where in the text this issue is
@@ -3042,31 +3263,29 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
-    var siblings = getSiblings(suggestion);
-    var hasSiblings = siblings.length > 1;
-
     if (suggestion.replacement !== undefined) {
-      var applyBtn = document.createElement('button');
-      applyBtn.type = 'button';
-      applyBtn.className = 'btn btn-primary btn-sm';
-      applyBtn.textContent = 'Apply';
-      applyBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (onApply) onApply(suggestion);
-        dismiss(suggestion);
-      });
-      actions.appendChild(applyBtn);
-
       if (hasSiblings) {
+        // For grouped cards, primary action is "Apply all"
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
-        applyAllBtn.className = 'btn btn-primary btn-sm btn-batch';
+        applyAllBtn.className = 'btn btn-primary btn-sm';
         applyAllBtn.textContent = 'Apply all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           applyAll(suggestion);
         });
         actions.appendChild(applyAllBtn);
+      } else {
+        var applyBtn = document.createElement('button');
+        applyBtn.type = 'button';
+        applyBtn.className = 'btn btn-primary btn-sm';
+        applyBtn.textContent = 'Apply';
+        applyBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (onApply) onApply(suggestion);
+          dismiss(suggestion);
+        });
+        actions.appendChild(applyBtn);
       }
     } else {
       var reviewBtn = document.createElement('button');
@@ -3085,24 +3304,16 @@ const Suggestions = (function () {
     var dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
     dismissBtn.className = 'btn btn-secondary btn-sm';
-    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.textContent = hasSiblings ? 'Dismiss all' : 'Dismiss';
     dismissBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      dismiss(suggestion);
+      if (hasSiblings) {
+        dismissAll(suggestion);
+      } else {
+        dismiss(suggestion);
+      }
     });
     actions.appendChild(dismissBtn);
-
-    if (hasSiblings) {
-      var ignoreAllBtn = document.createElement('button');
-      ignoreAllBtn.type = 'button';
-      ignoreAllBtn.className = 'btn btn-secondary btn-sm btn-batch';
-      ignoreAllBtn.textContent = 'Ignore all (' + siblings.length + ')';
-      ignoreAllBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        dismissAll(suggestion);
-      });
-      actions.appendChild(ignoreAllBtn);
-    }
 
     card.appendChild(actions);
     return card;
@@ -3217,7 +3428,7 @@ const Suggestions = (function () {
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
-          Suggestions.setCorrectness(results);
+          processQuickCheckResults(results);
         }
       });
     });
@@ -3240,7 +3451,7 @@ const Suggestions = (function () {
       var text = Editor.getText();
       QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
-        Suggestions.setCorrectness(results);
+        processQuickCheckResults(results);
       });
     });
 
@@ -3296,7 +3507,7 @@ const Suggestions = (function () {
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
             lastCheckVersion = v;
-            Suggestions.setCorrectness(results);
+            processQuickCheckResults(results);
           });
         }
         pendingRestore = null;
@@ -3319,7 +3530,7 @@ const Suggestions = (function () {
       Stats.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
-        Suggestions.setCorrectness(results);
+        processQuickCheckResults(results);
       });
     }
   }
@@ -3362,6 +3573,33 @@ const Suggestions = (function () {
       }
 
       Suggestions.setClarity(results || []);
+    });
+  }
+
+  // Rules that show as inline underlines in the editor rather than sidebar cards
+  var INLINE_RULES = { 'double-space': true, 'punctuation-spacing': true };
+
+  /**
+   * Split quick check results: inline issues go to editor overlay,
+   * the rest go to the suggestions sidebar.
+   */
+  function processQuickCheckResults(results) {
+    var sidebarResults = [];
+    var inlineResults = [];
+
+    results.forEach(function (r) {
+      if (INLINE_RULES[r.ruleId] && r.replacement !== undefined) {
+        inlineResults.push(r);
+      } else {
+        sidebarResults.push(r);
+      }
+    });
+
+    Suggestions.setCorrectness(sidebarResults);
+
+    // Show inline marks in editor overlay
+    Editor.showInlineMarks(inlineResults, function (mark) {
+      Editor.applyReplacement(mark.start, mark.end, mark.replacement);
     });
   }
 
@@ -3432,7 +3670,7 @@ const Suggestions = (function () {
     updateSaveStatus('unsaved');
     QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
       lastCheckVersion = v;
-      Suggestions.setCorrectness(results);
+      processQuickCheckResults(results);
     });
   }
 
@@ -3584,7 +3822,7 @@ const Suggestions = (function () {
             // Run quick checks
             QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
               lastCheckVersion = v;
-              Suggestions.setCorrectness(results);
+              processQuickCheckResults(results);
             });
           }
           draftsModal.hidden = true;

@@ -229,6 +229,28 @@ const Suggestions = (function () {
     renderClarityGroup(clarityBody, clar);
   }
 
+  /**
+   * Deduplicate suggestions: merge items with the same ruleId + original text
+   * into a single representative item with a siblings count.
+   * Returns array of { suggestion, siblings } objects.
+   */
+  function deduplicateSuggestions(suggestions) {
+    var groups = {};
+    var order = [];
+    suggestions.forEach(function (s) {
+      var key = getSiblingKey(s);
+      if (!groups[key]) {
+        groups[key] = [];
+        order.push(key);
+      }
+      groups[key].push(s);
+    });
+
+    return order.map(function (key) {
+      return { suggestion: groups[key][0], siblings: groups[key] };
+    });
+  }
+
   function renderGroup(container, suggestions, groupClass) {
     container.innerHTML = '';
 
@@ -240,42 +262,83 @@ const Suggestions = (function () {
       return;
     }
 
+    // Deduplicate: group same rule+original into single cards
+    var deduped = deduplicateSuggestions(suggestions);
+
     // Group by category
     var categories = {};
-    suggestions.forEach(function (s) {
-      var cat = s.category || 'Other';
+    deduped.forEach(function (d) {
+      var cat = d.suggestion.category || 'Other';
       if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(s);
+      categories[cat].push(d);
     });
 
-    Object.keys(categories).forEach(function (cat) {
+    var catKeys = Object.keys(categories);
+    var singleCategory = catKeys.length === 1;
+
+    catKeys.forEach(function (cat) {
       var items = categories[cat];
-      var catGroup = document.createElement('div');
-      catGroup.className = 'category-group';
 
-      var catHeader = document.createElement('button');
-      catHeader.type = 'button';
-      catHeader.className = 'category-header';
-      catHeader.setAttribute('aria-expanded', 'true');
-      catHeader.innerHTML =
-        '<span>' + escapeHtml(cat) + '</span>' +
-        '<span class="category-count">' + items.length + '</span>';
-      catHeader.addEventListener('click', function () {
-        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
-        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-      });
-      catGroup.appendChild(catHeader);
+      if (singleCategory) {
+        items.forEach(function (d) {
+          container.appendChild(createCard(d.suggestion, groupClass, d.siblings));
+        });
+        return;
+      }
 
-      var catBody = document.createElement('div');
-      catBody.className = 'category-body';
-
-      items.forEach(function (s) {
-        catBody.appendChild(createCard(s, groupClass));
-      });
-
-      catGroup.appendChild(catBody);
-      container.appendChild(catGroup);
+      container.appendChild(buildCategoryGroup(cat, items, groupClass));
     });
+  }
+
+  /**
+   * Build a collapsible category sub-group.
+   * Starts collapsed — click the header to expand.
+   */
+  function buildCategoryGroup(cat, items, groupClass) {
+    var catGroup = document.createElement('div');
+    catGroup.className = 'category-group';
+
+    // Count total individual issues (items are deduped groups)
+    var totalIssues = 0;
+    items.forEach(function (d) {
+      totalIssues += d.siblings.length;
+    });
+
+    // Peek text: first item's title, e.g. "Missing capital letter, ..."
+    var peekTitles = [];
+    var seen = {};
+    items.forEach(function (d) {
+      var t = d.suggestion.title || '';
+      if (t && !seen[t]) { seen[t] = true; peekTitles.push(t); }
+    });
+    var peek = peekTitles.slice(0, 2).join(', ');
+    if (peekTitles.length > 2) peek += ', ...';
+
+    var catHeader = document.createElement('button');
+    catHeader.type = 'button';
+    catHeader.className = 'category-header';
+    catHeader.setAttribute('aria-expanded', 'false');
+    catHeader.innerHTML =
+      '<span class="category-label">' +
+        '<span class="category-name">' + escapeHtml(cat) + '</span>' +
+        '<span class="category-peek">' + escapeHtml(peek) + '</span>' +
+      '</span>' +
+      '<span class="category-count">' + totalIssues + '</span>';
+    catHeader.addEventListener('click', function () {
+      var expanded = catHeader.getAttribute('aria-expanded') === 'true';
+      catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    });
+    catGroup.appendChild(catHeader);
+
+    var catBody = document.createElement('div');
+    catBody.className = 'category-body';
+
+    items.forEach(function (d) {
+      catBody.appendChild(createCard(d.suggestion, groupClass, d.siblings));
+    });
+
+    catGroup.appendChild(catBody);
+    return catGroup;
   }
 
   function renderClarityGroup(container, suggestions) {
@@ -297,41 +360,31 @@ const Suggestions = (function () {
       return;
     }
 
+    // Deduplicate
+    var deduped = deduplicateSuggestions(suggestions);
+
     // Group by category
     var categories = {};
-    suggestions.forEach(function (s) {
-      var cat = s.category || 'Other';
+    deduped.forEach(function (d) {
+      var cat = d.suggestion.category || 'Other';
       if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(s);
+      categories[cat].push(d);
     });
 
-    Object.keys(categories).forEach(function (cat) {
+    var catKeys = Object.keys(categories);
+    var singleCategory = catKeys.length === 1;
+
+    catKeys.forEach(function (cat) {
       var items = categories[cat];
-      var catGroup = document.createElement('div');
-      catGroup.className = 'category-group';
 
-      var catHeader = document.createElement('button');
-      catHeader.type = 'button';
-      catHeader.className = 'category-header';
-      catHeader.setAttribute('aria-expanded', 'true');
-      catHeader.innerHTML =
-        '<span>' + escapeHtml(cat) + '</span>' +
-        '<span class="category-count">' + items.length + '</span>';
-      catHeader.addEventListener('click', function () {
-        var expanded = catHeader.getAttribute('aria-expanded') === 'true';
-        catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-      });
-      catGroup.appendChild(catHeader);
+      if (singleCategory) {
+        items.forEach(function (d) {
+          container.appendChild(createCard(d.suggestion, 'clarity', d.siblings));
+        });
+        return;
+      }
 
-      var catBody = document.createElement('div');
-      catBody.className = 'category-body';
-
-      items.forEach(function (s) {
-        catBody.appendChild(createCard(s, 'clarity'));
-      });
-
-      catGroup.appendChild(catBody);
-      container.appendChild(catGroup);
+      container.appendChild(buildCategoryGroup(cat, items, 'clarity'));
     });
   }
 
@@ -383,10 +436,14 @@ const Suggestions = (function () {
     return { before: ctxBefore, target: ctxTarget, after: ctxAfter };
   }
 
-  function createCard(suggestion, groupClass) {
+  function createCard(suggestion, groupClass, siblings) {
     var card = document.createElement('div');
     card.className = 'suggestion-card ' + groupClass;
     card.dataset.id = suggestion.id;
+
+    // siblings is the deduped group (defaults to just this suggestion)
+    if (!siblings) siblings = [suggestion];
+    var hasSiblings = siblings.length > 1;
 
     if (suggestion.id === activeSuggestionId) {
       card.classList.add('active');
@@ -400,9 +457,13 @@ const Suggestions = (function () {
       if (onSelect) onSelect(suggestion);
     });
 
+    // Title row with occurrence count badge
     var titleEl = document.createElement('div');
     titleEl.className = 'suggestion-title';
-    titleEl.textContent = suggestion.title;
+    titleEl.innerHTML = escapeHtml(suggestion.title);
+    if (hasSiblings) {
+      titleEl.innerHTML += ' <span class="occurrence-badge">' + siblings.length + ' occurrences</span>';
+    }
     card.appendChild(titleEl);
 
     // Context snippet — shows where in the text this issue is
@@ -437,31 +498,29 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
-    var siblings = getSiblings(suggestion);
-    var hasSiblings = siblings.length > 1;
-
     if (suggestion.replacement !== undefined) {
-      var applyBtn = document.createElement('button');
-      applyBtn.type = 'button';
-      applyBtn.className = 'btn btn-primary btn-sm';
-      applyBtn.textContent = 'Apply';
-      applyBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (onApply) onApply(suggestion);
-        dismiss(suggestion);
-      });
-      actions.appendChild(applyBtn);
-
       if (hasSiblings) {
+        // For grouped cards, primary action is "Apply all"
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
-        applyAllBtn.className = 'btn btn-primary btn-sm btn-batch';
+        applyAllBtn.className = 'btn btn-primary btn-sm';
         applyAllBtn.textContent = 'Apply all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           applyAll(suggestion);
         });
         actions.appendChild(applyAllBtn);
+      } else {
+        var applyBtn = document.createElement('button');
+        applyBtn.type = 'button';
+        applyBtn.className = 'btn btn-primary btn-sm';
+        applyBtn.textContent = 'Apply';
+        applyBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (onApply) onApply(suggestion);
+          dismiss(suggestion);
+        });
+        actions.appendChild(applyBtn);
       }
     } else {
       var reviewBtn = document.createElement('button');
@@ -480,24 +539,16 @@ const Suggestions = (function () {
     var dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
     dismissBtn.className = 'btn btn-secondary btn-sm';
-    dismissBtn.textContent = 'Dismiss';
+    dismissBtn.textContent = hasSiblings ? 'Dismiss all' : 'Dismiss';
     dismissBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      dismiss(suggestion);
+      if (hasSiblings) {
+        dismissAll(suggestion);
+      } else {
+        dismiss(suggestion);
+      }
     });
     actions.appendChild(dismissBtn);
-
-    if (hasSiblings) {
-      var ignoreAllBtn = document.createElement('button');
-      ignoreAllBtn.type = 'button';
-      ignoreAllBtn.className = 'btn btn-secondary btn-sm btn-batch';
-      ignoreAllBtn.textContent = 'Ignore all (' + siblings.length + ')';
-      ignoreAllBtn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        dismissAll(suggestion);
-      });
-      actions.appendChild(ignoreAllBtn);
-    }
 
     card.appendChild(actions);
     return card;

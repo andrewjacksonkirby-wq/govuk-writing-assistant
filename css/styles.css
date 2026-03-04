@@ -244,6 +244,14 @@ body {
   color: var(--color-sensitive);
 }
 
+.editor-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .editor {
   flex: 1;
   padding: var(--spacing-lg);
@@ -256,6 +264,30 @@ body {
   white-space: pre-wrap;
   word-wrap: break-word;
   min-height: 200px;
+}
+
+.inline-marks-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.inline-mark {
+  position: absolute;
+  pointer-events: auto;
+  cursor: pointer;
+  border-bottom: 2px dotted var(--color-correctness);
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.inline-mark:hover {
+  background: var(--color-correctness-bg);
+  border-bottom-style: solid;
 }
 
 .editor:focus {
@@ -392,7 +424,10 @@ body {
 
 /* ===== Category sub-groups ===== */
 .category-group {
-  margin-bottom: var(--spacing-xs);
+  margin-bottom: 2px;
+  border: 1px solid var(--color-border-light);
+  border-radius: var(--radius);
+  overflow: hidden;
 }
 
 .category-header {
@@ -400,29 +435,71 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
-  padding: var(--spacing-xs) var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-sm);
   border: none;
-  background: none;
+  background: var(--color-bg);
   cursor: pointer;
   font-family: var(--font-main);
   font-size: 13px;
-  font-weight: 500;
-  color: var(--color-text-secondary);
+  font-weight: 600;
+  color: var(--color-text);
   text-align: left;
-  border-radius: var(--radius);
+  border-radius: 0;
+  gap: var(--spacing-xs);
+}
+
+.category-header::before {
+  content: '\25B6';
+  font-size: 9px;
+  color: var(--color-text-muted);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+
+.category-header[aria-expanded="true"]::before {
+  transform: rotate(90deg);
 }
 
 .category-header:hover {
-  background: var(--color-bg);
+  background: var(--color-border-light);
 }
 
 .category-header[aria-expanded="false"] + .category-body {
   display: none;
 }
 
-.category-count {
+.category-label {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.category-name {
+  font-weight: 600;
+}
+
+.category-peek {
   font-size: 12px;
+  font-weight: 400;
   color: var(--color-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-header[aria-expanded="true"] .category-peek {
+  display: none;
+}
+
+.category-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-surface);
+  border-radius: 10px;
+  padding: 1px 8px;
+  flex-shrink: 0;
 }
 
 /* ===== Suggestion cards ===== */
@@ -459,6 +536,16 @@ body {
   font-weight: 600;
   margin-bottom: 2px;
   color: var(--color-text);
+}
+
+.occurrence-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  background: var(--color-bg);
+  border-radius: 10px;
+  padding: 1px 8px;
+  vertical-align: middle;
 }
 
 .suggestion-context {

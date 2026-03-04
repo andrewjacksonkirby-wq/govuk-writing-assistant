@@ -77,7 +77,7 @@
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
-          Suggestions.setCorrectness(results);
+          processQuickCheckResults(results);
         }
       });
     });
@@ -100,7 +100,7 @@
       var text = Editor.getText();
       QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
-        Suggestions.setCorrectness(results);
+        processQuickCheckResults(results);
       });
     });
 
@@ -156,7 +156,7 @@
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
             lastCheckVersion = v;
-            Suggestions.setCorrectness(results);
+            processQuickCheckResults(results);
           });
         }
         pendingRestore = null;
@@ -179,7 +179,7 @@
       Stats.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
-        Suggestions.setCorrectness(results);
+        processQuickCheckResults(results);
       });
     }
   }
@@ -222,6 +222,33 @@
       }
 
       Suggestions.setClarity(results || []);
+    });
+  }
+
+  // Rules that show as inline underlines in the editor rather than sidebar cards
+  var INLINE_RULES = { 'double-space': true, 'punctuation-spacing': true };
+
+  /**
+   * Split quick check results: inline issues go to editor overlay,
+   * the rest go to the suggestions sidebar.
+   */
+  function processQuickCheckResults(results) {
+    var sidebarResults = [];
+    var inlineResults = [];
+
+    results.forEach(function (r) {
+      if (INLINE_RULES[r.ruleId] && r.replacement !== undefined) {
+        inlineResults.push(r);
+      } else {
+        sidebarResults.push(r);
+      }
+    });
+
+    Suggestions.setCorrectness(sidebarResults);
+
+    // Show inline marks in editor overlay
+    Editor.showInlineMarks(inlineResults, function (mark) {
+      Editor.applyReplacement(mark.start, mark.end, mark.replacement);
     });
   }
 
@@ -292,7 +319,7 @@
     updateSaveStatus('unsaved');
     QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
       lastCheckVersion = v;
-      Suggestions.setCorrectness(results);
+      processQuickCheckResults(results);
     });
   }
 
@@ -444,7 +471,7 @@
             // Run quick checks
             QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
               lastCheckVersion = v;
-              Suggestions.setCorrectness(results);
+              processQuickCheckResults(results);
             });
           }
           draftsModal.hidden = true;

@@ -17,6 +17,7 @@ const Editor = (function () {
 
   function handleInput() {
     clearHighlights();
+    clearInlineMarks();
     documentVersion++;
     notifyChange();
   }
@@ -180,6 +181,73 @@ const Editor = (function () {
     }
   }
 
+  // ===== Inline marks overlay (for spacing issues etc.) =====
+  let overlayEl = null;
+  let inlineMarkCallback = null;
+
+  /**
+   * Show inline underline marks in the editor overlay.
+   * marks: array of {start, end, replacement, title}
+   * onClick: callback(mark) when user clicks a mark
+   */
+  function showInlineMarks(marks, onClick) {
+    if (!overlayEl) {
+      overlayEl = document.getElementById('inlineMarksOverlay');
+    }
+    if (!overlayEl || !editorEl) return;
+    inlineMarkCallback = onClick;
+    overlayEl.innerHTML = '';
+
+    if (!marks || marks.length === 0) return;
+
+    const text = getText();
+    if (!text) return;
+
+    // We need to map text offsets to screen positions using Range API
+    // First, ensure editor has a single text node (no marks)
+    clearHighlights();
+
+    marks.forEach(function (m) {
+      if (m.start < 0 || m.end > text.length) return;
+
+      const startInfo = getNodeOffset(editorEl, m.start);
+      const endInfo = getNodeOffset(editorEl, m.end);
+      if (!startInfo || !endInfo) return;
+
+      const range = document.createRange();
+      range.setStart(startInfo.node, startInfo.offset);
+      range.setEnd(endInfo.node, endInfo.offset);
+
+      const rects = range.getClientRects();
+      const editorRect = editorEl.getBoundingClientRect();
+
+      for (let i = 0; i < rects.length; i++) {
+        const rect = rects[i];
+        const span = document.createElement('span');
+        span.className = 'inline-mark';
+        span.style.left = (rect.left - editorRect.left + editorEl.scrollLeft) + 'px';
+        span.style.top = (rect.top - editorRect.top + editorEl.scrollTop) + 'px';
+        span.style.width = rect.width + 'px';
+        span.style.height = rect.height + 'px';
+        span.title = m.title || 'Click to fix';
+        span.addEventListener('click', function () {
+          if (inlineMarkCallback) inlineMarkCallback(m);
+        });
+        overlayEl.appendChild(span);
+      }
+    });
+  }
+
+  /**
+   * Clear inline marks overlay.
+   */
+  function clearInlineMarks() {
+    if (!overlayEl) {
+      overlayEl = document.getElementById('inlineMarksOverlay');
+    }
+    if (overlayEl) overlayEl.innerHTML = '';
+  }
+
   return {
     init: init,
     getText: getText,
@@ -189,6 +257,8 @@ const Editor = (function () {
     getElement: getElement,
     applyReplacement: applyReplacement,
     highlightRange: highlightRange,
-    clearHighlights: clearHighlights
+    clearHighlights: clearHighlights,
+    showInlineMarks: showInlineMarks,
+    clearInlineMarks: clearInlineMarks
   };
 })();
