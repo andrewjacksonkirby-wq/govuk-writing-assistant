@@ -462,25 +462,35 @@ const QuickChecks = (function () {
 
       var charIndex = match.index + match[1].length;
       var theChar = text[charIndex];
-      results.push({
-        id: makeId(),
-        ruleId: 'capitalisation',
-        source: 'regex',
-        group: 'correctness',
-        category: 'Capitalisation',
-        start: charIndex,
-        end: charIndex + 1,
-        message: 'Sentences should start with a capital letter',
-        title: 'Missing capital letter',
-        replacement: theChar.toUpperCase(),
-        original: theChar
-      });
+
+      // Skip if the word is a known missing-letter pattern (e.g. "nternal" -> "internal")
+      var wordAfter = text.substring(charIndex).match(/^([a-z]+)/i);
+      var isMissingWord = wordAfter && MISSING_FIRST_LETTER[wordAfter[1].toLowerCase()];
+      if (!isMissingWord) {
+        results.push({
+          id: makeId(),
+          ruleId: 'capitalisation',
+          source: 'regex',
+          group: 'correctness',
+          category: 'Capitalisation',
+          start: charIndex,
+          end: charIndex + 1,
+          message: 'Sentences should start with a capital letter',
+          title: 'Missing capital letter',
+          replacement: theChar.toUpperCase(),
+          original: theChar
+        });
+      }
     }
 
     // Also check start of text (first non-whitespace character)
     var startMatch = text.match(/^\s*([a-z])/);
     if (startMatch) {
       var idx = text.indexOf(startMatch[1]);
+      // Skip if the first word is a known missing-letter pattern (e.g. "nternal" -> "internal")
+      var firstWordMatch = text.substring(idx).match(/^([a-z]+)/i);
+      var isMissingLetter = firstWordMatch && MISSING_FIRST_LETTER[firstWordMatch[1].toLowerCase()];
+      if (!isMissingLetter) {
       results.push({
         id: makeId(),
         ruleId: 'capitalisation',
@@ -494,6 +504,7 @@ const QuickChecks = (function () {
         replacement: startMatch[1].toUpperCase(),
         original: startMatch[1]
       });
+      }
     }
 
     return results;
