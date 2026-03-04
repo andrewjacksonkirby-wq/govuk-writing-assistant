@@ -1100,10 +1100,14 @@ body {
 
 /* ===== Inline issue underlines (Grammarly-style) ===== */
 .issue-underline {
+  display: inline;
   background: transparent;
   border-radius: 0;
   cursor: pointer;
   transition: background 0.2s ease;
+  text-decoration: none;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /* --- Correctness (red) --- */

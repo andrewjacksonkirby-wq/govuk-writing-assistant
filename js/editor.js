@@ -266,8 +266,18 @@ const Editor = (function () {
   }
 
   /**
+   * Rules that flag large structural ranges (whole sentences/paragraphs)
+   * should only appear in the sidebar, not as inline underlines.
+   * Underlining an entire sentence is visually useless — it looks like
+   * the whole paragraph is one error.
+   */
+  var STRUCTURAL_RULES = ['sentence-length'];
+
+  /**
    * Render underline marks into the editor content.
    * Splits text into segments and wraps flagged ranges with <mark> elements.
+   * Only word/phrase-level issues get underlined; structural issues (e.g.
+   * sentence length) are excluded so they don't swallow the whole paragraph.
    */
   function renderUnderlines() {
     if (!editorEl) return;
@@ -280,12 +290,28 @@ const Editor = (function () {
       return;
     }
 
-    // Sort marks by start position, then by length (longer first for nesting)
-    var marks = currentUnderlines.slice().sort(function (a, b) {
-      return a.start - b.start || (b.end - b.start) - (a.end - a.start);
+    // 1. Filter out structural/sentence-level rules — they should not
+    //    produce inline underlines (they still appear in the sidebar).
+    var wordLevel = currentUnderlines.filter(function (m) {
+      return STRUCTURAL_RULES.indexOf(m.ruleId) === -1;
     });
 
-    // Remove overlapping marks (keep first/higher priority)
+    if (wordLevel.length === 0) {
+      if (editorEl.querySelector('.issue-underline')) {
+        editorEl.textContent = text;
+      }
+      return;
+    }
+
+    // 2. Sort marks by start position, then shortest first so that
+    //    small word-level marks are preferred over any remaining wide marks.
+    var marks = wordLevel.slice().sort(function (a, b) {
+      return a.start - b.start || (a.end - a.start) - (b.end - b.start);
+    });
+
+    // 3. Remove overlapping marks — keep the more specific (shorter) one.
+    //    Because we sorted shortest-first at each position, the first
+    //    mark we encounter at a position is the most specific.
     var filtered = [];
     var lastEnd = -1;
     marks.forEach(function (m) {
