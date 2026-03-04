@@ -271,6 +271,7 @@ const FullCheck = (function () {
       body: JSON.stringify({
         model: config.model,
         max_tokens: 2048,
+        source: { type: 'web_app' },
         messages: [{ role: 'user', content: prompt }]
       })
     })
