@@ -422,86 +422,6 @@ body {
   padding: 0 var(--spacing-sm);
 }
 
-/* ===== Category sub-groups ===== */
-.category-group {
-  margin-bottom: 2px;
-  border: 1px solid var(--color-border-light);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-
-.category-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: var(--spacing-sm) var(--spacing-sm);
-  border: none;
-  background: var(--color-bg);
-  cursor: pointer;
-  font-family: var(--font-main);
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text);
-  text-align: left;
-  border-radius: 0;
-  gap: var(--spacing-xs);
-}
-
-.category-header::before {
-  content: '\25B6';
-  font-size: 9px;
-  color: var(--color-text-muted);
-  transition: transform 0.15s;
-  flex-shrink: 0;
-}
-
-.category-header[aria-expanded="true"]::before {
-  transform: rotate(90deg);
-}
-
-.category-header:hover {
-  background: var(--color-border-light);
-}
-
-.category-header[aria-expanded="false"] + .category-body {
-  display: none;
-}
-
-.category-label {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
-
-.category-name {
-  font-weight: 600;
-}
-
-.category-peek {
-  font-size: 12px;
-  font-weight: 400;
-  color: var(--color-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.category-header[aria-expanded="true"] .category-peek {
-  display: none;
-}
-
-.category-count {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--color-text-secondary);
-  background: var(--color-surface);
-  border-radius: 10px;
-  padding: 1px 8px;
-  flex-shrink: 0;
-}
-
 /* ===== Suggestion cards ===== */
 .suggestion-card {
   padding: var(--spacing-sm) var(--spacing-md);
@@ -531,6 +451,27 @@ body {
   border-left: 3px solid var(--color-clarity);
 }
 
+.suggestion-cat-tag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 1px 8px;
+  border-radius: 3px;
+  margin-bottom: var(--spacing-xs);
+}
+
+.suggestion-cat-tag.correctness {
+  background: var(--color-correctness-bg);
+  color: var(--color-correctness);
+}
+
+.suggestion-cat-tag.clarity {
+  background: var(--color-clarity-bg);
+  color: var(--color-clarity);
+}
+
 .suggestion-title {
   font-size: 14px;
   font-weight: 600;
@@ -539,12 +480,13 @@ body {
 }
 
 .occurrence-badge {
+  display: inline-block;
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-text-secondary);
+  color: var(--color-text-muted);
   background: var(--color-bg);
   border-radius: 10px;
-  padding: 1px 8px;
+  padding: 1px 7px;
   vertical-align: middle;
 }
 

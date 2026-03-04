@@ -1,6 +1,11 @@
 /**
  * Suggestions module
  * Manages the sidebar: rendering, filtering, grouping, apply/dismiss actions.
+ *
+ * Layout follows the Grammarly pattern:
+ *   - Two top-level collapsible groups: Correctness, Clarity & style
+ *   - Flat list of suggestion cards within each group (no nested sub-groups)
+ *   - Duplicate issues (same rule + same original text) merged into one card
  */
 const Suggestions = (function () {
   var correctnessSuggestions = [];
@@ -204,6 +209,8 @@ const Suggestions = (function () {
     return correctnessSuggestions.concat(claritySuggestions);
   }
 
+  // ===== Rendering =====
+
   /**
    * Render the full sidebar.
    */
@@ -222,16 +229,16 @@ const Suggestions = (function () {
     correctnessGroup.classList.toggle('hidden', activeFilter === 'clarity');
     clarityGroup.classList.toggle('hidden', activeFilter === 'correctness');
 
-    // Render correctness
-    renderGroup(correctnessBody, corr, 'correctness');
+    // Render correctness — flat card list (Grammarly-style)
+    renderCardList(correctnessBody, corr, 'correctness');
 
     // Render clarity
-    renderClarityGroup(clarityBody, clar);
+    renderClarityCards(clarityBody, clar);
   }
 
   /**
    * Deduplicate suggestions: merge items with the same ruleId + original text
-   * into a single representative item with a siblings count.
+   * into a single representative item with a siblings array.
    * Returns array of { suggestion, siblings } objects.
    */
   function deduplicateSuggestions(suggestions) {
@@ -251,7 +258,11 @@ const Suggestions = (function () {
     });
   }
 
-  function renderGroup(container, suggestions, groupClass) {
+  /**
+   * Render a flat list of suggestion cards (no sub-groups).
+   * Duplicates are merged into a single card.
+   */
+  function renderCardList(container, suggestions, groupClass) {
     container.innerHTML = '';
 
     if (suggestions.length === 0) {
@@ -262,86 +273,17 @@ const Suggestions = (function () {
       return;
     }
 
-    // Deduplicate: group same rule+original into single cards
     var deduped = deduplicateSuggestions(suggestions);
 
-    // Group by category
-    var categories = {};
     deduped.forEach(function (d) {
-      var cat = d.suggestion.category || 'Other';
-      if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(d);
-    });
-
-    var catKeys = Object.keys(categories);
-    var singleCategory = catKeys.length === 1;
-
-    catKeys.forEach(function (cat) {
-      var items = categories[cat];
-
-      if (singleCategory) {
-        items.forEach(function (d) {
-          container.appendChild(createCard(d.suggestion, groupClass, d.siblings));
-        });
-        return;
-      }
-
-      container.appendChild(buildCategoryGroup(cat, items, groupClass));
+      container.appendChild(createCard(d.suggestion, groupClass, d.siblings));
     });
   }
 
   /**
-   * Build a collapsible category sub-group.
-   * Starts collapsed — click the header to expand.
+   * Render clarity cards (with "run check" empty state).
    */
-  function buildCategoryGroup(cat, items, groupClass) {
-    var catGroup = document.createElement('div');
-    catGroup.className = 'category-group';
-
-    // Count total individual issues (items are deduped groups)
-    var totalIssues = 0;
-    items.forEach(function (d) {
-      totalIssues += d.siblings.length;
-    });
-
-    // Peek text: first item's title, e.g. "Missing capital letter, ..."
-    var peekTitles = [];
-    var seen = {};
-    items.forEach(function (d) {
-      var t = d.suggestion.title || '';
-      if (t && !seen[t]) { seen[t] = true; peekTitles.push(t); }
-    });
-    var peek = peekTitles.slice(0, 2).join(', ');
-    if (peekTitles.length > 2) peek += ', ...';
-
-    var catHeader = document.createElement('button');
-    catHeader.type = 'button';
-    catHeader.className = 'category-header';
-    catHeader.setAttribute('aria-expanded', 'false');
-    catHeader.innerHTML =
-      '<span class="category-label">' +
-        '<span class="category-name">' + escapeHtml(cat) + '</span>' +
-        '<span class="category-peek">' + escapeHtml(peek) + '</span>' +
-      '</span>' +
-      '<span class="category-count">' + totalIssues + '</span>';
-    catHeader.addEventListener('click', function () {
-      var expanded = catHeader.getAttribute('aria-expanded') === 'true';
-      catHeader.setAttribute('aria-expanded', expanded ? 'false' : 'true');
-    });
-    catGroup.appendChild(catHeader);
-
-    var catBody = document.createElement('div');
-    catBody.className = 'category-body';
-
-    items.forEach(function (d) {
-      catBody.appendChild(createCard(d.suggestion, groupClass, d.siblings));
-    });
-
-    catGroup.appendChild(catBody);
-    return catGroup;
-  }
-
-  function renderClarityGroup(container, suggestions) {
+  function renderClarityCards(container, suggestions) {
     container.innerHTML = '';
 
     if (!hasRunFullCheck) {
@@ -360,33 +302,14 @@ const Suggestions = (function () {
       return;
     }
 
-    // Deduplicate
     var deduped = deduplicateSuggestions(suggestions);
 
-    // Group by category
-    var categories = {};
     deduped.forEach(function (d) {
-      var cat = d.suggestion.category || 'Other';
-      if (!categories[cat]) categories[cat] = [];
-      categories[cat].push(d);
-    });
-
-    var catKeys = Object.keys(categories);
-    var singleCategory = catKeys.length === 1;
-
-    catKeys.forEach(function (cat) {
-      var items = categories[cat];
-
-      if (singleCategory) {
-        items.forEach(function (d) {
-          container.appendChild(createCard(d.suggestion, 'clarity', d.siblings));
-        });
-        return;
-      }
-
-      container.appendChild(buildCategoryGroup(cat, items, 'clarity'));
+      container.appendChild(createCard(d.suggestion, 'clarity', d.siblings));
     });
   }
+
+  // ===== Context snippets =====
 
   /**
    * Get the full editor text for context snippets.
@@ -436,12 +359,17 @@ const Suggestions = (function () {
     return { before: ctxBefore, target: ctxTarget, after: ctxAfter };
   }
 
+  // ===== Card creation =====
+
+  /**
+   * Create a suggestion card element.
+   * Follows Grammarly layout: category tag, context, message, preview, actions.
+   */
   function createCard(suggestion, groupClass, siblings) {
     var card = document.createElement('div');
     card.className = 'suggestion-card ' + groupClass;
     card.dataset.id = suggestion.id;
 
-    // siblings is the deduped group (defaults to just this suggestion)
     if (!siblings) siblings = [suggestion];
     var hasSiblings = siblings.length > 1;
 
@@ -449,7 +377,7 @@ const Suggestions = (function () {
       card.classList.add('active');
     }
 
-    // Click card to select suggestion
+    // Click card to select and highlight in editor
     card.addEventListener('click', function (e) {
       if (e.target.closest('.suggestion-actions')) return;
       activeSuggestionId = suggestion.id;
@@ -457,16 +385,29 @@ const Suggestions = (function () {
       if (onSelect) onSelect(suggestion);
     });
 
-    // Title row with occurrence count badge
+    // --- Category tag (small coloured label) ---
+    if (suggestion.category) {
+      var catTag = document.createElement('span');
+      catTag.className = 'suggestion-cat-tag ' + groupClass;
+      catTag.textContent = suggestion.category;
+      card.appendChild(catTag);
+    }
+
+    // --- Title + occurrence badge ---
     var titleEl = document.createElement('div');
     titleEl.className = 'suggestion-title';
-    titleEl.innerHTML = escapeHtml(suggestion.title);
-    if (hasSiblings) {
-      titleEl.innerHTML += ' <span class="occurrence-badge">' + siblings.length + ' occurrences</span>';
-    }
+    titleEl.textContent = suggestion.title || suggestion.message;
     card.appendChild(titleEl);
 
-    // Context snippet — shows where in the text this issue is
+    if (hasSiblings) {
+      var badge = document.createElement('span');
+      badge.className = 'occurrence-badge';
+      badge.textContent = siblings.length + '\u00d7'; // × symbol
+      titleEl.appendChild(document.createTextNode(' '));
+      titleEl.appendChild(badge);
+    }
+
+    // --- Context snippet ---
     var ctx = buildContextSnippet(suggestion);
     if (ctx) {
       var ctxEl = document.createElement('div');
@@ -478,29 +419,29 @@ const Suggestions = (function () {
       card.appendChild(ctxEl);
     }
 
+    // --- Message ---
     var msgEl = document.createElement('div');
     msgEl.className = 'suggestion-message';
     msgEl.textContent = suggestion.message;
     card.appendChild(msgEl);
 
-    // Preview (if replacement exists)
+    // --- Replacement preview ---
     if (suggestion.replacement !== undefined && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'suggestion-preview';
       preview.innerHTML =
         '<span class="original">' + escapeHtml(suggestion.original) + '</span>' +
-        '<span class="arrow"> → </span>' +
+        '<span class="arrow"> \u2192 </span>' +
         '<span class="replacement">' + escapeHtml(suggestion.replacement) + '</span>';
       card.appendChild(preview);
     }
 
-    // Actions
+    // --- Actions ---
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
     if (suggestion.replacement !== undefined) {
       if (hasSiblings) {
-        // For grouped cards, primary action is "Apply all"
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
         applyAllBtn.className = 'btn btn-primary btn-sm';
