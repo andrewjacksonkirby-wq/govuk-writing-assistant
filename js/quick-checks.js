@@ -231,24 +231,9 @@ const QuickChecks = (function () {
       run: checkConfusedWords
     },
     {
-      id: 'tone',
-      category: 'Tone',
-      run: checkTonePatterns
-    },
-    {
       id: 'missing-letter',
       category: 'Spelling',
       run: checkMissingLetters
-    },
-    {
-      id: 'passive-voice',
-      category: 'Clarity',
-      run: checkPassiveVoice
-    },
-    {
-      id: 'sentence-length',
-      category: 'Clarity',
-      run: checkSentenceLength
     },
     {
       id: 'date-format',

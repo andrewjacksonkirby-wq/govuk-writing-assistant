@@ -273,22 +273,6 @@ const Reports = (function () {
         badgeRow.appendChild(badge);
         card.appendChild(badgeRow);
 
-        // Splitting suggestion
-        var suggestion = suggestSplit(s.text, s.words);
-        if (suggestion) {
-          var adviceEl = document.createElement('div');
-          adviceEl.className = 'report-split-advice';
-          adviceEl.textContent = suggestion.advice;
-          card.appendChild(adviceEl);
-
-          if (suggestion.splitPreview) {
-            var previewEl = document.createElement('div');
-            previewEl.className = 'report-split-preview';
-            previewEl.textContent = suggestion.splitPreview;
-            card.appendChild(previewEl);
-          }
-        }
-
         card.addEventListener('click', function () {
           if (onHighlight) onHighlight(s.start, s.end);
         });
@@ -312,109 +296,6 @@ const Reports = (function () {
     el.appendChild(valEl);
     el.appendChild(labelEl);
     return el;
-  }
-
-  // ========== Sentence splitting suggestions ==========
-
-  /**
-   * Conjunctions and connectors where a long sentence can naturally be split.
-   * Ordered by priority — earlier entries are better split points.
-   */
-  var SPLIT_CONNECTORS = [
-    // Coordinating conjunctions joining independent clauses
-    { regex: /,\s+(but|however|yet|although|though)\s+/gi, advice: 'split into two sentences' },
-    { regex: /,\s+(and|so|or)\s+(?:(?:this|that|it|they|we|he|she|I|you|the|there|these|those)\s+)/gi, advice: 'split into two sentences' },
-    { regex: /\s+(which|who|that)\s+(?:is|are|was|were|has|have|had|will|would|could|should|can|may|might)\s+/gi, advice: 'try a separate sentence' },
-    // Semicolons are natural split points
-    { regex: /;\s+/g, advice: 'replace semicolon with a full stop' },
-    // Subordinating conjunctions mid-sentence
-    { regex: /,\s+(because|since|as|while|whereas|unless|until|after|before|if|when|where)\s+/gi, advice: 'split into two sentences' },
-    // Comma + and/or without a clear subject (list-like)
-    { regex: /,\s+(and|or)\s+/gi, advice: 'split into two sentences or use a list' },
-    // Phrases that signal a new thought
-    { regex: /\s+(in addition|furthermore|moreover|as well as|in order to|as a result|for example|for instance)\s+/gi, advice: 'start a new sentence' },
-  ];
-
-  /**
-   * Analyse a long sentence and produce a concrete splitting suggestion.
-   * Returns { advice: string, splitPreview: string|null } or null.
-   */
-  function suggestSplit(sentenceText, wordCount) {
-    var words = sentenceText.match(/\b[a-zA-Z0-9']+\b/g) || [];
-
-    // Try each connector pattern to find a good split point
-    for (var i = 0; i < SPLIT_CONNECTORS.length; i++) {
-      var connector = SPLIT_CONNECTORS[i];
-      // Reset regex lastIndex
-      connector.regex.lastIndex = 0;
-      var m = connector.regex.exec(sentenceText);
-      if (m) {
-        var splitPos = m.index;
-        // Count words before the split to check it's roughly balanced
-        var before = sentenceText.substring(0, splitPos);
-        var wordsBefore = (before.match(/\b[a-zA-Z0-9']+\b/g) || []).length;
-        var wordsAfter = wordCount - wordsBefore;
-
-        // Only suggest if both halves would be at least 5 words
-        if (wordsBefore >= 5 && wordsAfter >= 5) {
-          var connectorWord = m[0].replace(/^[,;]\s+/i, '').replace(/\s+$/, '');
-          var firstPart = before.trim();
-          // Ensure first part ends with a full stop
-          if (!/[.!?]$/.test(firstPart)) firstPart += '.';
-
-          var afterText = sentenceText.substring(splitPos + m[0].length).trim();
-          // Capitalise the start of the second sentence
-          var secondPart = afterText.charAt(0).toUpperCase() + afterText.slice(1);
-
-          // For connectors like "which is" or semicolons, just start fresh
-          // For "because/since", the second sentence may need a lead-in
-          var preview = truncate(firstPart, 60) + ' \u2192 ' + truncate(secondPart, 60);
-
-          return {
-            connectorWord: connectorWord,
-            advice: 'Try splitting at "' + connectorWord + '" \u2014 ' + connector.advice,
-            splitPreview: preview,
-            wordsBefore: wordsBefore,
-            wordsAfter: wordsAfter
-          };
-        }
-      }
-    }
-
-    // Fallback: no clear connector found — give general advice based on structure
-    if (wordCount > 40) {
-      return {
-        connectorWord: null,
-        advice: 'This sentence is very long (' + wordCount + ' words). Look for a place to break it into two shorter ideas.',
-        splitPreview: null,
-        wordsBefore: 0,
-        wordsAfter: 0
-      };
-    }
-
-    // Mild overshoot — look for a comma that could become a split
-    var commaPos = sentenceText.indexOf(',', Math.floor(sentenceText.length * 0.3));
-    if (commaPos > 0) {
-      var beforeComma = sentenceText.substring(0, commaPos);
-      var commaWordsBefore = (beforeComma.match(/\b[a-zA-Z0-9']+\b/g) || []).length;
-      if (commaWordsBefore >= 8) {
-        return {
-          connectorWord: null,
-          advice: 'Try ending the sentence at the comma near word ' + commaWordsBefore + ', then start a new sentence.',
-          splitPreview: null,
-          wordsBefore: commaWordsBefore,
-          wordsAfter: wordCount - commaWordsBefore
-        };
-      }
-    }
-
-    return {
-      connectorWord: null,
-      advice: 'Try removing unnecessary words, or break this into two sentences.',
-      splitPreview: null,
-      wordsBefore: 0,
-      wordsAfter: 0
-    };
   }
 
   function truncate(text, max) {

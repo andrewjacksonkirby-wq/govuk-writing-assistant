@@ -275,6 +275,106 @@ const FullCheck = (function () {
     return s.charAt(0).toLowerCase() + s.slice(1);
   }
 
+  // ========== Sentence length (contextual) ==========
+
+  var SPLIT_CONNECTORS = [
+    { regex: /,\s+(but|however|yet|although|though)\s+/gi, advice: 'split into two sentences' },
+    { regex: /,\s+(and|so|or)\s+(?:(?:this|that|it|they|we|he|she|I|you|the|there|these|those)\s+)/gi, advice: 'split into two sentences' },
+    { regex: /\s+(which|who|that)\s+(?:is|are|was|were|has|have|had|will|would|could|should|can|may|might)\s+/gi, advice: 'try a separate sentence' },
+    { regex: /;\s+/g, advice: 'replace semicolon with a full stop' },
+    { regex: /,\s+(because|since|as|while|whereas|unless|until|after|before|if|when|where)\s+/gi, advice: 'split into two sentences' },
+    { regex: /,\s+(and|or)\s+/gi, advice: 'split into two sentences or use a list' },
+    { regex: /\s+(in addition|furthermore|moreover|as well as|in order to|as a result|for example|for instance)\s+/gi, advice: 'start a new sentence' },
+  ];
+
+  function checkSentenceLengthContextual(text) {
+    var results = [];
+    var sentenceRegex = /[^.!?]*[.!?]+/g;
+    var match;
+    while ((match = sentenceRegex.exec(text)) !== null) {
+      var sentence = match[0].trim();
+      if (!sentence) continue;
+      var words = sentence.split(/\s+/).filter(function (w) { return w.length > 0; });
+      if (words.length <= 25) continue;
+
+      // Find a split point for contextual advice
+      var advice = 'This sentence is ' + words.length + ' words (GOV.UK recommends under 25).';
+      for (var i = 0; i < SPLIT_CONNECTORS.length; i++) {
+        var conn = SPLIT_CONNECTORS[i];
+        conn.regex.lastIndex = 0;
+        var m = conn.regex.exec(sentence);
+        if (m) {
+          var before = sentence.substring(0, m.index);
+          var wordsBefore = (before.match(/\b\w+\b/g) || []).length;
+          var wordsAfter = words.length - wordsBefore;
+          if (wordsBefore >= 5 && wordsAfter >= 5) {
+            var connWord = m[0].replace(/^[,;]\s+/i, '').replace(/\s+$/, '');
+            advice += ' Try splitting at "' + connWord + '" \u2014 ' + conn.advice + '.';
+            break;
+          }
+        }
+      }
+
+      results.push({
+        id: makeId(),
+        ruleId: 'sentence-length',
+        source: 'ai',
+        group: 'clarity',
+        category: 'Sentence length',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: advice,
+        title: 'Long sentence (' + words.length + ' words)',
+        original: sentence
+      });
+    }
+    return results;
+  }
+
+  // ========== Tone patterns (contextual) ==========
+
+  var TONE_PATTERNS = [
+    { regex: /\b(I just wanted to)\b/gi, msg: 'Drop the hedge \u2014 just say what you need.', fix: null, title: 'Hedging language', modes: ['email', 'chat'] },
+    { regex: /\b(sorry to bother you)\b/gi, msg: 'No need to apologise \u2014 state your request directly.', fix: null, title: 'Unnecessary apology', modes: ['email', 'chat'] },
+    { regex: /\b(sorry for the delay)\b/gi, msg: 'Try "thanks for your patience" \u2014 it\'s more positive.', fix: 'thanks for your patience', title: 'Negative framing', modes: ['email', 'chat'] },
+    { regex: /\b(as per my last email)\b/gi, msg: 'This can sound passive-aggressive. Try "as I mentioned" or restate the point.', fix: 'as I mentioned', title: 'Passive-aggressive', modes: ['email', 'chat'] },
+    { regex: /\b(as previously stated)\b/gi, msg: 'This can sound curt. Try restating the point directly.', fix: null, title: 'Passive-aggressive', modes: ['email', 'chat'] },
+    { regex: /\b(I think maybe)\b/gi, msg: 'Pick one: "I think" or "maybe" \u2014 both together sounds unsure.', fix: 'I think', title: 'Over-hedging', modes: ['email', 'chat'] },
+    { regex: /\b(I was wondering if you could)\b/gi, msg: 'Be direct: "Could you" or "Please" works better.', fix: 'Could you', title: 'Indirect request', modes: ['email', 'chat'] },
+    { regex: /\b(does that make sense)\b/gi, msg: 'This can undermine your point. Try "let me know if you have questions".', fix: 'let me know if you have questions', title: 'Self-undermining', modes: ['email', 'chat'] },
+    { regex: /\b(please advise)\b/gi, msg: 'Try "let me know" or ask a specific question instead.', fix: 'let me know', title: 'Stiff phrasing', modes: ['email', 'chat'] },
+    { regex: /\b(please do not hesitate to)\b/gi, msg: 'Simpler: "feel free to" or just ask directly.', fix: 'feel free to', title: 'Overly formal', modes: ['email', 'chat'] },
+    { regex: /\b(I hope this email finds you well)\b/gi, msg: 'This is filler \u2014 jump straight to the point.', fix: null, title: 'Filler phrase', modes: ['email'] },
+    { regex: /\b(ASAP)\b/g, msg: 'Give a specific deadline instead of "ASAP" \u2014 it creates urgency without clarity.', fix: null, title: 'Vague urgency', modes: ['email', 'chat'] },
+    { regex: /\b(FYI)\b/g, msg: 'In formal emails, write "for your information" or just provide the context.', fix: null, title: 'Too casual', modes: ['email'] }
+  ];
+
+  function checkToneContextual(text) {
+    var results = [];
+    TONE_PATTERNS.forEach(function (entry) {
+      if (entry.modes && entry.modes.indexOf(currentMode) === -1) return;
+      entry.regex.lastIndex = 0;
+      var match;
+      while ((match = entry.regex.exec(text)) !== null) {
+        var suggestion = {
+          id: makeId(),
+          ruleId: 'tone',
+          source: 'ai',
+          group: 'clarity',
+          category: 'Tone',
+          start: match.index,
+          end: match.index + match[0].length,
+          message: entry.msg,
+          title: entry.title,
+          original: match[0]
+        };
+        if (entry.fix) suggestion.replacement = entry.fix;
+        results.push(suggestion);
+      }
+    });
+    return results;
+  }
+
   /**
    * Local simulation of AI checks for GOV.UK style issues.
    * This provides useful checks without needing an API.
@@ -378,9 +478,15 @@ const FullCheck = (function () {
         }
       }
 
-      // Check for passive voice (needs context, so lives in full check not quick checks)
+      // Contextual checks — these need judgment, so only run via "Check now"
       var passiveResults = checkPassiveVoice(text);
       results = results.concat(passiveResults);
+
+      var sentenceLengthResults = checkSentenceLengthContextual(text);
+      results = results.concat(sentenceLengthResults);
+
+      var toneResults = checkToneContextual(text);
+      results = results.concat(toneResults);
 
       // Check for overused words (3+ occurrences, excluding common words)
       var overusedResults = checkOverusedWords(text);
