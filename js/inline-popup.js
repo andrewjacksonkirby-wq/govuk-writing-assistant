@@ -15,6 +15,7 @@ const InlinePopup = (function () {
   function getCat(suggestion) {
     if (STYLE_RULES.indexOf(suggestion.ruleId) !== -1) return 'style';
     if (CLARITY_RULES.indexOf(suggestion.ruleId) !== -1) return 'clarity';
+    if (suggestion.category === 'Plain English') return 'clarity';
     if (suggestion.group === 'style') return 'style';
     if (suggestion.group === 'clarity') return 'clarity';
     return 'correctness';

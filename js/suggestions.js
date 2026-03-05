@@ -41,10 +41,11 @@ const Suggestions = (function () {
     if (['contractions', 'numbers', 'date-format', 'govuk-style', 'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'].indexOf(ruleId) !== -1) {
       return 'style';
     }
-    // Clarity: sentence length, passive voice, overused words, tone
+    // Clarity: sentence length, passive voice, overused words, tone, plain English
     if (['sentence-length', 'passive-voice', 'overused-word', 'tone', 'email-tone', 'chat-length'].indexOf(ruleId) !== -1) {
       return 'clarity';
     }
+    if (suggestion.category === 'Plain English') return 'clarity';
     // Respect explicit group from pattern definitions
     if (group === 'style') return 'style';
     if (group === 'correctness') return 'correctness';
