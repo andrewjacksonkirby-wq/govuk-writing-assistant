@@ -257,6 +257,11 @@ const QuickChecks = (function () {
     return 'qc-' + (++idCounter);
   }
 
+  var MISSING_APOSTROPHE_WORDS = new Set([
+    'dont', 'doesnt', 'cant', 'wont', 'didnt', 'isnt',
+    'wasnt', 'hasnt', 'hadnt', 'wouldnt', 'shouldnt', 'couldnt'
+  ]);
+
   /**
    * Check for common misspellings.
    */
@@ -275,16 +280,17 @@ const QuickChecks = (function () {
         if (word[0] === word[0].toUpperCase()) {
           replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
         }
+        var isMissingApostrophe = MISSING_APOSTROPHE_WORDS.has(lower);
         results.push({
           id: makeId(),
           ruleId: 'spelling',
           source: 'regex',
           group: 'correctness',
-          category: 'Spelling',
+          category: isMissingApostrophe ? 'Punctuation' : 'Spelling',
           start: match.index,
           end: match.index + word.length,
-          message: 'Check the spelling of "' + word + '"',
-          title: 'Possible spelling mistake',
+          message: isMissingApostrophe ? 'Missing apostrophe in "' + word + '"' : 'Check the spelling of "' + word + '"',
+          title: isMissingApostrophe ? 'Missing apostrophe' : 'Possible spelling mistake',
           replacement: replacement,
           original: word
         });
@@ -541,8 +547,8 @@ const QuickChecks = (function () {
       { regex: /\b(initiate)\b/gi, fix: 'start', msg: 'Prefer "start" over "initiate" for plain English', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(implement)\b/gi, fix: 'carry out', msg: 'Prefer "carry out" or "set up" over "implement" for plain English', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(indicate)\b/gi, fix: 'show', msg: 'Prefer "show" or "suggest" over "indicate" for plain English', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(therefore)\b/gi, fix: 'so', msg: 'Prefer "so" over "therefore" for plain English', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(however)\b/gi, fix: 'but', msg: 'Consider "but" instead of "however" for simpler English', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(therefore)\b/gi, fix: 'so', msg: 'GOV.UK style: prefer "so" over "therefore"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\b(however)\b/gi, fix: 'but', msg: 'GOV.UK style: consider "but" instead of "however"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\b(in accordance with)\b/gi, fix: 'in line with', msg: 'Prefer "in line with" or "following" over "in accordance with"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(with reference to)\b/gi, fix: 'about', msg: 'Prefer "about" over "with reference to"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in the event of)\b/gi, fix: 'if', msg: 'Prefer "if" over "in the event of"', cat: 'Plain English', title: 'Use plain English' },
@@ -556,11 +562,11 @@ const QuickChecks = (function () {
       { regex: /\bplease\b/gi, fix: null, msg: 'GOV.UK style: avoid "please" — be direct', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bkindly\b/gi, fix: null, msg: 'GOV.UK style: avoid "kindly" — be direct', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       // "going forward" handled below with "moving forward"
-      { regex: /\bat this point in time\b/gi, fix: 'now', msg: 'Use "now" or "currently" instead', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bin the event that\b/gi, fix: 'if', msg: 'Use "if" instead of "in the event that"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bwith regards to\b/gi, fix: 'about', msg: 'Use "about" instead of "with regards to"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\ba number of\b/gi, fix: null, msg: 'Be specific — say how many instead of "a number of"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bin respect of\b/gi, fix: 'about', msg: 'Use "about" or "for" instead of "in respect of"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\bat this point in time\b/gi, fix: 'now', msg: 'Prefer "now" over "at this point in time"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\bin the event that\b/gi, fix: 'if', msg: 'Prefer "if" over "in the event that"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\bwith regards to\b/gi, fix: 'about', msg: 'Prefer "about" over "with regards to"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\ba number of\b/gi, fix: null, msg: 'Be specific — say how many instead of "a number of"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\bin respect of\b/gi, fix: 'about', msg: 'Prefer "about" or "for" over "in respect of"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\betc\.?\b/gi, fix: null, msg: 'GOV.UK style: avoid "etc" — list the items or say "for example"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bie\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "ie"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\beg\b/gi, fix: 'for example', msg: 'Write "for example" instead of "eg"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
