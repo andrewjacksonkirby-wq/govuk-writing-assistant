@@ -29,11 +29,64 @@ const Reports = (function () {
    * Handles abbreviations (e.g., Dr., etc.) and decimal numbers (3.5) without
    * treating their periods as sentence boundaries.
    */
+  /**
+   * Detect if a line is a list item (bullet, numbered, or lettered).
+   */
+  var LIST_ITEM_RE = /^[\s]*(?:[-*•–—]|\d+[.):]|[a-zA-Z][.):])\s+/;
+
   function parseSentences(text) {
     var sentences = [];
 
-    // Replace abbreviation periods and decimal points with a placeholder
-    // so they don't trigger sentence splits, then restore them.
+    // First, split text into blocks: list items get treated individually,
+    // prose paragraphs go through normal sentence splitting.
+    var lines = text.split('\n');
+    var proseBuffer = '';
+    var proseStart = 0;
+    var offset = 0;
+
+    for (var li = 0; li < lines.length; li++) {
+      var line = lines[li];
+      var lineStart = offset;
+      offset += line.length + 1; // +1 for the \n
+
+      if (LIST_ITEM_RE.test(line)) {
+        // Flush any accumulated prose first
+        if (proseBuffer.length > 0) {
+          parseProse(proseBuffer, proseStart, sentences);
+          proseBuffer = '';
+        }
+        // Treat this list item as its own sentence
+        var trimmedLine = line.trim();
+        var wordCount = (trimmedLine.match(/\b[a-zA-Z0-9']+\b/g) || []).length;
+        if (wordCount > 0) {
+          sentences.push({
+            text: trimmedLine,
+            start: lineStart + (line.length - line.trimStart().length),
+            end: lineStart + line.trimEnd().length,
+            words: wordCount
+          });
+        }
+      } else {
+        // Accumulate prose lines
+        if (proseBuffer.length === 0) {
+          proseStart = lineStart;
+        }
+        proseBuffer += (proseBuffer.length > 0 ? '\n' : '') + line;
+      }
+    }
+
+    // Flush remaining prose
+    if (proseBuffer.length > 0) {
+      parseProse(proseBuffer, proseStart, sentences);
+    }
+
+    return sentences;
+  }
+
+  /**
+   * Parse prose text into sentences using punctuation-based splitting.
+   */
+  function parseProse(text, baseOffset, sentences) {
     var PLACEHOLDER = '\x00';
     var safeText = text
       // Protect decimal numbers like 3.5, £12.50
@@ -57,12 +110,11 @@ const Reports = (function () {
       if (wordCount === 0) continue;
       sentences.push({
         text: originalTrimmed,
-        start: match.index,
-        end: match.index + originalRaw.trimEnd().length,
+        start: baseOffset + match.index,
+        end: baseOffset + match.index + originalRaw.trimEnd().length,
         words: wordCount
       });
     }
-    return sentences;
   }
 
   /**
