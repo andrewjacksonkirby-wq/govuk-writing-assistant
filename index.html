@@ -4,51 +4,74 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GOV.UK Writing Assistant</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
   <header class="app-header">
     <div class="header-left">
-      <h1 class="app-title">Writing assistant</h1>
+      <div class="app-logo">W</div>
+      <h1 class="app-title">Writing Assistant</h1>
       <span class="save-status" id="saveStatus">Saved</span>
     </div>
     <div class="header-right">
-      <button type="button" class="btn btn-secondary" id="newDraftBtn">New draft</button>
-      <button type="button" class="btn btn-secondary" id="draftsBtn">My documents</button>
-      <button type="button" class="btn btn-secondary" id="historyBtn">Version history</button>
+      <button type="button" class="header-btn" id="newDraftBtn" title="New draft">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>New</span>
+      </button>
+      <button type="button" class="header-btn" id="draftsBtn" title="My documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        <span>Documents</span>
+      </button>
+      <button type="button" class="header-btn" id="historyBtn" title="Version history">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span>History</span>
+      </button>
     </div>
   </header>
 
   <main class="app-main">
     <section class="editor-pane">
       <div class="editor-toolbar">
-        <div class="toolbar-left">
-          <div class="mode-selector">
-            <label class="mode-label" for="modeSelect">Mode:</label>
-            <select id="modeSelect" class="mode-select">
-              <option value="govuk">GOV.UK content</option>
-              <option value="email">Email</option>
-              <option value="chat">Teams / Slack</option>
-            </select>
-          </div>
-          <button type="button" class="btn btn-secondary btn-sm" id="dictBtn" title="Custom dictionary">Dictionary</button>
-          <div class="sensitivity-control">
-            <label class="sensitivity-label" for="sensitivityToggle">
-              <input type="checkbox" id="sensitivityToggle">
-              <span class="sensitivity-text sensitive" id="sensitivityText">Do not send to external AI</span>
-            </label>
-          </div>
+        <div class="toolbar-group">
+          <select id="modeSelect" class="mode-select" title="Writing mode">
+            <option value="govuk">GOV.UK content</option>
+            <option value="email">Email</option>
+            <option value="chat">Teams / Slack</option>
+          </select>
+          <div class="toolbar-divider"></div>
+          <label class="sensitivity-toggle" title="Toggle AI check availability">
+            <input type="checkbox" id="sensitivityToggle">
+            <span class="sensitivity-slider"></span>
+            <span class="sensitivity-text sensitive" id="sensitivityText">AI off</span>
+          </label>
         </div>
-        <div class="editor-actions">
-          <button type="button" class="btn btn-secondary btn-sm" id="ttsBtn" title="Read text aloud (text-to-speech)">
-            <span id="ttsIcon">&#9654;</span> Read aloud
+        <div class="toolbar-group">
+          <button type="button" class="toolbar-btn" id="dictBtn" title="Custom dictionary">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.3"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+            <span>Dictionary</span>
           </button>
-          <label class="btn btn-secondary btn-sm upload-btn" id="uploadLabel" title="Upload .docx or .txt">
-            Upload
+          <button type="button" class="toolbar-btn" id="ttsBtn" title="Read text aloud">
+            <span id="ttsIcon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 5.5h2l4-3v11l-4-3H3a1 1 0 01-1-1v-3a1 1 0 011-1z" fill="currentColor"/><path d="M11 5.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+            <span>Read aloud</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <label class="toolbar-btn upload-btn" id="uploadLabel" title="Upload .docx or .txt">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 10V3M5 5l3-3 3 3M3 11v2h10v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Upload</span>
             <input type="file" id="uploadFile" accept=".docx,.txt,.doc" hidden>
           </label>
-          <button type="button" class="btn btn-secondary btn-sm" id="exportBtn" title="Download as text file">Export</button>
-          <button type="button" class="btn btn-primary" id="checkNowBtn" disabled>Check now</button>
+          <button type="button" class="toolbar-btn" id="exportBtn" title="Download as text file">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 3v7M5 8l3 3 3-3M3 11v2h10v-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Export</span>
+          </button>
+          <div class="toolbar-divider"></div>
+          <button type="button" class="check-now-btn" id="checkNowBtn" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4l-7 7-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Check now
+          </button>
         </div>
       </div>
       <div
@@ -62,27 +85,34 @@
       ></div>
       <div class="inline-marks-overlay" id="inlineMarksOverlay"></div>
       <div class="stats-bar" id="statsBar">
-        <span class="stat-item"><span class="stat-label">Words</span> <span class="stat-value" id="statWords">0</span></span>
-        <span class="stat-item"><span class="stat-label">Sentences</span> <span class="stat-value" id="statSentences">0</span></span>
-        <span class="stat-item"><span class="stat-label">Paragraphs</span> <span class="stat-value" id="statParagraphs">0</span></span>
-        <span class="stat-item"><span class="stat-label">Reading time</span> <span class="stat-value" id="statReadingTime">0 min</span></span>
-        <span class="stat-item stat-readability">
-          <span class="stat-label">Readability</span>
-          <span class="stat-value" id="statReadability">--</span>
-          <span class="readability-bar"><span class="readability-bar-fill" id="readabilityBar"></span></span>
-        </span>
-        <span class="stat-item stat-reading-age">
-          <span class="stat-label">Reading age</span>
-          <span class="stat-value" id="statReadingAge">--</span>
-          <span class="reading-age-target" id="readingAgeTarget">Target: age 9</span>
-        </span>
+        <div class="stats-left">
+          <span class="stat-item"><span class="stat-value" id="statWords">0</span> words</span>
+          <span class="stat-divider"></span>
+          <span class="stat-item"><span class="stat-value" id="statSentences">0</span> sentences</span>
+          <span class="stat-divider"></span>
+          <span class="stat-item"><span class="stat-value" id="statParagraphs">0</span> paragraphs</span>
+          <span class="stat-divider"></span>
+          <span class="stat-item"><span class="stat-value" id="statReadingTime">0 min</span> read</span>
+        </div>
+        <div class="stats-right">
+          <span class="stat-item stat-readability">
+            <span class="stat-value" id="statReadability">--</span>
+            <span class="readability-bar"><span class="readability-bar-fill" id="readabilityBar"></span></span>
+          </span>
+          <span class="stat-item stat-reading-age">
+            <span class="stat-value" id="statReadingAge">--</span>
+            <span class="reading-age-target" id="readingAgeTarget">Target: age 9</span>
+          </span>
+        </div>
       </div>
     </section>
 
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-view-toggle">
-        <button type="button" class="view-tab active" id="viewSuggestions" data-view="suggestions">Suggestions</button>
-        <button type="button" class="view-tab" id="viewReports" data-view="reports">Reports</button>
+        <div class="view-toggle-pill">
+          <button type="button" class="view-tab active" id="viewSuggestions" data-view="suggestions">Suggestions</button>
+          <button type="button" class="view-tab" id="viewReports" data-view="reports">Reports</button>
+        </div>
       </div>
 
       <div class="sidebar-view" id="suggestionsView">

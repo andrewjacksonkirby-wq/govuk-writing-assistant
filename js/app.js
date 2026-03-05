@@ -435,27 +435,15 @@
     sensitivityToggle.checked = isSafe;
 
     if (isSafe) {
-      sensitivityText.textContent = 'Safe to send to AI';
+      sensitivityText.textContent = 'AI on';
       sensitivityText.className = 'sensitivity-text';
       checkNowBtn.disabled = false;
       checkNowBtn.title = '';
     } else {
-      sensitivityText.textContent = 'Do not send to external AI';
+      sensitivityText.textContent = 'AI off';
       sensitivityText.className = 'sensitivity-text sensitive';
       checkNowBtn.disabled = true;
       checkNowBtn.title = 'AI check unavailable — draft marked as sensitive';
-    }
-
-    // Update AI status indicator
-    var toolbar = document.querySelector('.editor-actions');
-    if (toolbar) {
-      var existingStatus = toolbar.querySelector('.ai-status');
-      if (existingStatus) existingStatus.remove();
-
-      var statusEl = document.createElement('span');
-      statusEl.className = 'ai-status ' + (isSafe ? 'available' : 'unavailable');
-      statusEl.textContent = isSafe ? 'AI check available' : 'AI check unavailable';
-      toolbar.insertBefore(statusEl, checkNowBtn);
     }
   }
 
@@ -706,13 +694,21 @@
 
   // ========== Text-to-speech ==========
 
+  var speakerSvg = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 5.5h2l4-3v11l-4-3H3a1 1 0 01-1-1v-3a1 1 0 011-1z" fill="currentColor"/><path d="M11 5.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>';
+  var stopSvg = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="3" y="3" width="10" height="10" rx="1.5" fill="currentColor"/></svg>';
+
+  function setTTSLabel(playing) {
+    ttsIcon.innerHTML = playing ? stopSvg : speakerSvg;
+    var label = ttsBtn.querySelector('span:last-child');
+    if (label) label.textContent = playing ? 'Stop' : 'Read aloud';
+    if (playing) ttsBtn.classList.add('tts-playing');
+    else ttsBtn.classList.remove('tts-playing');
+  }
+
   function handleTTS() {
-    // If already speaking, stop
     if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
       window.speechSynthesis.cancel();
-      ttsBtn.classList.remove('tts-playing');
-      ttsIcon.textContent = '\u25B6';
-      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
+      setTTSLabel(false);
       return;
     }
 
@@ -723,21 +719,10 @@
     ttsUtterance.lang = 'en-GB';
     ttsUtterance.rate = 0.95;
 
-    ttsBtn.classList.add('tts-playing');
-    ttsIcon.textContent = '\u25A0';
-    ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Stop';
+    setTTSLabel(true);
 
-    ttsUtterance.onend = function () {
-      ttsBtn.classList.remove('tts-playing');
-      ttsIcon.textContent = '\u25B6';
-      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
-    };
-
-    ttsUtterance.onerror = function () {
-      ttsBtn.classList.remove('tts-playing');
-      ttsIcon.textContent = '\u25B6';
-      ttsBtn.childNodes[ttsBtn.childNodes.length - 1].textContent = ' Read aloud';
-    };
+    ttsUtterance.onend = function () { setTTSLabel(false); };
+    ttsUtterance.onerror = function () { setTTSLabel(false); };
 
     window.speechSynthesis.speak(ttsUtterance);
   }
