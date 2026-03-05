@@ -1609,31 +1609,6 @@ body {
   text-overflow: ellipsis;
 }
 
-/* ===== Reading age display ===== */
-.stat-reading-age {
-  gap: 6px;
-  font-weight: 600;
-}
-
-.reading-age-target {
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: var(--radius-pill);
-  background: var(--color-success-bg);
-  color: var(--color-success);
-}
-
-.reading-age-target.over-target {
-  background: var(--color-correctness-bg);
-  color: var(--color-correctness);
-}
-
-.reading-age-target.near-target {
-  background: var(--color-clarity-bg);
-  color: #b45309;
-}
-
 /* ===== TTS button states ===== */
 #ttsBtn.tts-playing {
   background: var(--color-primary-light);

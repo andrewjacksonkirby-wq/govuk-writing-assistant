@@ -47,10 +47,8 @@ const Stats = (function () {
       var grade = fleschKincaidGrade(trimmed, words, sentences);
       var ease = fleschReadingEase(trimmed, words, sentences);
       setReadability(grade, ease);
-      setReadingAge(grade);
     } else {
       setReadability(null, null);
-      setReadingAge(null);
     }
   }
 
@@ -160,50 +158,6 @@ const Stats = (function () {
       var barPercent = Math.max(5, Math.min(100, ((18 - grade) / 17) * 100));
       els.readabilityBar.style.width = barPercent + '%';
       els.readabilityBar.className = 'readability-bar-fill ' + cls;
-    }
-  }
-
-  /**
-   * Reading age display — converts grade level to approximate reading age.
-   * GOV.UK recommends content readable by a 9-year-old.
-   */
-  function setReadingAge(grade) {
-    var ageEl = document.getElementById('statReadingAge');
-    var targetEl = document.getElementById('readingAgeTarget');
-    if (!ageEl) return;
-
-    if (grade === null) {
-      ageEl.textContent = '--';
-      ageEl.className = 'stat-value';
-      if (targetEl) {
-        targetEl.textContent = 'Target: age 9';
-        targetEl.className = 'reading-age-target';
-      }
-      return;
-    }
-
-    // Reading age ≈ grade + 5 (US grade 1 = age 6)
-    var age = Math.max(5, grade + 5);
-    ageEl.textContent = 'Age ' + age;
-
-    if (age <= 9) {
-      ageEl.className = 'stat-value readability-easy';
-      if (targetEl) {
-        targetEl.textContent = 'On target';
-        targetEl.className = 'reading-age-target';
-      }
-    } else if (age <= 11) {
-      ageEl.className = 'stat-value readability-ok';
-      if (targetEl) {
-        targetEl.textContent = 'Close (target: 9)';
-        targetEl.className = 'reading-age-target near-target';
-      }
-    } else {
-      ageEl.className = 'stat-value readability-hard';
-      if (targetEl) {
-        targetEl.textContent = 'Over target (age ' + age + ' vs 9)';
-        targetEl.className = 'reading-age-target over-target';
-      }
     }
   }
 
