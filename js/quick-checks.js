@@ -173,27 +173,6 @@ const QuickChecks = (function () {
     { regex: /\b(pacific)\s+(reason|example|issue|case|time|date|detail|requirement)/gi, msg: 'Did you mean "specific"?', fix: 'specific', matchGroup: 1 }
   ];
 
-  /**
-   * Email/chat tone patterns — only active in email/chat modes.
-   */
-  var TONE_PATTERNS = [
-    { regex: /\b(I just wanted to)\b/gi, msg: 'Drop the hedge — just say what you need', fix: null, category: 'Tone', title: 'Hedging language', modes: ['email', 'chat'] },
-    { regex: /\b(sorry to bother you)\b/gi, msg: 'No need to apologise — state your request directly', fix: null, category: 'Tone', title: 'Unnecessary apology', modes: ['email', 'chat'] },
-    { regex: /\b(sorry for the delay)\b/gi, msg: 'Try "thanks for your patience" — it\'s more positive', fix: 'thanks for your patience', category: 'Tone', title: 'Negative framing', modes: ['email', 'chat'] },
-    { regex: /\b(as per my last email)\b/gi, msg: 'This can sound passive-aggressive. Try "as I mentioned" or restate the point.', fix: 'as I mentioned', category: 'Tone', title: 'Passive-aggressive', modes: ['email', 'chat'] },
-    { regex: /\b(as previously stated)\b/gi, msg: 'This can sound curt. Try restating the point directly.', fix: null, category: 'Tone', title: 'Passive-aggressive', modes: ['email', 'chat'] },
-    { regex: /\b(I think maybe)\b/gi, msg: 'Pick one: "I think" or "maybe" — both together sounds unsure', fix: 'I think', category: 'Tone', title: 'Over-hedging', modes: ['email', 'chat'] },
-    { regex: /\b(I was wondering if you could)\b/gi, msg: 'Be direct: "Could you" or "Please" works better', fix: 'Could you', category: 'Tone', title: 'Indirect request', modes: ['email', 'chat'] },
-    { regex: /\b(does that make sense)\b/gi, msg: 'This can undermine your point. Try "let me know if you have questions"', fix: 'let me know if you have questions', category: 'Tone', title: 'Self-undermining', modes: ['email', 'chat'] },
-    { regex: /\b(per se)\b/gi, msg: 'Consider simpler phrasing — "per se" can sound overly formal', fix: null, category: 'Tone', title: 'Overly formal', modes: ['email', 'chat'] },
-    { regex: /\b(please advise)\b/gi, msg: 'Try "let me know" or ask a specific question instead', fix: 'let me know', category: 'Tone', title: 'Stiff phrasing', modes: ['email', 'chat'] },
-    { regex: /\b(please do not hesitate to)\b/gi, msg: 'Simpler: "feel free to" or just ask directly', fix: 'feel free to', category: 'Tone', title: 'Overly formal', modes: ['email', 'chat'] },
-    { regex: /\b(I hope this email finds you well)\b/gi, msg: 'This is filler — jump straight to the point', fix: null, category: 'Tone', title: 'Filler phrase', modes: ['email'] },
-    { regex: /\b(kind regards|warm regards|best regards)\b/gi, msg: null, fix: null, category: null, modes: [] }, // skip — these are fine
-    { regex: /\b(ASAP)\b/g, msg: 'Give a specific deadline instead of "ASAP" — it creates urgency without clarity', fix: null, category: 'Tone', title: 'Vague urgency', modes: ['email', 'chat'] },
-    { regex: /\b(FYI)\b/g, msg: 'In formal emails, write "for your information" or just provide the context', fix: null, category: 'Tone', title: 'Too casual', modes: ['email'] }
-  ];
-
   var rules = [
     {
       id: 'spelling',
@@ -524,9 +503,6 @@ const QuickChecks = (function () {
     var results = [];
     var patterns = [
       // --- Grammar errors ---
-      { regex: /\b(could of)\b/gi, fix: 'could have', msg: 'Use "could have" instead of "could of"', cat: 'Grammar', title: 'Grammar error' },
-      { regex: /\b(should of)\b/gi, fix: 'should have', msg: 'Use "should have" instead of "should of"', cat: 'Grammar', title: 'Grammar error' },
-      { regex: /\b(would of)\b/gi, fix: 'would have', msg: 'Use "would have" instead of "would of"', cat: 'Grammar', title: 'Grammar error' },
       { regex: /\b(must of)\b/gi, fix: 'must have', msg: 'Use "must have" instead of "must of"', cat: 'Grammar', title: 'Grammar error' },
       { regex: /\b(alright)\b/gi, fix: 'all right', msg: 'GOV.UK style uses "all right" not "alright"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
 
@@ -715,39 +691,6 @@ const QuickChecks = (function () {
             fix = fix.charAt(0).toUpperCase() + fix.slice(1);
           }
           suggestion.replacement = fix;
-        }
-        results.push(suggestion);
-      }
-    });
-    return results;
-  }
-
-  /**
-   * Check for tone issues (active in email/chat modes).
-   */
-  function checkTonePatterns(text) {
-    var results = [];
-    TONE_PATTERNS.forEach(function (entry) {
-      if (!entry.msg || !entry.category) return; // skip null entries
-      if (entry.modes && entry.modes.length > 0 && entry.modes.indexOf(currentMode) === -1) return;
-
-      entry.regex.lastIndex = 0; // Reset — g flag retains lastIndex between calls
-      var match;
-      while ((match = entry.regex.exec(text)) !== null) {
-        var suggestion = {
-          id: makeId(),
-          ruleId: 'tone',
-          source: 'regex',
-          group: 'clarity',
-          category: entry.category,
-          start: match.index,
-          end: match.index + match[0].length,
-          message: entry.msg,
-          title: entry.title,
-          original: match[0]
-        };
-        if (entry.fix) {
-          suggestion.replacement = entry.fix;
         }
         results.push(suggestion);
       }
