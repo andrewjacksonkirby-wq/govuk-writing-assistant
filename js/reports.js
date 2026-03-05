@@ -20,23 +20,45 @@ const Reports = (function () {
   }
 
   /**
+   * Common abbreviations that end with a period but don't end a sentence.
+   */
+  var ABBREVS = /(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|Prof|Sr|Jr|No|Vol|dept|govt|approx|Inc|Ltd|St|Ave|Ref|Fig|Gen|Corp|Est|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\./gi;
+
+  /**
    * Split text into sentences with their start/end offsets.
+   * Handles abbreviations (e.g., Dr., etc.) and decimal numbers (3.5) without
+   * treating their periods as sentence boundaries.
    */
   function parseSentences(text) {
     var sentences = [];
-    // Match sentences ending with . ! ? or end-of-string
+
+    // Replace abbreviation periods and decimal points with a placeholder
+    // so they don't trigger sentence splits, then restore them.
+    var PLACEHOLDER = '\x00';
+    var safeText = text
+      // Protect decimal numbers like 3.5, £12.50
+      .replace(/(\d)\.(\d)/g, '$1' + PLACEHOLDER + '$2')
+      // Protect known abbreviations
+      .replace(ABBREVS, function (m) { return m.replace(/\./g, PLACEHOLDER); })
+      // Protect ellipsis
+      .replace(/\.{2,}/g, function (m) { return m.replace(/\./g, PLACEHOLDER); });
+
+    // Split on sentence-ending punctuation followed by whitespace or end-of-string
     var regex = /[^\s][^.!?]*[.!?]+[\s]?|[^\s][^.!?]*$/g;
     var match;
-    while ((match = regex.exec(text)) !== null) {
+    while ((match = regex.exec(safeText)) !== null) {
       var raw = match[0];
       var trimmed = raw.trim();
       if (trimmed.length < 2) continue;
-      var wordCount = (trimmed.match(/\b[a-zA-Z0-9']+\b/g) || []).length;
+      // Use the original text for the actual sentence content
+      var originalRaw = text.substring(match.index, match.index + raw.length);
+      var originalTrimmed = originalRaw.trim();
+      var wordCount = (originalTrimmed.match(/\b[a-zA-Z0-9']+\b/g) || []).length;
       if (wordCount === 0) continue;
       sentences.push({
-        text: trimmed,
+        text: originalTrimmed,
         start: match.index,
-        end: match.index + raw.trimEnd().length,
+        end: match.index + originalRaw.trimEnd().length,
         words: wordCount
       });
     }

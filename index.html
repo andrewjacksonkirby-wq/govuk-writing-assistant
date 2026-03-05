@@ -43,9 +43,9 @@
           </select>
           <div class="toolbar-divider"></div>
           <label class="sensitivity-toggle" title="Toggle AI check availability">
-            <input type="checkbox" id="sensitivityToggle">
+            <input type="checkbox" id="sensitivityToggle" checked>
             <span class="sensitivity-slider"></span>
-            <span class="sensitivity-text sensitive" id="sensitivityText">AI off</span>
+            <span class="sensitivity-text" id="sensitivityText">AI on</span>
           </label>
         </div>
         <div class="toolbar-group">
@@ -68,9 +68,9 @@
             <span>Export</span>
           </button>
           <div class="toolbar-divider"></div>
-          <button type="button" class="check-now-btn" id="checkNowBtn" disabled>
+          <button type="button" class="check-now-btn" id="checkNowBtn">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M13 4l-7 7-3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            Check now
+            <span id="checkNowText">Check now</span>
           </button>
         </div>
       </div>

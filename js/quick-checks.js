@@ -67,7 +67,6 @@ const QuickChecks = (function () {
     'indipendent': 'independent',
     'infomation': 'information',
     'knowlege': 'knowledge',
-    'liaise': 'liaise',
     'liason': 'liaison',
     'maintainance': 'maintenance',
     'managment': 'management',

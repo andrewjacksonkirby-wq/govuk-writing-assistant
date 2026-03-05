@@ -264,12 +264,12 @@
 
     // Show loading state
     checkNowBtn.disabled = true;
-    checkNowBtn.textContent = 'Checking...';
+    document.getElementById('checkNowText').textContent = 'Checking...';
     Suggestions.markFullCheckRun();
 
     FullCheck.run(text, sensitivity, function (results, error) {
       checkNowBtn.disabled = false;
-      checkNowBtn.textContent = 'Check now';
+      document.getElementById('checkNowText').textContent = 'Check now';
 
       if (error === 'blocked') {
         alert('AI check blocked: this draft is marked as sensitive.');

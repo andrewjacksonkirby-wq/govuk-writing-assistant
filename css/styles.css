@@ -1428,6 +1428,10 @@ body {
   overflow-y: auto;
 }
 
+.sidebar-view[hidden] {
+  display: none;
+}
+
 /* ===== Reports panel ===== */
 .reports-panel {
   padding: var(--spacing-md);

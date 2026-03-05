@@ -52,6 +52,7 @@ const Documents = (function () {
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       sensitivity: 'safe', // 'sensitive' or 'safe'
+      mode: 'govuk',
       versions: []
     };
     saveDocs(docs);
