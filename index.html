@@ -80,47 +80,60 @@
     </section>
 
     <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="score-section" id="scoreSection">
-          <div class="score-circle" id="scoreCircle">
-            <svg viewBox="0 0 80 80" class="score-ring">
-              <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e8e8" stroke-width="6"/>
-              <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" stroke-linecap="round"
-                      class="score-ring-fill" id="scoreRingFill"
-                      stroke-dasharray="213.6" stroke-dashoffset="213.6"
-                      transform="rotate(-90 40 40)"/>
-            </svg>
-            <span class="score-number" id="scoreNumber">--</span>
+      <div class="sidebar-view-toggle">
+        <button type="button" class="view-tab active" id="viewSuggestions" data-view="suggestions">Suggestions</button>
+        <button type="button" class="view-tab" id="viewReports" data-view="reports">Reports</button>
+      </div>
+
+      <div class="sidebar-view" id="suggestionsView">
+        <div class="sidebar-header">
+          <div class="score-section" id="scoreSection">
+            <div class="score-circle" id="scoreCircle">
+              <svg viewBox="0 0 80 80" class="score-ring">
+                <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e8e8" stroke-width="6"/>
+                <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" stroke-linecap="round"
+                        class="score-ring-fill" id="scoreRingFill"
+                        stroke-dasharray="213.6" stroke-dashoffset="213.6"
+                        transform="rotate(-90 40 40)"/>
+              </svg>
+              <span class="score-number" id="scoreNumber">--</span>
+            </div>
+            <div class="score-label">Overall score</div>
+            <div class="score-readability" id="scoreReadability"></div>
           </div>
-          <div class="score-label">Overall score</div>
-          <div class="score-readability" id="scoreReadability"></div>
+        </div>
+
+        <div class="sidebar-categories" id="sidebarCategories">
+          <button type="button" class="cat-tab active" data-filter="all">
+            <span class="cat-tab-label">All</span>
+            <span class="cat-tab-count" id="countAll">0</span>
+          </button>
+          <button type="button" class="cat-tab" data-filter="correctness">
+            <span class="cat-dot correctness-dot"></span>
+            <span class="cat-tab-label">Correctness</span>
+            <span class="cat-tab-count" id="countCorrectness">0</span>
+          </button>
+          <button type="button" class="cat-tab" data-filter="clarity">
+            <span class="cat-dot clarity-dot"></span>
+            <span class="cat-tab-label">Clarity</span>
+            <span class="cat-tab-count" id="countClarity">0</span>
+          </button>
+          <button type="button" class="cat-tab" data-filter="style">
+            <span class="cat-dot style-dot"></span>
+            <span class="cat-tab-label">Style</span>
+            <span class="cat-tab-count" id="countStyle">0</span>
+          </button>
+        </div>
+
+        <div class="suggestions-list" id="suggestionsList">
+          <!-- Cards rendered dynamically -->
         </div>
       </div>
 
-      <div class="sidebar-categories" id="sidebarCategories">
-        <button type="button" class="cat-tab active" data-filter="all">
-          <span class="cat-tab-label">All</span>
-          <span class="cat-tab-count" id="countAll">0</span>
-        </button>
-        <button type="button" class="cat-tab" data-filter="correctness">
-          <span class="cat-dot correctness-dot"></span>
-          <span class="cat-tab-label">Correctness</span>
-          <span class="cat-tab-count" id="countCorrectness">0</span>
-        </button>
-        <button type="button" class="cat-tab" data-filter="clarity">
-          <span class="cat-dot clarity-dot"></span>
-          <span class="cat-tab-label">Clarity</span>
-          <span class="cat-tab-count" id="countClarity">0</span>
-        </button>
-        <button type="button" class="cat-tab" data-filter="style">
-          <span class="cat-dot style-dot"></span>
-          <span class="cat-tab-label">Style</span>
-          <span class="cat-tab-count" id="countStyle">0</span>
-        </button>
-      </div>
-
-      <div class="suggestions-list" id="suggestionsList">
-        <!-- Cards rendered dynamically -->
+      <div class="sidebar-view" id="reportsView" hidden>
+        <div class="reports-panel" id="reportsPanel">
+          <p class="report-empty">Write some text to see sentence analysis.</p>
+        </div>
       </div>
     </aside>
   </main>
@@ -190,6 +203,7 @@
   <script src="js/full-check.js"></script>
   <script src="js/stats.js"></script>
   <script src="js/suggestions.js"></script>
+  <script src="js/reports.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

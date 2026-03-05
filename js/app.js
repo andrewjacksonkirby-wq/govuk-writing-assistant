@@ -53,6 +53,32 @@
     // Init stats
     Stats.init();
 
+    // Init reports
+    Reports.init({
+      onHighlight: function (start, end) {
+        Editor.highlightRange(start, end, 'highlight-clarity');
+      }
+    });
+
+    // Sidebar view toggle
+    var viewSuggestionsBtn = document.getElementById('viewSuggestions');
+    var viewReportsBtn = document.getElementById('viewReports');
+    var suggestionsView = document.getElementById('suggestionsView');
+    var reportsView = document.getElementById('reportsView');
+
+    viewSuggestionsBtn.addEventListener('click', function () {
+      viewSuggestionsBtn.classList.add('active');
+      viewReportsBtn.classList.remove('active');
+      suggestionsView.hidden = false;
+      reportsView.hidden = true;
+    });
+    viewReportsBtn.addEventListener('click', function () {
+      viewReportsBtn.classList.add('active');
+      viewSuggestionsBtn.classList.remove('active');
+      reportsView.hidden = false;
+      suggestionsView.hidden = true;
+    });
+
     // Init suggestions
     Suggestions.init({
       onApply: handleApply,
@@ -86,6 +112,7 @@
     Editor.onChange(function (text, version) {
       updateSaveStatus('unsaved');
       Stats.update(text);
+      Reports.update(text);
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
@@ -163,6 +190,7 @@
           Editor.setText(restoredText);
           Suggestions.clearAll();
           Stats.update(restoredText);
+          Reports.update(restoredText);
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
             lastCheckVersion = v;
@@ -208,6 +236,7 @@
     var initialText = Editor.getText();
     if (initialText.trim().length > 0) {
       Stats.update(initialText);
+      Reports.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
         lastCheckVersion = v;
         processQuickCheckResults(results);
@@ -348,6 +377,7 @@
   function loadUploadedText(text) {
     Editor.setText(text);
     Stats.update(text);
+    Reports.update(text);
     Suggestions.clearAll();
     updateSaveStatus('unsaved');
     QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
@@ -478,6 +508,7 @@
     Suggestions.clearAll();
     Editor.clearUnderlines();
     Stats.update('');
+    Reports.update('');
     updateSensitivityUI(Documents.getSensitivity());
     updateModeUI(Documents.getMode());
     showEditorView();
@@ -494,6 +525,7 @@
       Suggestions.clearAll();
       Editor.clearUnderlines();
       Stats.update(switched.text || '');
+      Reports.update(switched.text || '');
       updateSensitivityUI(switched.sensitivity || 'safe');
       updateModeUI(switched.mode || 'govuk');
       QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
@@ -517,6 +549,7 @@
       Editor.setText(doc.text || '');
       Suggestions.clearAll();
       Stats.update(doc.text || '');
+      Reports.update(doc.text || '');
       updateSensitivityUI(Documents.getSensitivity());
       updateModeUI(Documents.getMode());
     }
