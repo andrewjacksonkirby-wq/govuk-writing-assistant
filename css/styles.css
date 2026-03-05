@@ -426,9 +426,7 @@ body {
 }
 
 .editor .highlight {
-  background: #fef3c7;
   border-radius: 3px;
-  outline: 2px solid #fbbf24;
 }
 
 .editor .highlight-correctness {
