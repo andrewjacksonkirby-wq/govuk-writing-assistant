@@ -991,21 +991,130 @@ const QuickChecks = (function () {
   }
 
   /**
-   * Build an educational tip for passive voice.
-   * Helps the user figure out how to rewrite, rather than doing it for them.
+   * Map common past participles to their active verb form.
+   */
+  var ACTIVE_FORMS = {
+    'accepted': 'accepted', 'achieved': 'achieved', 'added': 'added',
+    'agreed': 'agreed', 'allowed': 'allows', 'announced': 'announced',
+    'applied': 'applied', 'approved': 'approved', 'arranged': 'arranged',
+    'asked': 'asked', 'assessed': 'assessed', 'assigned': 'assigned',
+    'awarded': 'awarded', 'based': 'bases', 'built': 'built',
+    'called': 'called', 'carried': 'carried', 'caused': 'caused',
+    'changed': 'changed', 'checked': 'checked', 'chosen': 'chose',
+    'claimed': 'claimed', 'closed': 'closed', 'collected': 'collected',
+    'completed': 'completed', 'confirmed': 'confirmed', 'considered': 'considered',
+    'contacted': 'contacted', 'controlled': 'controlled', 'covered': 'covered',
+    'created': 'created', 'decided': 'decided', 'defined': 'defined',
+    'delivered': 'delivered', 'described': 'described', 'designed': 'designed',
+    'developed': 'developed', 'directed': 'directed', 'discussed': 'discussed',
+    'distributed': 'distributed', 'done': 'did', 'drawn': 'drew',
+    'driven': 'drove', 'employed': 'employed', 'ended': 'ended',
+    'established': 'established', 'expected': 'expects', 'explained': 'explained',
+    'extended': 'extended', 'filed': 'filed', 'filled': 'filled',
+    'fixed': 'fixed', 'followed': 'followed', 'formed': 'formed',
+    'found': 'found', 'funded': 'funded', 'given': 'gave',
+    'governed': 'governs', 'granted': 'granted', 'handled': 'handled',
+    'heard': 'heard', 'held': 'held', 'helped': 'helped',
+    'hidden': 'hid', 'hired': 'hired', 'identified': 'identified',
+    'improved': 'improved', 'included': 'included', 'increased': 'increased',
+    'informed': 'informed', 'introduced': 'introduced', 'investigated': 'investigated',
+    'invited': 'invited', 'issued': 'issued', 'joined': 'joined',
+    'kept': 'kept', 'known': 'knows', 'launched': 'launched',
+    'led': 'led', 'listed': 'listed', 'lost': 'lost',
+    'made': 'made', 'maintained': 'maintains', 'managed': 'managed',
+    'measured': 'measured', 'met': 'met', 'moved': 'moved',
+    'named': 'named', 'needed': 'needs', 'noted': 'noted',
+    'obtained': 'obtained', 'offered': 'offered', 'opened': 'opened',
+    'operated': 'operated', 'ordered': 'ordered', 'organised': 'organised',
+    'owned': 'owns', 'paid': 'paid', 'passed': 'passed',
+    'performed': 'performed', 'placed': 'placed', 'planned': 'planned',
+    'posted': 'posted', 'prepared': 'prepared', 'presented': 'presented',
+    'processed': 'processed', 'produced': 'produced', 'protected': 'protects',
+    'provided': 'provided', 'published': 'published', 'raised': 'raised',
+    'reached': 'reached', 'received': 'received', 'recognised': 'recognised',
+    'recorded': 'recorded', 'reduced': 'reduced', 'referred': 'referred',
+    'refused': 'refused', 'released': 'released', 'removed': 'removed',
+    'replaced': 'replaced', 'reported': 'reported', 'requested': 'requested',
+    'required': 'requires', 'resolved': 'resolved', 'reviewed': 'reviewed',
+    'run': 'runs', 'said': 'said', 'seen': 'saw',
+    'selected': 'selected', 'sent': 'sent', 'served': 'served',
+    'set': 'set', 'shared': 'shared', 'shown': 'shows',
+    'signed': 'signed', 'sold': 'sold', 'solved': 'solved',
+    'sought': 'sought', 'spent': 'spent', 'spoken': 'spoke',
+    'started': 'started', 'stated': 'stated', 'stopped': 'stopped',
+    'stored': 'stored', 'submitted': 'submitted', 'supported': 'supports',
+    'taken': 'took', 'taught': 'taught', 'tested': 'tested',
+    'told': 'told', 'treated': 'treated', 'turned': 'turned',
+    'understood': 'understands', 'updated': 'updated', 'used': 'uses',
+    'visited': 'visited', 'wanted': 'wants', 'warned': 'warned',
+    'withdrawn': 'withdrew', 'won': 'won', 'worked': 'worked',
+    'written': 'wrote'
+  };
+
+  /**
+   * Pick the right tense of the active verb based on the be-verb.
+   */
+  function activeVerb(beVerb, participle) {
+    var base = ACTIVE_FORMS[participle] || participle;
+    // For past tense be-verbs, keep past; for present, use present/base
+    if (beVerb === 'was' || beVerb === 'were' || beVerb === 'been') {
+      return base; // already past-ish from ACTIVE_FORMS
+    }
+    return base;
+  }
+
+  /**
+   * Build a contextual tip for passive voice with a concrete rewrite example.
    */
   function buildPassiveVoiceTip(beVerb, participle, fullMatch, text, matchIndex) {
+    // Grab surrounding context: the sentence fragment containing the passive
+    var sentenceStart = text.lastIndexOf('.', matchIndex);
+    if (sentenceStart < 0) sentenceStart = 0; else sentenceStart += 1;
+    var sentenceEnd = text.indexOf('.', matchIndex + fullMatch.length);
+    if (sentenceEnd < 0) sentenceEnd = text.length;
+    var sentence = text.substring(sentenceStart, sentenceEnd).trim();
+
     // Check if there's a "by ..." agent after the passive phrase
-    var after = text.substring(matchIndex + fullMatch.length, matchIndex + fullMatch.length + 60);
-    var byAgent = after.match(/^\s+by\s+(\w+(?:\s+\w+)?)/i);
+    var after = text.substring(matchIndex + fullMatch.length, matchIndex + fullMatch.length + 80);
+    var byAgent = after.match(/^\s+by\s+(the\s+\w+(?:\s+\w+)?|\w+(?:\s+\w+)?)/i);
+
+    // Get the subject (what comes before the be-verb in this clause)
+    var before = text.substring(sentenceStart, matchIndex).trim();
+    // Grab the last noun phrase before the passive as the object of the active version
+    var subjectMatch = before.match(/(?:the\s+)?(?:\w+\s+){0,2}\w+$/i);
+    var passiveSubject = subjectMatch ? subjectMatch[0].trim() : null;
+
+    var verb = activeVerb(beVerb, participle);
 
     if (byAgent) {
-      // "was approved by the manager" -> tip: put "the manager" first
-      return 'Try putting "' + byAgent[1] + '" at the start as the subject, followed by an active verb.';
+      var agent = byAgent[1].trim();
+      // "The report was approved by the manager" -> "The manager approved the report"
+      var rewrite = capitalise(agent) + ' ' + verb;
+      if (passiveSubject) {
+        rewrite += ' ' + uncapitalise(passiveSubject);
+      }
+      return 'Passive voice. Try: "' + rewrite + '." \u2014 put "' + agent + '" first as the doer.';
     }
 
-    // No "by" agent — the doer is missing entirely
-    return 'Consider rewriting in active voice. Who or what "' + participle + '"? Lead with that.';
+    // No "by" agent — suggest who the doer might be based on GOV.UK context
+    if (passiveSubject) {
+      // "Applications are processed within 10 days" -> "We process applications within 10 days"
+      var govRewrite = 'we ' + verb + ' ' + uncapitalise(passiveSubject);
+      return 'Passive voice. Who does this? Try: "' + capitalise(govRewrite) + '." On GOV.UK, use "we" for the organisation or name the doer.';
+    }
+
+    return 'Passive voice. Who ' + verb + '? Name the doer and put them first \u2014 e.g. "We ' + verb + '..." or "[Team name] ' + verb + '..."';
+  }
+
+  function capitalise(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function uncapitalise(s) {
+    // Don't uncapitalise proper nouns / acronyms (all-caps or starts with two caps)
+    if (s.length > 1 && s === s.toUpperCase()) return s;
+    if (s.length > 1 && s[0] === s[0].toUpperCase() && s[1] === s[1].toUpperCase()) return s;
+    return s.charAt(0).toLowerCase() + s.slice(1);
   }
 
   /**
