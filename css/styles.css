@@ -1625,6 +1625,36 @@ body {
   color: white;
 }
 
+.report-long-badge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.report-split-advice {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-text);
+  line-height: 1.45;
+  padding: 6px 8px;
+  background: var(--color-warning-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--color-warning);
+  margin-bottom: 4px;
+}
+
+.report-split-preview {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-style: italic;
+  line-height: 1.5;
+  padding: 4px 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* ===== Reading age display ===== */
 .stat-reading-age {
   gap: 6px;
