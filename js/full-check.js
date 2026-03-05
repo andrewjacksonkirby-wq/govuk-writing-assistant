@@ -121,6 +121,160 @@ const FullCheck = (function () {
     return results;
   }
 
+  // ========== Passive voice detection ==========
+
+  var PAST_PARTICIPLES = new Set([
+    'accepted', 'achieved', 'added', 'agreed', 'allowed', 'announced',
+    'applied', 'approved', 'arranged', 'asked', 'assessed', 'assigned',
+    'awarded', 'based', 'built', 'called', 'carried', 'caused', 'changed',
+    'charged', 'checked', 'chosen', 'claimed', 'closed', 'collected',
+    'completed', 'confirmed', 'considered', 'contacted', 'controlled',
+    'covered', 'created', 'decided', 'defined', 'delivered', 'described',
+    'designed', 'developed', 'directed', 'discussed', 'distributed',
+    'done', 'drawn', 'driven', 'dropped', 'earned', 'employed', 'ended',
+    'entered', 'established', 'examined', 'expected', 'explained',
+    'expressed', 'extended', 'filed', 'filled', 'fixed', 'followed',
+    'formed', 'found', 'funded', 'given', 'governed', 'granted', 'grown',
+    'handled', 'heard', 'held', 'helped', 'hidden', 'hired', 'hit',
+    'identified', 'improved', 'included', 'increased', 'informed',
+    'introduced', 'investigated', 'invited', 'issued', 'joined', 'judged',
+    'kept', 'killed', 'known', 'launched', 'led', 'left', 'listed',
+    'lost', 'made', 'maintained', 'managed', 'measured', 'met', 'moved',
+    'named', 'needed', 'noted', 'obtained', 'offered', 'opened',
+    'operated', 'ordered', 'organised', 'owned', 'paid', 'passed',
+    'performed', 'placed', 'planned', 'played', 'posted', 'prepared',
+    'presented', 'processed', 'produced', 'protected', 'provided',
+    'published', 'put', 'raised', 'reached', 'read', 'received',
+    'recognised', 'recorded', 'reduced', 'referred', 'refused', 'released',
+    'removed', 'replaced', 'reported', 'requested', 'required', 'resolved',
+    'reviewed', 'run', 'said', 'seen', 'selected', 'sent', 'served',
+    'set', 'shared', 'shown', 'signed', 'sold', 'solved', 'sought',
+    'spent', 'split', 'spoken', 'started', 'stated', 'stopped', 'stored',
+    'submitted', 'supported', 'taken', 'taught', 'tested', 'thought',
+    'told', 'treated', 'turned', 'understood', 'updated', 'used',
+    'visited', 'wanted', 'warned', 'withdrawn', 'won', 'worked', 'written'
+  ]);
+
+  var ACTIVE_FORMS = {
+    'accepted': 'accepted', 'achieved': 'achieved', 'added': 'added',
+    'agreed': 'agreed', 'allowed': 'allows', 'announced': 'announced',
+    'applied': 'applied', 'approved': 'approved', 'arranged': 'arranged',
+    'asked': 'asked', 'assessed': 'assessed', 'assigned': 'assigned',
+    'awarded': 'awarded', 'built': 'built', 'called': 'called',
+    'carried': 'carried', 'caused': 'caused', 'changed': 'changed',
+    'checked': 'checked', 'chosen': 'chose', 'claimed': 'claimed',
+    'closed': 'closed', 'collected': 'collected', 'completed': 'completed',
+    'confirmed': 'confirmed', 'considered': 'considered', 'contacted': 'contacted',
+    'controlled': 'controlled', 'covered': 'covered', 'created': 'created',
+    'decided': 'decided', 'defined': 'defined', 'delivered': 'delivered',
+    'described': 'described', 'designed': 'designed', 'developed': 'developed',
+    'directed': 'directed', 'discussed': 'discussed', 'distributed': 'distributed',
+    'done': 'did', 'drawn': 'drew', 'driven': 'drove', 'employed': 'employed',
+    'ended': 'ended', 'established': 'established', 'expected': 'expects',
+    'explained': 'explained', 'extended': 'extended', 'filed': 'filed',
+    'filled': 'filled', 'fixed': 'fixed', 'followed': 'followed',
+    'formed': 'formed', 'found': 'found', 'funded': 'funded', 'given': 'gave',
+    'governed': 'governs', 'granted': 'granted', 'handled': 'handled',
+    'heard': 'heard', 'held': 'held', 'helped': 'helped', 'hidden': 'hid',
+    'hired': 'hired', 'identified': 'identified', 'improved': 'improved',
+    'included': 'included', 'increased': 'increased', 'informed': 'informed',
+    'introduced': 'introduced', 'investigated': 'investigated', 'invited': 'invited',
+    'issued': 'issued', 'joined': 'joined', 'kept': 'kept', 'known': 'knows',
+    'launched': 'launched', 'led': 'led', 'listed': 'listed', 'lost': 'lost',
+    'made': 'made', 'maintained': 'maintains', 'managed': 'managed',
+    'measured': 'measured', 'met': 'met', 'moved': 'moved', 'named': 'named',
+    'needed': 'needs', 'noted': 'noted', 'obtained': 'obtained', 'offered': 'offered',
+    'opened': 'opened', 'operated': 'operated', 'ordered': 'ordered',
+    'organised': 'organised', 'owned': 'owns', 'paid': 'paid', 'passed': 'passed',
+    'performed': 'performed', 'placed': 'placed', 'planned': 'planned',
+    'posted': 'posted', 'prepared': 'prepared', 'presented': 'presented',
+    'processed': 'processed', 'produced': 'produced', 'protected': 'protects',
+    'provided': 'provided', 'published': 'published', 'raised': 'raised',
+    'reached': 'reached', 'received': 'received', 'recognised': 'recognised',
+    'recorded': 'recorded', 'reduced': 'reduced', 'referred': 'referred',
+    'refused': 'refused', 'released': 'released', 'removed': 'removed',
+    'replaced': 'replaced', 'reported': 'reported', 'requested': 'requested',
+    'required': 'requires', 'resolved': 'resolved', 'reviewed': 'reviewed',
+    'run': 'runs', 'said': 'said', 'seen': 'saw', 'selected': 'selected',
+    'sent': 'sent', 'served': 'served', 'set': 'set', 'shared': 'shared',
+    'shown': 'shows', 'signed': 'signed', 'sold': 'sold', 'solved': 'solved',
+    'sought': 'sought', 'spent': 'spent', 'spoken': 'spoke', 'started': 'started',
+    'stated': 'stated', 'stopped': 'stopped', 'stored': 'stored',
+    'submitted': 'submitted', 'supported': 'supports', 'taken': 'took',
+    'taught': 'taught', 'tested': 'tested', 'told': 'told', 'treated': 'treated',
+    'turned': 'turned', 'understood': 'understands', 'updated': 'updated',
+    'used': 'uses', 'visited': 'visited', 'wanted': 'wants', 'warned': 'warned',
+    'withdrawn': 'withdrew', 'won': 'won', 'worked': 'worked', 'written': 'wrote'
+  };
+
+  function checkPassiveVoice(text) {
+    var results = [];
+    var beVerbs = '(?:is|are|was|were|be|been|being)';
+    var adverb = '(?:\\s+\\w+ly)?';
+    var regex = new RegExp('\\b(' + beVerbs + ')' + adverb + '\\s+(\\w+)\\b', 'gi');
+    var match;
+    while ((match = regex.exec(text)) !== null) {
+      var participle = match[2].toLowerCase();
+      if (!PAST_PARTICIPLES.has(participle)) continue;
+
+      var beVerb = match[1].toLowerCase();
+      var fullMatch = match[0];
+      var verb = ACTIVE_FORMS[participle] || participle;
+
+      // Find the sentence boundary for context
+      var sentStart = text.lastIndexOf('.', match.index);
+      if (sentStart < 0) sentStart = 0; else sentStart += 1;
+      var sentEnd = text.indexOf('.', match.index + fullMatch.length);
+      if (sentEnd < 0) sentEnd = text.length;
+
+      // Check for "by ..." agent
+      var after = text.substring(match.index + fullMatch.length, match.index + fullMatch.length + 80);
+      var byAgent = after.match(/^\s+by\s+(the\s+\w+(?:\s+\w+)?|\w+(?:\s+\w+)?)/i);
+
+      // Get the passive subject (object of the active version)
+      var before = text.substring(sentStart, match.index).trim();
+      var subjectMatch = before.match(/(?:the\s+)?(?:\w+\s+){0,2}\w+$/i);
+      var passiveSubject = subjectMatch ? subjectMatch[0].trim() : null;
+
+      var tip;
+      if (byAgent) {
+        var agent = byAgent[1].trim();
+        var rewrite = capitalise(agent) + ' ' + verb;
+        if (passiveSubject) rewrite += ' ' + uncapitalise(passiveSubject);
+        tip = 'Passive voice. Try: "' + rewrite + '." \u2014 put "' + agent + '" first as the doer.';
+      } else if (passiveSubject) {
+        var govRewrite = 'we ' + verb + ' ' + uncapitalise(passiveSubject);
+        tip = 'Passive voice. Who does this? Try: "' + capitalise(govRewrite) + '." On GOV.UK, use "we" for the organisation or name the doer.';
+      } else {
+        tip = 'Passive voice. Who ' + verb + '? Name the doer and put them first \u2014 e.g. "We ' + verb + '..." or "[Team name] ' + verb + '..."';
+      }
+
+      results.push({
+        id: makeId(),
+        ruleId: 'passive-voice',
+        source: 'ai',
+        group: 'clarity',
+        category: 'Passive voice',
+        start: match.index,
+        end: match.index + fullMatch.length,
+        message: tip,
+        title: 'Passive voice',
+        original: fullMatch
+      });
+    }
+    return results;
+  }
+
+  function capitalise(s) {
+    return s.charAt(0).toUpperCase() + s.slice(1);
+  }
+
+  function uncapitalise(s) {
+    if (s.length > 1 && s === s.toUpperCase()) return s;
+    if (s.length > 1 && s[0] === s[0].toUpperCase() && s[1] === s[1].toUpperCase()) return s;
+    return s.charAt(0).toLowerCase() + s.slice(1);
+  }
+
   /**
    * Local simulation of AI checks for GOV.UK style issues.
    * This provides useful checks without needing an API.
@@ -223,6 +377,10 @@ const FullCheck = (function () {
           }
         }
       }
+
+      // Check for passive voice (needs context, so lives in full check not quick checks)
+      var passiveResults = checkPassiveVoice(text);
+      results = results.concat(passiveResults);
 
       // Check for overused words (3+ occurrences, excluding common words)
       var overusedResults = checkOverusedWords(text);
