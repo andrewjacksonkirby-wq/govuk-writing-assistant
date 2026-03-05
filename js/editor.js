@@ -311,7 +311,7 @@ const Editor = (function () {
           (function (issueRef) {
             wordEl.addEventListener('click', function (e) {
               e.stopPropagation();
-              if (underlineCallback) underlineCallback(issueRef);
+              if (underlineCallback) underlineCallback(issueRef, e.currentTarget);
             });
           })(w);
           structEl.appendChild(wordEl);
@@ -342,7 +342,7 @@ const Editor = (function () {
           (function (issueRef) {
             wordEl2.addEventListener('click', function (e) {
               e.stopPropagation();
-              if (underlineCallback) underlineCallback(issueRef);
+              if (underlineCallback) underlineCallback(issueRef, e.currentTarget);
             });
           })(wm);
           frag.appendChild(wordEl2);

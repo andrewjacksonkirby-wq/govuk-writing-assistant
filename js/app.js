@@ -86,6 +86,16 @@
       onSelect: handleSelect
     });
 
+    // Init inline popup
+    InlinePopup.init({
+      onApply: function (suggestion) {
+        handleApply(suggestion);
+      },
+      onDismiss: function (suggestion) {
+        Suggestions.dismiss(suggestion);
+      }
+    });
+
     // Load current document
     var doc = Documents.loadCurrent();
     if (doc && doc.text) {
@@ -293,8 +303,10 @@
     Suggestions.setCorrectness(results);
 
     // Show all issues as inline underlines in the editor
-    Editor.showUnderlines(results, function (mark) {
-      // Clicking an underline expands the corresponding sidebar card
+    Editor.showUnderlines(results, function (mark, markEl) {
+      if (markEl) {
+        InlinePopup.show(mark, markEl);
+      }
       Suggestions.selectById(mark.id);
     });
   }
