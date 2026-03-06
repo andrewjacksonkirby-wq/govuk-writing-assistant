@@ -11,129 +11,148 @@ const QuickChecks = (function () {
   var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
 
   /**
-   * Typo.js dictionary instance for comprehensive spell-checking (British English).
-   * fallbackWordSet is a plain Set of lowercase words parsed from the .dic file —
-   * used when the Typo constructor fails but the raw data was fetched successfully.
+   * Pre-expanded word set for spell-checking (British English).
+   * Contains ~88k fully-inflected word forms — no affix processing needed.
    */
-  var typoDictionary = null;
-  var fallbackWordSet = null;
-  var typoLoading = false;
-  var typoLoaded = false;
-  var typoRetries = 0;
+  var wordSet = null;
+  var dictLoading = false;
+  var dictLoaded = false;
+  var dictRetries = 0;
   var MAX_RETRIES = 3;
 
   /**
-   * Parse a Hunspell .dic file into a Set of lowercase base words.
-   * Each line is "word/flags" or just "word". First line is the word count.
+   * BK-tree for fast fuzzy matching / spelling suggestions.
+   * Stores words organised by edit distance for O(log n) suggestion lookup.
    */
-  function parseDicToWordSet(dicData) {
-    var set = new Set();
-    var lines = dicData.split('\n');
-    for (var i = 1; i < lines.length; i++) { // skip first line (count)
-      var line = lines[i].trim();
-      if (!line) continue;
-      var slashIdx = line.indexOf('/');
-      var word = slashIdx !== -1 ? line.substring(0, slashIdx) : line;
-      if (word && /^[a-zA-Z]+$/.test(word)) {
-        set.add(word.toLowerCase());
+  var bkTree = null;
+
+  function levenshtein(a, b) {
+    if (a === b) return 0;
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    // Optimised single-row DP
+    var prev = new Array(b.length + 1);
+    for (var j = 0; j <= b.length; j++) prev[j] = j;
+    for (var i = 1; i <= a.length; i++) {
+      var curr = [i];
+      for (var j = 1; j <= b.length; j++) {
+        var cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        curr[j] = Math.min(
+          curr[j - 1] + 1,      // insertion
+          prev[j] + 1,          // deletion
+          prev[j - 1] + cost    // substitution
+        );
       }
+      prev = curr;
     }
-    return set;
+    return prev[b.length];
   }
 
-  function loadTypoDictionary() {
-    if (typoLoading || typoLoaded) return;
-    typoLoading = true;
-
-    function checkedFetch(url) {
-      return fetch(url).then(function (r) {
-        if (!r.ok) throw new Error(url + ' returned HTTP ' + r.status);
-        return r.text();
-      });
+  /**
+   * Build a BK-tree from a sample of the word set for fast suggestions.
+   * We sample common-length words (4-10 chars) to keep the tree manageable.
+   */
+  function buildBKTree(words) {
+    if (!words || words.length === 0) return null;
+    var root = { word: words[0], children: {} };
+    for (var i = 1; i < words.length; i++) {
+      insertBK(root, words[i]);
     }
+    return root;
+  }
 
-    Promise.all([
-      checkedFetch('dictionaries/en_GB.aff'),
-      checkedFetch('dictionaries/en_GB.dic')
-    ]).then(function (results) {
-      // Always build the fallback word set from raw .dic data
-      try {
-        fallbackWordSet = parseDicToWordSet(results[1]);
-        console.log('Fallback word set built (' + fallbackWordSet.size + ' words)');
-      } catch (e) {
-        console.warn('Failed to parse .dic into fallback set:', e);
+  function insertBK(node, word) {
+    var d = levenshtein(node.word, word);
+    if (d === 0) return; // duplicate
+    if (node.children[d]) {
+      insertBK(node.children[d], word);
+    } else {
+      node.children[d] = { word: word, children: {} };
+    }
+  }
+
+  function searchBK(node, word, maxDist, results, limit) {
+    if (!node || results.length >= limit) return;
+    var d = levenshtein(node.word, word);
+    if (d <= maxDist) {
+      results.push({ word: node.word, dist: d });
+    }
+    // Only visit children within the triangle inequality bounds
+    var lo = d - maxDist;
+    var hi = d + maxDist;
+    var keys = Object.keys(node.children);
+    for (var i = 0; i < keys.length; i++) {
+      var k = parseInt(keys[i], 10);
+      if (k >= lo && k <= hi) {
+        searchBK(node.children[k], word, maxDist, results, limit);
       }
+    }
+  }
 
-      // Try to build the full Typo.js dictionary (handles affixes, suggestions)
-      try {
-        var dict = new Typo('en_GB', results[0], results[1]);
-        if (!dict.loaded) throw new Error('Typo dictionary parsed but not marked loaded');
-        typoDictionary = dict;
-        console.log('Typo.js dictionary loaded (en_GB)');
-      } catch (e) {
-        console.warn('Typo.js constructor failed, using fallback word set:', e);
+  function loadDictionary() {
+    if (dictLoading || dictLoaded) return;
+    dictLoading = true;
+
+    fetch('dictionaries/words.txt').then(function (r) {
+      if (!r.ok) throw new Error('words.txt returned HTTP ' + r.status);
+      return r.text();
+    }).then(function (data) {
+      var lines = data.split('\n');
+      wordSet = new Set();
+      for (var i = 0; i < lines.length; i++) {
+        var w = lines[i].trim();
+        if (w) wordSet.add(w);
       }
+      console.log('[QuickChecks] Word list loaded: ' + wordSet.size + ' words');
 
-      typoLoaded = true;
-      typoLoading = false;
+      // Build BK-tree from a sample of words (4-10 chars) for suggestions
+      // Sampling keeps memory and build time reasonable
+      var sampleWords = [];
+      var iter = wordSet.values();
+      var entry;
+      while ((entry = iter.next()) && !entry.done) {
+        var w = entry.value;
+        if (w.length >= 3 && w.length <= 12) {
+          sampleWords.push(w);
+        }
+      }
+      // Shuffle and take up to 30k for the BK-tree (covers most common words)
+      if (sampleWords.length > 30000) {
+        // Fisher-Yates partial shuffle
+        for (var i = sampleWords.length - 1; i > 0 && i > sampleWords.length - 30001; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = sampleWords[i];
+          sampleWords[i] = sampleWords[j];
+          sampleWords[j] = tmp;
+        }
+        sampleWords = sampleWords.slice(0, 30000);
+      }
+      bkTree = buildBKTree(sampleWords);
+      console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
+
+      dictLoaded = true;
+      dictLoading = false;
       document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
     }).catch(function (err) {
-      console.warn('Failed to fetch dictionary files (attempt ' + (typoRetries + 1) + '):', err);
-      typoLoading = false;
-      // Retry with exponential backoff
-      if (typoRetries < MAX_RETRIES) {
-        var delay = Math.pow(2, typoRetries) * 1000; // 1s, 2s, 4s
-        typoRetries++;
-        setTimeout(loadTypoDictionary, delay);
+      console.warn('[QuickChecks] Failed to load word list (attempt ' + (dictRetries + 1) + '):', err);
+      dictLoading = false;
+      if (dictRetries < MAX_RETRIES) {
+        var delay = Math.pow(2, dictRetries) * 1000;
+        dictRetries++;
+        setTimeout(loadDictionary, delay);
       } else {
         console.warn('[QuickChecks] Dictionary loading failed after all retries — spelling will use common misspellings + heuristics only');
-        typoLoaded = true;
+        dictLoaded = true;
         document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
       }
     });
   }
 
   // Start loading dictionary immediately
-  if (typeof Typo !== 'undefined') {
-    loadTypoDictionary();
-  } else {
-    // Retry once after DOM is ready, then try without Typo
-    document.addEventListener('DOMContentLoaded', function () {
-      if (typeof Typo !== 'undefined') {
-        loadTypoDictionary();
-      } else {
-        // Typo.js library not loaded — still fetch .dic for fallback word set
-        loadFallbackOnly();
-      }
-    });
-  }
+  loadDictionary();
 
   /**
-   * If Typo.js library itself didn't load, still fetch the .dic file
-   * for a basic word-set spell check.
-   */
-  function loadFallbackOnly() {
-    if (typoLoading || typoLoaded || fallbackWordSet) return;
-    typoLoading = true;
-    fetch('dictionaries/en_GB.dic').then(function (r) {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    }).then(function (dicData) {
-      fallbackWordSet = parseDicToWordSet(dicData);
-      typoLoaded = true;
-      typoLoading = false;
-      console.log('Fallback-only word set built (' + fallbackWordSet.size + ' words)');
-      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
-    }).catch(function (err) {
-      console.warn('Failed to load fallback dictionary:', err);
-      typoLoading = false;
-      typoLoaded = true;
-      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
-    });
-  }
-
-  /**
-   * Words to skip during Typo.js checking — short common words,
+   * Words to skip during spell checking — short common words,
    * abbreviations, and patterns that aren't real misspellings.
    */
   var SKIP_WORDS = new Set([
@@ -1159,7 +1178,7 @@ const QuickChecks = (function () {
   /**
    * Check for common misspellings.
    * Uses COMMON_MISSPELLINGS for fast known corrections, then falls back
-   * to Typo.js (Hunspell en_GB) for comprehensive spell-checking.
+   * to the word list for comprehensive spell-checking.
    */
   function checkSpelling(text) {
     var results = [];
@@ -1209,8 +1228,8 @@ const QuickChecks = (function () {
       }
     }
 
-    // Pass 2: Dictionary check (Typo.js or fallback word set)
-    var hasDictionary = typoDictionary || fallbackWordSet;
+    // Pass 2: Dictionary check (pre-expanded word list)
+    var hasDictionary = !!wordSet;
     if (hasDictionary) {
       try {
         wordRegex.lastIndex = 0;
@@ -1248,7 +1267,7 @@ const QuickChecks = (function () {
             var entry = {
               id: makeId(),
               ruleId: 'spelling',
-              source: typoDictionary ? 'typo' : 'fallback',
+              source: 'wordlist',
               group: 'correctness',
               category: 'Spelling',
               start: match.index,
@@ -1305,105 +1324,93 @@ const QuickChecks = (function () {
   }
 
   /**
-   * Check if a word is valid using best available dictionary.
-   * Tries Typo.js first (handles affixes, compound words), falls back to word set.
+   * Check if a word is valid against the pre-expanded word set.
+   * Since the word set already contains all inflected forms, a simple
+   * lowercase lookup is all that's needed.
    */
   function checkWordValid(word) {
-    if (typoDictionary) {
-      return typoDictionary.check(word);
-    }
-    if (fallbackWordSet) {
-      var lower = word.toLowerCase();
-      // Direct match
-      if (fallbackWordSet.has(lower)) return true;
-      // Common suffixes: check if stripping a suffix yields a known word
-      // This approximates Hunspell affix handling for the fallback
-      var suffixes = ['s', 'es', 'ed', 'ing', 'er', 'est', 'ly', 'ness', 'ment', 'tion', 'sion', 'able', 'ible', 'ful', 'less', 'ous', 'ive', 'al', 'ial'];
-      for (var i = 0; i < suffixes.length; i++) {
-        var suf = suffixes[i];
-        if (lower.length > suf.length + 2 && lower.endsWith(suf)) {
-          var stem = lower.substring(0, lower.length - suf.length);
-          if (fallbackWordSet.has(stem)) return true;
-          // Handle doubled consonant (e.g. "running" -> "run")
-          if (stem.length > 2 && stem[stem.length - 1] === stem[stem.length - 2]) {
-            if (fallbackWordSet.has(stem.substring(0, stem.length - 1))) return true;
-          }
-          // Handle dropped 'e' (e.g. "making" -> "make")
-          if (fallbackWordSet.has(stem + 'e')) return true;
-        }
-      }
-      return false;
-    }
-    return true; // No dictionary available — don't flag
+    if (!wordSet) return true; // No dictionary loaded — don't flag
+    return wordSet.has(word.toLowerCase());
   }
 
   /**
-   * Get spelling suggestions using best available dictionary.
+   * Get spelling suggestions using a hybrid approach:
+   * 1. Fast edit-distance-1 candidates checked against wordSet (instant)
+   * 2. BK-tree search for distance-2 candidates (fast, O(log n))
+   * Results are ranked by edit distance, then alphabetically.
    */
   function getWordSuggestions(word, limit) {
-    if (typoDictionary) {
-      try {
-        return typoDictionary.suggest(word, limit || 3);
-      } catch (e) {
-        return [];
+    if (!wordSet) return [];
+    limit = limit || 3;
+    var lower = word.toLowerCase();
+    var results = [];
+    var seen = new Set();
+
+    // Phase 1: edit-distance-1 candidates (very fast — no tree needed)
+    var ed1 = editDistance1Candidates(lower);
+    for (var i = 0; i < ed1.length && results.length < limit * 2; i++) {
+      if (wordSet.has(ed1[i]) && !seen.has(ed1[i])) {
+        seen.add(ed1[i]);
+        results.push({ word: ed1[i], dist: 1 });
       }
     }
-    if (fallbackWordSet) {
-      // Simple edit-distance-1 suggestions from the fallback word set
-      return editDistance1Suggestions(word.toLowerCase(), limit || 3);
+
+    // Phase 2: BK-tree search for distance-2 if we need more suggestions
+    if (results.length < limit && bkTree) {
+      var bkResults = [];
+      searchBK(bkTree, lower, 2, bkResults, limit * 3);
+      for (var i = 0; i < bkResults.length; i++) {
+        if (!seen.has(bkResults[i].word) && bkResults[i].dist > 0) {
+          seen.add(bkResults[i].word);
+          results.push(bkResults[i]);
+        }
+      }
     }
-    return [];
+
+    // Sort by distance, then alphabetically
+    results.sort(function (a, b) {
+      if (a.dist !== b.dist) return a.dist - b.dist;
+      return a.word < b.word ? -1 : 1;
+    });
+
+    var out = [];
+    for (var i = 0; i < Math.min(results.length, limit); i++) {
+      out.push(results[i].word);
+    }
+    return out;
   }
 
   /**
-   * Find words in fallbackWordSet that are 1 edit away from the input.
-   * Edits: delete a char, insert a char, replace a char, swap adjacent chars.
+   * Generate all edit-distance-1 candidates for a word.
+   * Returns array of candidate strings (not checked against dictionary yet).
    */
-  function editDistance1Suggestions(word, limit) {
-    var results = [];
+  function editDistance1Candidates(word) {
+    var candidates = [];
     var alphabet = 'abcdefghijklmnopqrstuvwxyz';
-    var seen = new Set();
 
     // Deletions
     for (var i = 0; i < word.length; i++) {
-      var candidate = word.substring(0, i) + word.substring(i + 1);
-      if (candidate.length >= 2 && fallbackWordSet.has(candidate) && !seen.has(candidate)) {
-        seen.add(candidate);
-        results.push(candidate);
-        if (results.length >= limit) return results;
-      }
+      candidates.push(word.substring(0, i) + word.substring(i + 1));
     }
-    // Swaps
+    // Transpositions (swaps)
     for (var i = 0; i < word.length - 1; i++) {
-      var candidate = word.substring(0, i) + word[i + 1] + word[i] + word.substring(i + 2);
-      if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
-        seen.add(candidate);
-        results.push(candidate);
-        if (results.length >= limit) return results;
-      }
+      candidates.push(word.substring(0, i) + word[i + 1] + word[i] + word.substring(i + 2));
     }
     // Replacements
-    for (var i = 0; i < word.length && results.length < limit; i++) {
-      for (var j = 0; j < alphabet.length && results.length < limit; j++) {
-        if (alphabet[j] === word[i]) continue;
-        var candidate = word.substring(0, i) + alphabet[j] + word.substring(i + 1);
-        if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
-          seen.add(candidate);
-          results.push(candidate);
+    for (var i = 0; i < word.length; i++) {
+      for (var j = 0; j < alphabet.length; j++) {
+        if (alphabet[j] !== word[i]) {
+          candidates.push(word.substring(0, i) + alphabet[j] + word.substring(i + 1));
         }
       }
     }
     // Insertions
-    for (var i = 0; i <= word.length && results.length < limit; i++) {
-      for (var j = 0; j < alphabet.length && results.length < limit; j++) {
-        var candidate = word.substring(0, i) + alphabet[j] + word.substring(i);
-        if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
-          seen.add(candidate);
-          results.push(candidate);
-        }
+    for (var i = 0; i <= word.length; i++) {
+      for (var j = 0; j < alphabet.length; j++) {
+        candidates.push(word.substring(0, i) + alphabet[j] + word.substring(i));
       }
     }
-    return results;
+    return candidates;
   }
 
   /**
@@ -1910,8 +1917,7 @@ const QuickChecks = (function () {
       // Skip words in the custom dictionary
       if (isInCustomDictionary(word)) continue;
       // Skip words that are valid English words (e.g. "mount" is not a misspelling of "amount")
-      if (typoDictionary && typoDictionary.check(word)) continue;
-      if (typoDictionary && typoDictionary.check(lower)) continue;
+      if (wordSet && wordSet.has(lower)) continue;
       // Check if this looks like a word with a missing first letter
       var found = findMissingLetterMatch(lower);
       if (found) {
@@ -2583,7 +2589,7 @@ const QuickChecks = (function () {
   };
 
   function runAll(text) {
-    console.log('[QuickChecks] runAll called, text length=' + (text ? text.length : 0) + ', rules=' + rules.length + ', typoLoaded=' + typoLoaded + ', fallbackWordSet=' + !!fallbackWordSet);
+    console.log('[QuickChecks] runAll called, text length=' + (text ? text.length : 0) + ', rules=' + rules.length + ', dictLoaded=' + dictLoaded + ', wordSet=' + !!wordSet);
     var allResults = [];
     rules.forEach(function (rule) {
       try {
@@ -2700,6 +2706,6 @@ const QuickChecks = (function () {
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
     isInCustomDictionary: isInCustomDictionary,
-    isDictionaryLoaded: function () { return typoLoaded || fallbackWordSet !== null; }
+    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; }
   };
 })();

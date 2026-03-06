@@ -248,7 +248,7 @@
       }
     });
 
-    // Re-run checks when Typo.js dictionary finishes loading
+    // Re-run checks when dictionary finishes loading
     document.addEventListener('typo-dictionary-loaded', function () {
       var text = Editor.getText();
       if (text && text.trim().length > 0) {
