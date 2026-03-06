@@ -85,6 +85,10 @@ const QuickChecks = (function () {
         var delay = Math.pow(2, typoRetries) * 1000; // 1s, 2s, 4s
         typoRetries++;
         setTimeout(loadTypoDictionary, delay);
+      } else {
+        console.warn('[QuickChecks] Dictionary loading failed after all retries — spelling will use common misspellings + heuristics only');
+        typoLoaded = true;
+        document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
       }
     });
   }
@@ -123,6 +127,8 @@ const QuickChecks = (function () {
     }).catch(function (err) {
       console.warn('Failed to load fallback dictionary:', err);
       typoLoading = false;
+      typoLoaded = true;
+      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
     });
   }
 
@@ -1161,10 +1167,24 @@ const QuickChecks = (function () {
     var match;
     var alreadyFlagged = new Set(); // track positions already flagged
 
+    // Pre-scan: find hyphenated tokens that are in the custom dictionary
+    // so their sub-words don't get flagged as misspellings
+    var hyphenSkipRanges = new Set();
+    var hyphenRegex = /\b[a-zA-Z]+-[a-zA-Z]+(?:-[a-zA-Z]+)*\b/g;
+    var hm;
+    while ((hm = hyphenRegex.exec(text)) !== null) {
+      if (isInCustomDictionary(hm[0])) {
+        for (var hi = hm.index; hi < hm.index + hm[0].length; hi++) {
+          hyphenSkipRanges.add(hi);
+        }
+      }
+    }
+
     // Pass 1: known misspellings (fast, high-quality suggestions)
     while ((match = wordRegex.exec(text)) !== null) {
       var word = match[0];
       var lower = word.toLowerCase();
+      if (hyphenSkipRanges.has(match.index)) continue;
       if (isInCustomDictionary(word)) continue;
       if (COMMON_MISSPELLINGS[lower]) {
         var replacement = COMMON_MISSPELLINGS[lower];
@@ -1200,6 +1220,8 @@ const QuickChecks = (function () {
 
           // Skip if already flagged by pass 1
           if (alreadyFlagged.has(match.index)) continue;
+          // Skip words that are part of a hyphenated custom dictionary entry
+          if (hyphenSkipRanges.has(match.index)) continue;
           // Skip custom dictionary words
           if (isInCustomDictionary(word)) continue;
           // Skip very short words, abbreviations, and known skip-list

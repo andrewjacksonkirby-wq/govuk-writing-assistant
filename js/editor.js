@@ -76,11 +76,20 @@ const Editor = (function () {
    * Uses Selection API + execCommand to preserve browser undo.
    * Returns true if successful.
    */
-  function applyReplacement(startOffset, endOffset, replacement) {
+  function applyReplacement(startOffset, endOffset, replacement, expectedOriginal) {
     clearHighlights();
     const text = getText();
     if (startOffset < 0 || endOffset > text.length || startOffset > endOffset) {
       return false;
+    }
+
+    // Verify text at offsets still matches what the suggestion expects
+    if (expectedOriginal) {
+      var actual = text.substring(startOffset, endOffset);
+      if (actual !== expectedOriginal) {
+        console.warn('[Editor] Stale offset — expected "' + expectedOriginal + '" but found "' + actual + '". Skipping replacement.');
+        return false;
+      }
     }
 
     // Use Selection API to select the range, then execCommand to replace

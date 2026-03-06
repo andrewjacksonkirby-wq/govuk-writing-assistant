@@ -14,19 +14,19 @@
     <div class="header-left">
       <div class="app-logo">W</div>
       <h1 class="app-title">Writing Assistant</h1>
-      <span class="save-status" id="saveStatus">Saved</span>
+      <span class="save-status" id="saveStatus" aria-live="polite">Saved</span>
     </div>
     <div class="header-right">
-      <button type="button" class="header-btn" id="newDraftBtn" title="New draft">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <button type="button" class="header-btn" id="newDraftBtn" title="New draft" aria-label="Create new draft">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>New</span>
       </button>
-      <button type="button" class="header-btn" id="draftsBtn" title="My documents">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      <button type="button" class="header-btn" id="draftsBtn" title="My documents" aria-label="View my documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
         <span>Documents</span>
       </button>
-      <button type="button" class="header-btn" id="historyBtn" title="Version history">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <button type="button" class="header-btn" id="historyBtn" title="Version history" aria-label="View version history">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
         <span>History</span>
       </button>
     </div>
@@ -87,7 +87,7 @@
         aria-label="Writing editor"
         spellcheck="false"
       ></div>
-      <div class="stats-bar" id="statsBar">
+      <div class="stats-bar" id="statsBar" aria-live="polite">
         <div class="stats-left">
           <span class="stat-item"><span class="stat-value" id="statWords">0</span> words</span>
           <span class="stat-divider"></span>
@@ -117,7 +117,7 @@
       <div class="sidebar-view" id="suggestionsView">
         <div class="sidebar-header">
           <div class="score-section" id="scoreSection">
-            <div class="score-circle" id="scoreCircle">
+            <div class="score-circle" id="scoreCircle" role="img" aria-label="Writing score">
               <svg viewBox="0 0 80 80" class="score-ring">
                 <circle cx="40" cy="40" r="34" fill="none" stroke="#e8e8e8" stroke-width="6"/>
                 <circle cx="40" cy="40" r="34" fill="none" stroke-width="6" stroke-linecap="round"
@@ -154,7 +154,7 @@
           </button>
         </div>
 
-        <div class="suggestions-list" id="suggestionsList">
+        <div class="suggestions-list" id="suggestionsList" aria-live="polite">
           <!-- Cards rendered dynamically -->
         </div>
       </div>

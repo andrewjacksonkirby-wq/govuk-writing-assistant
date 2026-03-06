@@ -525,6 +525,9 @@ const FullCheck = (function () {
       '- replacement: suggested fix (optional)\n\n' +
       'Text to check:\n\n' + text;
 
+    var controller = new AbortController();
+    var timeoutId = setTimeout(function () { controller.abort(); }, 30000);
+
     fetch(config.apiEndpoint, {
       method: 'POST',
       headers: {
@@ -532,6 +535,7 @@ const FullCheck = (function () {
         'x-api-key': config.apiKey,
         'anthropic-version': '2023-06-01'
       },
+      signal: controller.signal,
       body: JSON.stringify({
         model: config.model,
         max_tokens: 2048,
@@ -540,6 +544,7 @@ const FullCheck = (function () {
       })
     })
     .then(function (response) {
+      clearTimeout(timeoutId);
       if (!response.ok) throw new Error('API error: ' + response.status);
       return response.json();
     })
@@ -559,7 +564,14 @@ const FullCheck = (function () {
         return;
       }
 
-      var issues = JSON.parse(jsonMatch[0]);
+      var issues;
+      try {
+        issues = JSON.parse(jsonMatch[0]);
+      } catch (parseErr) {
+        isRunning = false;
+        callback(null, 'Failed to parse AI response');
+        return;
+      }
       var results = issues.map(function (issue) {
         return {
           id: makeId(),
@@ -581,8 +593,10 @@ const FullCheck = (function () {
       callback(results, null);
     })
     .catch(function (err) {
+      clearTimeout(timeoutId);
       isRunning = false;
-      callback(null, err.message);
+      var msg = err.name === 'AbortError' ? 'Check timed out after 30 seconds' : err.message;
+      callback(null, msg);
     });
   }
 

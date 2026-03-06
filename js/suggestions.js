@@ -250,10 +250,17 @@ const Suggestions = (function () {
 
     // Color
     scoreRingFill.className = 'score-ring-fill';
-    if (score >= 80) scoreRingFill.classList.add('score-good');
-    else if (score >= 60) scoreRingFill.classList.add('score-ok');
-    else if (score >= 40) scoreRingFill.classList.add('score-poor');
-    else scoreRingFill.classList.add('score-bad');
+    var scoreLabel;
+    if (score >= 80) { scoreRingFill.classList.add('score-good'); scoreLabel = 'Good'; }
+    else if (score >= 60) { scoreRingFill.classList.add('score-ok'); scoreLabel = 'OK'; }
+    else if (score >= 40) { scoreRingFill.classList.add('score-poor'); scoreLabel = 'Needs work'; }
+    else { scoreRingFill.classList.add('score-bad'); scoreLabel = 'Poor'; }
+
+    // Update aria-label on score circle
+    var scoreCircle = document.getElementById('scoreCircle');
+    if (scoreCircle) {
+      scoreCircle.setAttribute('aria-label', 'Writing score: ' + score + ' out of 100 — ' + scoreLabel);
+    }
   }
 
   function updateReadabilityDisplay() {

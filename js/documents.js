@@ -25,7 +25,23 @@ const Documents = (function () {
   }
 
   function saveDocs(docs) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.warn('[Documents] localStorage quota exceeded — pruning oldest document');
+        var keys = Object.keys(docs);
+        if (keys.length > 1) {
+          var sorted = keys.sort(function (a, b) {
+            return new Date(docs[a].updatedAt) - new Date(docs[b].updatedAt);
+          });
+          for (var i = 0; i < sorted.length; i++) {
+            if (sorted[i] !== currentDocId) { delete docs[sorted[i]]; break; }
+          }
+          try { localStorage.setItem(STORAGE_KEY, JSON.stringify(docs)); } catch (e2) { /* best effort */ }
+        }
+      }
+    }
   }
 
   /**

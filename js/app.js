@@ -160,8 +160,10 @@
       // Re-run quick checks with new mode
       var text = Editor.getText();
       QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
-        lastCheckVersion = v;
-        processQuickCheckResults(results);
+        if (v >= lastCheckVersion) {
+          lastCheckVersion = v;
+          processQuickCheckResults(results);
+        }
       });
     });
 
@@ -224,8 +226,10 @@
           Reports.update(restoredText);
           // Trigger quick checks on restored text
           QuickChecks.scheduleCheck(restoredText, Editor.getVersion(), function (results, v) {
-            lastCheckVersion = v;
-            processQuickCheckResults(results);
+            if (v >= lastCheckVersion) {
+              lastCheckVersion = v;
+              processQuickCheckResults(results);
+            }
           });
         }
         pendingRestore = null;
@@ -249,8 +253,10 @@
       var text = Editor.getText();
       if (text && text.trim().length > 0) {
         QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
-          lastCheckVersion = v;
-          processQuickCheckResults(results);
+          if (v >= lastCheckVersion) {
+            lastCheckVersion = v;
+            processQuickCheckResults(results);
+          }
         });
       }
     });
@@ -302,8 +308,10 @@
       Stats.update(initialText);
       Reports.update(initialText);
       QuickChecks.scheduleCheck(initialText, Editor.getVersion(), function (results, v) {
-        lastCheckVersion = v;
-        processQuickCheckResults(results);
+        if (v >= lastCheckVersion) {
+          lastCheckVersion = v;
+          processQuickCheckResults(results);
+        }
       });
     }
   }
@@ -384,9 +392,13 @@
     document.getElementById('checkNowText').textContent = 'Checking...';
     Suggestions.markFullCheckRun();
 
+    var checkDocId = Documents.getCurrentId();
     FullCheck.run(text, sensitivity, function (results, error) {
       checkNowBtn.disabled = false;
       document.getElementById('checkNowText').textContent = 'Check now';
+
+      // Discard results if user switched documents during the check
+      if (Documents.getCurrentId() !== checkDocId) return;
 
       if (error === 'blocked') {
         alert('AI check blocked: this draft is marked as sensitive.');
@@ -427,7 +439,7 @@
 
   function handleApply(suggestion) {
     if (suggestion.replacement !== undefined) {
-      Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement);
+      Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement, suggestion.original);
     }
     // Immediately re-check (don't wait for debounce) since offsets have shifted
     recheckNow();
@@ -438,7 +450,7 @@
     // so later replacements don't shift earlier offsets
     suggestions.forEach(function (s) {
       if (s.replacement !== undefined) {
-        Editor.applyReplacement(s.start, s.end, s.replacement);
+        Editor.applyReplacement(s.start, s.end, s.replacement, s.original);
       }
     });
     recheckNow();
@@ -507,8 +519,10 @@
     Suggestions.clearAll();
     updateSaveStatus('unsaved');
     QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
-      lastCheckVersion = v;
-      processQuickCheckResults(results);
+      if (v >= lastCheckVersion) {
+        lastCheckVersion = v;
+        processQuickCheckResults(results);
+      }
     });
   }
 
@@ -657,8 +671,10 @@
       updateSensitivityUI(switched.sensitivity || 'safe');
       updateModeUI(switched.mode || 'govuk');
       QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
-        lastCheckVersion = v;
-        processQuickCheckResults(results);
+        if (v >= lastCheckVersion) {
+          lastCheckVersion = v;
+          processQuickCheckResults(results);
+        }
       });
     }
     showEditorView();

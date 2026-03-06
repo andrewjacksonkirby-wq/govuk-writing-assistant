@@ -15,7 +15,7 @@
   --color-border-light: #ecedf1;
   --color-text: #1e2128;
   --color-text-secondary: #4a4f5c;
-  --color-text-muted: #8b8f9a;
+  --color-text-muted: #6b6f7a;
 
   --color-primary: #6366f1;
   --color-primary-hover: #4f46e5;
@@ -413,6 +413,7 @@ body {
   padding: var(--spacing-xl) var(--spacing-xl);
   font-size: 16px;
   line-height: 1.8;
+  letter-spacing: 0.03em;
   color: var(--color-text);
   background: var(--color-surface);
   overflow-y: auto;

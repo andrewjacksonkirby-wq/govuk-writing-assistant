@@ -35,6 +35,7 @@ const Reports = (function () {
   var LIST_ITEM_RE = /^[\s]*(?:[-*•–—]|\d+[.):]|[a-zA-Z][.):])\s+/;
 
   function parseSentences(text) {
+    text = text.replace(/\r\n/g, '\n');
     var sentences = [];
 
     // First, split text into blocks: list items get treated individually,
