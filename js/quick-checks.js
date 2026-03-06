@@ -299,6 +299,11 @@ const QuickChecks = (function () {
       id: 'govuk-capitalisation',
       category: 'Style',
       run: checkGovukCapitalisation
+    },
+    {
+      id: 'sentence-length',
+      category: 'Clarity',
+      run: checkSentenceLength
     }
   ];
 
@@ -1704,21 +1709,27 @@ const QuickChecks = (function () {
     var deduped = [];
     for (var i = 0; i < allResults.length; i++) {
       var current = allResults[i];
-      var dominated = false;
+      var currentPri = RULE_PRIORITY[current.ruleId] || 5;
+
+      var overlapping = [];
+      var nonOverlapping = [];
       for (var j = 0; j < deduped.length; j++) {
         var kept = deduped[j];
-        // Check if ranges overlap
         if (current.start < kept.end && current.end > kept.start) {
-          // Overlapping — keep the higher priority one
-          var currentPri = RULE_PRIORITY[current.ruleId] || 5;
-          var keptPri = RULE_PRIORITY[kept.ruleId] || 5;
-          if (currentPri <= keptPri) {
-            dominated = true;
-            break;
-          }
+          overlapping.push(kept);
+        } else {
+          nonOverlapping.push(kept);
         }
       }
+
+      // If any overlapping kept item has equal or higher priority, current is dominated
+      var dominated = overlapping.some(function (k) {
+        return (RULE_PRIORITY[k.ruleId] || 5) >= currentPri;
+      });
+
       if (!dominated) {
+        // current wins — discard all lower-priority overlapping items and add current
+        deduped = nonOverlapping;
         deduped.push(current);
       }
     }

@@ -44,7 +44,7 @@ const Editor = (function () {
 
   function setText(text) {
     if (!editorEl) return;
-    editorEl.textContent = text;
+    editorEl.innerText = text;
     documentVersion++;
   }
 

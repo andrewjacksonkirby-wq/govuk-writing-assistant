@@ -315,7 +315,7 @@ const Suggestions = (function () {
     if (!text || suggestion.start === undefined) return null;
 
     var start = suggestion.start;
-    var end = suggestion.end || (start + (suggestion.original || '').length);
+    var end = suggestion.end !== undefined ? suggestion.end : (start + (suggestion.original || '').length);
     if (start < 0 || end > text.length) return null;
 
     var ctxBefore = text.substring(Math.max(0, start - 40), start);
