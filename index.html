@@ -106,7 +106,7 @@
       </div>
     </section>
 
-    <aside class="sidebar" id="sidebar">
+    <aside class="sidebar" id="sidebar" aria-label="Writing suggestions">
       <div class="sidebar-view-toggle">
         <div class="view-toggle-pill">
           <button type="button" class="view-tab active" id="viewSuggestions" data-view="suggestions">Suggestions</button>
@@ -179,7 +179,7 @@
   </div>
 
   <!-- Version history modal -->
-  <div class="modal-overlay" id="historyModal" hidden>
+  <div class="modal-overlay" id="historyModal" hidden aria-modal="true" role="dialog">
     <div class="modal" role="dialog" aria-label="Version history">
       <div class="modal-header">
         <h2>Version history</h2>
@@ -192,7 +192,7 @@
   </div>
 
   <!-- Confirm restore dialog -->
-  <div class="modal-overlay" id="restoreConfirmModal" hidden>
+  <div class="modal-overlay" id="restoreConfirmModal" hidden aria-modal="true" role="dialog">
     <div class="modal modal-small" role="alertdialog" aria-label="Confirm restore">
       <div class="modal-header">
         <h2>Restore this version?</h2>
@@ -208,7 +208,7 @@
   </div>
 
   <!-- Custom dictionary modal -->
-  <div class="modal-overlay" id="dictionaryModal" hidden>
+  <div class="modal-overlay" id="dictionaryModal" hidden aria-modal="true" role="dialog">
     <div class="modal" role="dialog" aria-label="Custom dictionary">
       <div class="modal-header">
         <h2>Custom dictionary</h2>

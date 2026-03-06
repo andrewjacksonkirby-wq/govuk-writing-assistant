@@ -176,6 +176,14 @@
 
     // Keyboard shortcuts
     document.addEventListener('keydown', function (e) {
+      // Escape = close modals and inline popup
+      if (e.key === 'Escape') {
+        if (!restoreConfirmModal.hidden) { restoreConfirmModal.hidden = true; releaseFocus(); pendingRestore = null; return; }
+        if (!historyModal.hidden) { historyModal.hidden = true; releaseFocus(); return; }
+        if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
+        InlinePopup.hide();
+        return;
+      }
       // Ctrl+S / Cmd+S = save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
@@ -195,14 +203,15 @@
 
     // History modal
     historyBtn.addEventListener('click', openHistoryModal);
-    closeHistoryModal.addEventListener('click', function () { historyModal.hidden = true; });
+    closeHistoryModal.addEventListener('click', function () { historyModal.hidden = true; releaseFocus(); });
     historyModal.addEventListener('click', function (e) {
-      if (e.target === historyModal) historyModal.hidden = true;
+      if (e.target === historyModal) { historyModal.hidden = true; releaseFocus(); }
     });
 
     // Restore confirm
     cancelRestore.addEventListener('click', function () {
       restoreConfirmModal.hidden = true;
+      releaseFocus();
       pendingRestore = null;
     });
     confirmRestore.addEventListener('click', function () {
@@ -223,6 +232,7 @@
       }
       restoreConfirmModal.hidden = true;
       historyModal.hidden = true;
+      releaseFocus();
     });
 
     // Paste & check: auto-trigger full check on large pastes (50+ words)
@@ -272,11 +282,11 @@
     dictBtn.addEventListener('click', function () {
       dictionaryModal.hidden = false;
       renderDictionary();
-      dictInput.focus();
+      trapFocus(dictionaryModal);
     });
-    closeDictModal.addEventListener('click', function () { dictionaryModal.hidden = true; });
+    closeDictModal.addEventListener('click', function () { dictionaryModal.hidden = true; releaseFocus(); });
     dictionaryModal.addEventListener('click', function (e) {
-      if (e.target === dictionaryModal) dictionaryModal.hidden = true;
+      if (e.target === dictionaryModal) { dictionaryModal.hidden = true; releaseFocus(); }
     });
     dictAddBtn.addEventListener('click', addDictWord);
     dictInput.addEventListener('keydown', function (e) {
@@ -752,6 +762,7 @@
     if (versions.length === 0) {
       historyList.innerHTML = '<p class="empty-state">No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.</p>';
       historyModal.hidden = false;
+      trapFocus(historyModal);
       return;
     }
 
@@ -779,6 +790,7 @@
       restoreBtn.addEventListener('click', function () {
         pendingRestore = index;
         restoreConfirmModal.hidden = false;
+        trapFocus(restoreConfirmModal);
       });
       item.appendChild(restoreBtn);
 
@@ -786,6 +798,37 @@
     });
 
     historyModal.hidden = false;
+    trapFocus(historyModal);
+  }
+
+  // ========== Focus trapping ==========
+
+  var activeTrap = null;
+
+  function trapFocus(modalEl) {
+    activeTrap = function (e) {
+      if (e.key !== 'Tab') return;
+      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
+      if (focusable.length === 0) return;
+      var first = focusable[0];
+      var last = focusable[focusable.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    };
+    document.addEventListener('keydown', activeTrap);
+    // Focus the first focusable element
+    var firstFocusable = modalEl.querySelector('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled])');
+    if (firstFocusable) firstFocusable.focus();
+  }
+
+  function releaseFocus() {
+    if (activeTrap) {
+      document.removeEventListener('keydown', activeTrap);
+      activeTrap = null;
+    }
   }
 
   // ========== Helpers ==========
