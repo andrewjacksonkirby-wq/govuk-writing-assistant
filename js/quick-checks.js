@@ -12,10 +12,34 @@ const QuickChecks = (function () {
 
   /**
    * Typo.js dictionary instance for comprehensive spell-checking (British English).
+   * fallbackWordSet is a plain Set of lowercase words parsed from the .dic file —
+   * used when the Typo constructor fails but the raw data was fetched successfully.
    */
   var typoDictionary = null;
+  var fallbackWordSet = null;
   var typoLoading = false;
   var typoLoaded = false;
+  var typoRetries = 0;
+  var MAX_RETRIES = 3;
+
+  /**
+   * Parse a Hunspell .dic file into a Set of lowercase base words.
+   * Each line is "word/flags" or just "word". First line is the word count.
+   */
+  function parseDicToWordSet(dicData) {
+    var set = new Set();
+    var lines = dicData.split('\n');
+    for (var i = 1; i < lines.length; i++) { // skip first line (count)
+      var line = lines[i].trim();
+      if (!line) continue;
+      var slashIdx = line.indexOf('/');
+      var word = slashIdx !== -1 ? line.substring(0, slashIdx) : line;
+      if (word && /^[a-zA-Z]+$/.test(word)) {
+        set.add(word.toLowerCase());
+      }
+    }
+    return set;
+  }
 
   function loadTypoDictionary() {
     if (typoLoading || typoLoaded) return;
@@ -32,17 +56,36 @@ const QuickChecks = (function () {
       checkedFetch('dictionaries/en_GB.aff'),
       checkedFetch('dictionaries/en_GB.dic')
     ]).then(function (results) {
-      var dict = new Typo('en_GB', results[0], results[1]);
-      if (!dict.loaded) throw new Error('Typo dictionary parsed but not marked loaded');
-      typoDictionary = dict;
+      // Always build the fallback word set from raw .dic data
+      try {
+        fallbackWordSet = parseDicToWordSet(results[1]);
+        console.log('Fallback word set built (' + fallbackWordSet.size + ' words)');
+      } catch (e) {
+        console.warn('Failed to parse .dic into fallback set:', e);
+      }
+
+      // Try to build the full Typo.js dictionary (handles affixes, suggestions)
+      try {
+        var dict = new Typo('en_GB', results[0], results[1]);
+        if (!dict.loaded) throw new Error('Typo dictionary parsed but not marked loaded');
+        typoDictionary = dict;
+        console.log('Typo.js dictionary loaded (en_GB)');
+      } catch (e) {
+        console.warn('Typo.js constructor failed, using fallback word set:', e);
+      }
+
       typoLoaded = true;
       typoLoading = false;
-      console.log('Typo.js dictionary loaded (en_GB)');
-      // Notify the app that the dictionary is ready so it can re-check
       document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
     }).catch(function (err) {
-      console.warn('Failed to load Typo.js dictionary:', err);
+      console.warn('Failed to fetch dictionary files (attempt ' + (typoRetries + 1) + '):', err);
       typoLoading = false;
+      // Retry with exponential backoff
+      if (typoRetries < MAX_RETRIES) {
+        var delay = Math.pow(2, typoRetries) * 1000; // 1s, 2s, 4s
+        typoRetries++;
+        setTimeout(loadTypoDictionary, delay);
+      }
     });
   }
 
@@ -50,9 +93,36 @@ const QuickChecks = (function () {
   if (typeof Typo !== 'undefined') {
     loadTypoDictionary();
   } else {
-    // Retry once after DOM is ready
+    // Retry once after DOM is ready, then try without Typo
     document.addEventListener('DOMContentLoaded', function () {
-      if (typeof Typo !== 'undefined') loadTypoDictionary();
+      if (typeof Typo !== 'undefined') {
+        loadTypoDictionary();
+      } else {
+        // Typo.js library not loaded — still fetch .dic for fallback word set
+        loadFallbackOnly();
+      }
+    });
+  }
+
+  /**
+   * If Typo.js library itself didn't load, still fetch the .dic file
+   * for a basic word-set spell check.
+   */
+  function loadFallbackOnly() {
+    if (typoLoading || typoLoaded || fallbackWordSet) return;
+    typoLoading = true;
+    fetch('dictionaries/en_GB.dic').then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    }).then(function (dicData) {
+      fallbackWordSet = parseDicToWordSet(dicData);
+      typoLoaded = true;
+      typoLoading = false;
+      console.log('Fallback-only word set built (' + fallbackWordSet.size + ' words)');
+      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
+    }).catch(function (err) {
+      console.warn('Failed to load fallback dictionary:', err);
+      typoLoading = false;
     });
   }
 
@@ -217,7 +287,189 @@ const QuickChecks = (function () {
     'hadnt': "hadn't",
     'wouldnt': "wouldn't",
     'shouldnt': "shouldn't",
-    'couldnt': "couldn't"
+    'couldnt': "couldn't",
+    // Fast-typing / keyboard slip typos
+    'thks': 'thanks',
+    'thnks': 'thanks',
+    'thankyou': 'thank you',
+    'thx': 'thanks',
+    'shpping': 'shipping',
+    'shping': 'shipping',
+    'shoping': 'shopping',
+    'shoppping': 'shopping',
+    'ot': 'to',
+    'fo': 'of',
+    'nad': 'and',
+    'tho': 'the',
+    'fro': 'for',
+    'fom': 'from',
+    'frm': 'from',
+    'wiht': 'with',
+    'wtih': 'with',
+    'whit': 'with',
+    'htat': 'that',
+    'thsi': 'this',
+    'htis': 'this',
+    'tihs': 'this',
+    'jsut': 'just',
+    'juts': 'just',
+    'liek': 'like',
+    'lkie': 'like',
+    'abuot': 'about',
+    'abotu': 'about',
+    'whne': 'when',
+    'wehn': 'when',
+    'hwen': 'when',
+    'thna': 'than',
+    'tahn': 'than',
+    'tehn': 'then',
+    'htey': 'they',
+    'tehy': 'they',
+    'thye': 'they',
+    'form': 'from',
+    'lsit': 'list',
+    'lits': 'list',
+    'oen': 'one',
+    'ont': 'not',
+    'yoru': 'your',
+    'yuor': 'your',
+    'youre': "you're",
+    'thats': "that's",
+    'whats': "what's",
+    'heres': "here's",
+    'theres': "there's",
+    'weve': "we've",
+    'theyre': "they're",
+    'youve': "you've",
+    'youll': "you'll",
+    'theyll': "they'll",
+    'well': "we'll",
+    'itll': "it'll",
+    'ive': "I've",
+    'im': "I'm",
+    'il': "I'll",
+    'wer': 'were',
+    'wre': 'were',
+    'whre': 'where',
+    'ther': 'there',
+    'theri': 'their',
+    'tehir': 'their',
+    'beign': 'being',
+    'bieng': 'being',
+    'beeing': 'being',
+    'comign': 'coming',
+    'goign': 'going',
+    'havign': 'having',
+    'makign': 'making',
+    'takign': 'taking',
+    'usign': 'using',
+    'gievn': 'given',
+    'knwo': 'know',
+    'konw': 'know',
+    'nkow': 'know',
+    'wrok': 'work',
+    'owrk': 'work',
+    'peolpe': 'people',
+    'peopel': 'people',
+    'poeple': 'people',
+    'cahnge': 'change',
+    'chnage': 'change',
+    'chagne': 'change',
+    'plase': 'please',
+    'plsea': 'please',
+    'pleae': 'please',
+    'pls': 'please',
+    'sicne': 'since',
+    'snce': 'since',
+    'udpate': 'update',
+    'upadte': 'update',
+    'updaet': 'update',
+    'nede': 'need',
+    'ned': 'need',
+    'neeed': 'need',
+    'aslo': 'also',
+    'alsi': 'also',
+    'soem': 'some',
+    'smoe': 'some',
+    'cna': 'can',
+    'evne': 'even',
+    'evrey': 'every',
+    'eveyr': 'every',
+    'porblem': 'problem',
+    'probelm': 'problem',
+    'problme': 'problem',
+    'acess': 'access',
+    'acccess': 'access',
+    'buidl': 'build',
+    'bulid': 'build',
+    'chekc': 'check',
+    'chedk': 'check',
+    'contnet': 'content',
+    'contetn': 'content',
+    'detials': 'details',
+    'deatils': 'details',
+    'detilas': 'details',
+    'emial': 'email',
+    'eamil': 'email',
+    'meial': 'email',
+    'entier': 'entire',
+    'exapmle': 'example',
+    'exmaple': 'example',
+    'exampel': 'example',
+    'frist': 'first',
+    'fisrt': 'first',
+    'formt': 'format',
+    'gorund': 'ground',
+    'incldue': 'include',
+    'inclue': 'include',
+    'inlcude': 'include',
+    'isssue': 'issue',
+    'isue': 'issue',
+    'isseu': 'issue',
+    'lnk': 'link',
+    'lnik': 'link',
+    'manay': 'many',
+    'mnay': 'many',
+    'msut': 'must',
+    'muts': 'must',
+    'nmae': 'name',
+    'naem': 'name',
+    'oepn': 'open',
+    'opne': 'open',
+    'paeg': 'page',
+    'pgae': 'page',
+    'plna': 'plan',
+    'palne': 'plane',
+    'pubilsh': 'publish',
+    'publsih': 'publish',
+    'raed': 'read',
+    'rela': 'real',
+    'rigth': 'right',
+    'rihgt': 'right',
+    'saem': 'same',
+    'smae': 'same',
+    'sned': 'send',
+    'sedn': 'send',
+    'shwo': 'show',
+    'hsow': 'show',
+    'szie': 'size',
+    'tiem': 'time',
+    'tima': 'time',
+    'udner': 'under',
+    'undedr': 'under',
+    'veyr': 'very',
+    'vrey': 'very',
+    'wnat': 'want',
+    'awnt': 'want',
+    'wyas': 'ways',
+    'wehn': 'when',
+    'whihc': 'which',
+    'wihch': 'which',
+    'iwth': 'with',
+    'wrods': 'words',
+    'owrds': 'words',
+    'wrtie': 'write',
+    'wirte': 'write'
   };
 
   /**
@@ -377,8 +629,9 @@ const QuickChecks = (function () {
       }
     }
 
-    // Pass 2: Typo.js dictionary check (comprehensive)
-    if (typoDictionary) {
+    // Pass 2: Dictionary check (Typo.js or fallback word set)
+    var hasDictionary = typoDictionary || fallbackWordSet;
+    if (hasDictionary) {
       try {
         wordRegex.lastIndex = 0;
         while ((match = wordRegex.exec(text)) !== null) {
@@ -398,13 +651,13 @@ const QuickChecks = (function () {
           if (word.indexOf("'") !== -1) continue;
           // Capitalised words: check the lowercase version instead of skipping entirely
           if (word.length > 1 && word[0] === word[0].toUpperCase() && word[1] === word[1].toLowerCase()) {
-            if (typoDictionary.check(word.toLowerCase())) continue;
-            // Lowercase failed Typo.js — fall through to flag it
+            if (checkWordValid(word.toLowerCase())) continue;
+            // Lowercase failed dictionary check — fall through to flag it
           }
 
-          // Check against Hunspell dictionary
-          if (!typoDictionary.check(word)) {
-            var suggestions = typoDictionary.suggest(word, 3);
+          // Check against dictionary
+          if (!checkWordValid(word)) {
+            var suggestions = getWordSuggestions(word, 3);
             var replacement = suggestions.length > 0 ? suggestions[0] : null;
             // Preserve case
             if (replacement && word[0] === word[0].toUpperCase()) {
@@ -413,7 +666,7 @@ const QuickChecks = (function () {
             var entry = {
               id: makeId(),
               ruleId: 'spelling',
-              source: 'typo',
+              source: typoDictionary ? 'typo' : 'fallback',
               group: 'correctness',
               category: 'Spelling',
               start: match.index,
@@ -431,10 +684,143 @@ const QuickChecks = (function () {
           }
         }
       } catch (e) {
-        console.warn('Typo.js check error:', e);
+        console.warn('Dictionary check error:', e);
       }
     }
 
+    // Pass 3: Heuristic check for obviously broken words (no dictionary needed)
+    if (!hasDictionary) {
+      wordRegex.lastIndex = 0;
+      while ((match = wordRegex.exec(text)) !== null) {
+        var hw = match[0];
+        if (hw.length < 3) continue;
+        if (alreadyFlagged.has(match.index)) continue;
+        if (isInCustomDictionary(hw)) continue;
+        if (SKIP_WORDS.has(hw.toLowerCase())) continue;
+        if (hw === hw.toUpperCase() && /^[A-Z]+$/.test(hw)) continue;
+        if (hw.indexOf("'") !== -1) continue;
+
+        // Flag words with no vowels (a,e,i,o,u,y) — almost always misspelled
+        if (!/[aeiouyAEIOUY]/.test(hw)) {
+          results.push({
+            id: makeId(),
+            ruleId: 'spelling',
+            source: 'heuristic',
+            group: 'correctness',
+            category: 'Spelling',
+            start: match.index,
+            end: match.index + hw.length,
+            message: 'Check the spelling of "' + hw + '"',
+            title: 'Possible spelling mistake',
+            original: hw
+          });
+          alreadyFlagged.add(match.index);
+        }
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Check if a word is valid using best available dictionary.
+   * Tries Typo.js first (handles affixes, compound words), falls back to word set.
+   */
+  function checkWordValid(word) {
+    if (typoDictionary) {
+      return typoDictionary.check(word);
+    }
+    if (fallbackWordSet) {
+      var lower = word.toLowerCase();
+      // Direct match
+      if (fallbackWordSet.has(lower)) return true;
+      // Common suffixes: check if stripping a suffix yields a known word
+      // This approximates Hunspell affix handling for the fallback
+      var suffixes = ['s', 'es', 'ed', 'ing', 'er', 'est', 'ly', 'ness', 'ment', 'tion', 'sion', 'able', 'ible', 'ful', 'less', 'ous', 'ive', 'al', 'ial'];
+      for (var i = 0; i < suffixes.length; i++) {
+        var suf = suffixes[i];
+        if (lower.length > suf.length + 2 && lower.endsWith(suf)) {
+          var stem = lower.substring(0, lower.length - suf.length);
+          if (fallbackWordSet.has(stem)) return true;
+          // Handle doubled consonant (e.g. "running" -> "run")
+          if (stem.length > 2 && stem[stem.length - 1] === stem[stem.length - 2]) {
+            if (fallbackWordSet.has(stem.substring(0, stem.length - 1))) return true;
+          }
+          // Handle dropped 'e' (e.g. "making" -> "make")
+          if (fallbackWordSet.has(stem + 'e')) return true;
+        }
+      }
+      return false;
+    }
+    return true; // No dictionary available — don't flag
+  }
+
+  /**
+   * Get spelling suggestions using best available dictionary.
+   */
+  function getWordSuggestions(word, limit) {
+    if (typoDictionary) {
+      try {
+        return typoDictionary.suggest(word, limit || 3);
+      } catch (e) {
+        return [];
+      }
+    }
+    if (fallbackWordSet) {
+      // Simple edit-distance-1 suggestions from the fallback word set
+      return editDistance1Suggestions(word.toLowerCase(), limit || 3);
+    }
+    return [];
+  }
+
+  /**
+   * Find words in fallbackWordSet that are 1 edit away from the input.
+   * Edits: delete a char, insert a char, replace a char, swap adjacent chars.
+   */
+  function editDistance1Suggestions(word, limit) {
+    var results = [];
+    var alphabet = 'abcdefghijklmnopqrstuvwxyz';
+    var seen = new Set();
+
+    // Deletions
+    for (var i = 0; i < word.length; i++) {
+      var candidate = word.substring(0, i) + word.substring(i + 1);
+      if (candidate.length >= 2 && fallbackWordSet.has(candidate) && !seen.has(candidate)) {
+        seen.add(candidate);
+        results.push(candidate);
+        if (results.length >= limit) return results;
+      }
+    }
+    // Swaps
+    for (var i = 0; i < word.length - 1; i++) {
+      var candidate = word.substring(0, i) + word[i + 1] + word[i] + word.substring(i + 2);
+      if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
+        seen.add(candidate);
+        results.push(candidate);
+        if (results.length >= limit) return results;
+      }
+    }
+    // Replacements
+    for (var i = 0; i < word.length && results.length < limit; i++) {
+      for (var j = 0; j < alphabet.length && results.length < limit; j++) {
+        if (alphabet[j] === word[i]) continue;
+        var candidate = word.substring(0, i) + alphabet[j] + word.substring(i + 1);
+        if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
+          seen.add(candidate);
+          results.push(candidate);
+        }
+      }
+    }
+    // Insertions
+    for (var i = 0; i <= word.length && results.length < limit; i++) {
+      for (var j = 0; j < alphabet.length && results.length < limit; j++) {
+        var candidate = word.substring(0, i) + alphabet[j] + word.substring(i);
+        if (fallbackWordSet.has(candidate) && !seen.has(candidate)) {
+          seen.add(candidate);
+          results.push(candidate);
+        }
+      }
+    }
     return results;
   }
 
@@ -1722,6 +2108,6 @@ const QuickChecks = (function () {
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
     isInCustomDictionary: isInCustomDictionary,
-    isDictionaryLoaded: function () { return typoLoaded; }
+    isDictionaryLoaded: function () { return typoLoaded || fallbackWordSet !== null; }
   };
 })();
