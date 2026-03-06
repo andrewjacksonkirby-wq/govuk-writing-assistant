@@ -65,7 +65,18 @@ const QuickChecks = (function () {
     'pm', 'am', 'cv', 'qa', 'jr', 'sr', 'mr', 'ms', 'dr', 'st',
     'nd', 'rd', 'th', 'gov', 'www', 'http', 'https', 'html', 'css',
     'pdf', 'doc', 'csv', 'url', 'api', 'btn', 'img', 'src', 'div',
+    // Government departments and agencies
     'hmrc', 'dvla', 'nhs', 'moj', 'dwp', 'hmcts', 'defra',
+    'apha', 'rpa', 'mmo', 'cefas', 'jncc', 'ofsted', 'ofgem',
+    'ofcom', 'dfe', 'dhsc', 'dcms', 'beis', 'fcdo', 'mod',
+    'dft', 'dluhc', 'ho', 'co', 'gds', 'ons',
+    // Common GOV.UK / Defra terms
+    'sfi', 'bps', 'elms', 'elm', 'sssi', 'sac', 'spa', 'lnr',
+    'eia', 'sea', 'habitats', 'brp', 'rle', 'oifm',
+    'intranet', 'stakeholder', 'stakeholders',
+    'biodiversity', 'catchment', 'waterbody', 'waterbodies',
+    'hedgerow', 'hedgerows', 'agri-environment',
+    // Days and months
     'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
     'january', 'february', 'march', 'april', 'may', 'june',
     'july', 'august', 'september', 'october', 'november', 'december'
@@ -381,8 +392,8 @@ const QuickChecks = (function () {
           // Skip very short words, abbreviations, and known skip-list
           if (word.length < 2) continue;
           if (SKIP_WORDS.has(lower)) continue;
-          // Skip words that are all uppercase (likely acronyms)
-          if (word.length <= 4 && word === word.toUpperCase()) continue;
+          // Skip words that are all uppercase (acronyms like DEFRA, APHA, BPS, ELMS)
+          if (word === word.toUpperCase() && /^[A-Z]+$/.test(word)) continue;
           // Skip words with apostrophes that are contractions
           if (word.indexOf("'") !== -1) continue;
           // Skip words that start with uppercase followed by lowercase (likely proper nouns)

@@ -6,6 +6,7 @@ const InlinePopup = (function () {
   var popupEl = null;
   var onApplyCb = null;
   var onDismissCb = null;
+  var onDismissOnceCb = null;
 
   var STYLE_RULES = ['contractions', 'numbers', 'date-format', 'govuk-style',
     'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'];
@@ -30,6 +31,7 @@ const InlinePopup = (function () {
   function init(callbacks) {
     onApplyCb = callbacks.onApply;
     onDismissCb = callbacks.onDismiss;
+    onDismissOnceCb = callbacks.onDismissOnce;
     popupEl = document.getElementById('inline-popup');
 
     // Dismiss on click outside (capture phase so it fires before the underline click)
@@ -103,10 +105,20 @@ const InlinePopup = (function () {
       actions.appendChild(fixBtn);
     }
 
+    var ignoreOnceBtn = document.createElement('button');
+    ignoreOnceBtn.type = 'button';
+    ignoreOnceBtn.className = 'btn btn-secondary btn-sm';
+    ignoreOnceBtn.textContent = 'Ignore once';
+    ignoreOnceBtn.addEventListener('click', function () {
+      if (onDismissOnceCb) onDismissOnceCb(suggestion);
+      hide();
+    });
+    actions.appendChild(ignoreOnceBtn);
+
     var ignoreBtn = document.createElement('button');
     ignoreBtn.type = 'button';
     ignoreBtn.className = 'btn btn-secondary btn-sm';
-    ignoreBtn.textContent = 'Ignore';
+    ignoreBtn.textContent = 'Ignore always';
     ignoreBtn.addEventListener('click', function () {
       if (onDismissCb) onDismissCb(suggestion);
       hide();

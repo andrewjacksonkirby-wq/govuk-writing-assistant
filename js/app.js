@@ -94,6 +94,9 @@
       },
       onDismiss: function (suggestion) {
         Suggestions.dismiss(suggestion);
+      },
+      onDismissOnce: function (suggestion) {
+        Suggestions.dismissOnce(suggestion);
       }
     });
 
@@ -220,6 +223,15 @@
       }
       restoreConfirmModal.hidden = true;
       historyModal.hidden = true;
+    });
+
+    // Paste & check: auto-trigger full check on large pastes (50+ words)
+    Editor.onPaste(function (pastedText) {
+      var words = pastedText.trim().split(/\s+/).length;
+      if (words >= 50 && Documents.getSensitivity() === 'safe' && !FullCheck.getIsRunning()) {
+        // Short delay so the editor onChange fires first (quick checks run)
+        setTimeout(function () { handleCheckNow(); }, 300);
+      }
     });
 
     // Re-run checks when Typo.js dictionary finishes loading

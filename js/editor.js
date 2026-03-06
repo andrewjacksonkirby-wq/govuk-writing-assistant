@@ -22,11 +22,15 @@ const Editor = (function () {
     notifyChange();
   }
 
+  let onPasteCallbacks = [];
+
   function handlePaste(e) {
     // Force plain text paste to keep the editor clean
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
     document.execCommand('insertText', false, text);
+    // Notify paste listeners with the pasted text length
+    onPasteCallbacks.forEach(function (cb) { cb(text); });
   }
 
   function notifyChange() {
@@ -104,6 +108,8 @@ const Editor = (function () {
       sel.removeAllRanges();
       sel.addRange(range);
       document.execCommand('insertText', false, replacement);
+      // Flash the replaced text green so the user sees what changed
+      showFixFlash(startOffset, replacement.length);
       return true;
     }
 
@@ -419,6 +425,38 @@ const Editor = (function () {
     sel.addRange(range);
   }
 
+  /**
+   * Briefly flash a green highlight over newly inserted replacement text.
+   */
+  function showFixFlash(offset, length) {
+    if (!editorEl) return;
+    try {
+      var startInfo = getNodeOffset(editorEl, offset);
+      var endInfo = getNodeOffset(editorEl, offset + length);
+      if (!startInfo || !endInfo) return;
+
+      var flashRange = document.createRange();
+      flashRange.setStart(startInfo.node, startInfo.offset);
+      flashRange.setEnd(endInfo.node, endInfo.offset);
+
+      var span = document.createElement('span');
+      span.className = 'fix-flash';
+      flashRange.surroundContents(span);
+
+      // Remove the wrapper after animation completes (keep text)
+      setTimeout(function () {
+        if (span.parentNode) {
+          var parent = span.parentNode;
+          while (span.firstChild) parent.insertBefore(span.firstChild, span);
+          parent.removeChild(span);
+          parent.normalize(); // Merge adjacent text nodes
+        }
+      }, 1300);
+    } catch (e) {
+      // Flash is cosmetic — don't break if it fails
+    }
+  }
+
   function clearUnderlines() {
     currentUnderlines = [];
     if (!editorEl) return;
@@ -428,12 +466,21 @@ const Editor = (function () {
     }
   }
 
+  /**
+   * Register a callback for paste events.
+   * Callback receives (pastedText).
+   */
+  function onPaste(cb) {
+    onPasteCallbacks.push(cb);
+  }
+
   return {
     init: init,
     getText: getText,
     setText: setText,
     getVersion: getVersion,
     onChange: onChange,
+    onPaste: onPaste,
     getElement: getElement,
     applyReplacement: applyReplacement,
     highlightRange: highlightRange,

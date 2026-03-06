@@ -798,6 +798,18 @@ body {
   font-weight: 600;
 }
 
+/* Read-aloud button on suggestion cards */
+.card-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+.card-read-btn svg {
+  flex-shrink: 0;
+}
+
 .empty-state {
   font-size: 14px;
   color: var(--color-text-muted);
@@ -1679,6 +1691,18 @@ body {
 
 .dict-word-chip .dict-remove:hover {
   color: var(--color-correctness);
+}
+
+/* ===== Fix-applied flash animation ===== */
+.fix-flash {
+  background: var(--color-success-bg);
+  border-radius: 3px;
+  animation: fix-flash-fade 1.2s ease-out forwards;
+}
+
+@keyframes fix-flash-fade {
+  0% { background: #bbf7d0; }
+  100% { background: transparent; }
 }
 
 /* Reduce motion if preferred */

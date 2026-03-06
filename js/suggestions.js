@@ -13,6 +13,7 @@ const Suggestions = (function () {
   var correctnessSuggestions = [];
   var claritySuggestions = [];
   var dismissedIds = new Set();
+  var sessionDismissedIds = new Set(); // "Ignore this time" — cleared on page reload
   var activeFilter = 'all';
   var activeSuggestionId = null;
   var expandedCardId = null;
@@ -94,18 +95,19 @@ const Suggestions = (function () {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
   }
 
+  function isDismissed(s) {
+    var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+    return dismissedIds.has(key) || sessionDismissedIds.has(key);
+  }
+
   function setCorrectness(suggestions) {
-    correctnessSuggestions = suggestions.filter(function (s) {
-      return !dismissedIds.has(s.ruleId + ':' + s.start + ':' + s.original);
-    });
+    correctnessSuggestions = suggestions.filter(function (s) { return !isDismissed(s); });
     render();
   }
 
   function setClarity(suggestions) {
     hasRunFullCheck = true;
-    claritySuggestions = suggestions.filter(function (s) {
-      return !dismissedIds.has(s.ruleId + ':' + s.start + ':' + (s.original || ''));
-    });
+    claritySuggestions = suggestions.filter(function (s) { return !isDismissed(s); });
     render();
   }
 
@@ -118,6 +120,21 @@ const Suggestions = (function () {
     var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
     dismissedIds.add(key);
     saveDismissed();
+
+    correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
+    claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
+
+    if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
+    if (expandedCardId === suggestion.id) expandedCardId = null;
+    render();
+  }
+
+  /**
+   * Dismiss a suggestion for this session only (comes back next time).
+   */
+  function dismissOnce(suggestion) {
+    var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
+    sessionDismissedIds.add(key);
 
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
     claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
@@ -453,6 +470,18 @@ const Suggestions = (function () {
       body.appendChild(preview);
     }
 
+    // Read aloud button for this suggestion's sentence
+    var readBtn = document.createElement('button');
+    readBtn.type = 'button';
+    readBtn.className = 'btn btn-secondary btn-sm card-read-btn';
+    readBtn.title = 'Read this sentence aloud';
+    readBtn.innerHTML = '<svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 5.5h2l4-3v11l-4-3H3a1 1 0 01-1-1v-3a1 1 0 011-1z" fill="currentColor"/><path d="M11 5.5a3 3 0 010 5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg> Hear it';
+    readBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      readSuggestionSentence(suggestion);
+    });
+    body.appendChild(readBtn);
+
     // Actions
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
@@ -482,10 +511,24 @@ const Suggestions = (function () {
       }
     }
 
+    // "Ignore this time" — session-only dismiss (comes back next document)
+    var ignoreOnceBtn = document.createElement('button');
+    ignoreOnceBtn.type = 'button';
+    ignoreOnceBtn.className = 'btn btn-secondary btn-sm';
+    ignoreOnceBtn.textContent = 'Ignore once';
+    ignoreOnceBtn.title = 'Dismiss for this session only — will come back next time';
+    ignoreOnceBtn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      dismissOnce(suggestion);
+    });
+    actions.appendChild(ignoreOnceBtn);
+
+    // "Ignore always" — permanent dismiss (localStorage)
     var dismissBtn = document.createElement('button');
     dismissBtn.type = 'button';
     dismissBtn.className = 'btn btn-secondary btn-sm';
-    dismissBtn.textContent = hasSiblings ? 'Ignore all' : 'Ignore';
+    dismissBtn.textContent = hasSiblings ? 'Ignore all' : 'Ignore always';
+    dismissBtn.title = 'Dismiss permanently — will not come back';
     dismissBtn.addEventListener('click', function (e) {
       e.stopPropagation();
       if (hasSiblings) dismissAll(suggestion);
@@ -538,6 +581,39 @@ const Suggestions = (function () {
     }
   }
 
+  /**
+   * Read aloud the sentence containing a suggestion using TTS.
+   * Finds the sentence boundaries around the flagged text.
+   */
+  function readSuggestionSentence(suggestion) {
+    var text = getEditorText();
+    if (!text || suggestion.start === undefined) return;
+
+    // Find sentence boundaries around the suggestion
+    var start = suggestion.start;
+    // Walk backwards to find sentence start (period, newline, or text start)
+    var sentStart = start;
+    while (sentStart > 0 && !/[.!?\n]/.test(text[sentStart - 1])) sentStart--;
+
+    // Walk forwards to find sentence end
+    var sentEnd = suggestion.end !== undefined ? suggestion.end : start;
+    while (sentEnd < text.length && !/[.!?\n]/.test(text[sentEnd])) sentEnd++;
+    if (sentEnd < text.length && /[.!?]/.test(text[sentEnd])) sentEnd++; // include the punctuation
+
+    var sentence = text.substring(sentStart, sentEnd).trim();
+    if (!sentence) return;
+
+    // Stop any current speech first
+    if (window.speechSynthesis.speaking || window.speechSynthesis.pending) {
+      window.speechSynthesis.cancel();
+    }
+
+    var utterance = new SpeechSynthesisUtterance(sentence);
+    utterance.lang = 'en-GB';
+    utterance.rate = 0.9;
+    window.speechSynthesis.speak(utterance);
+  }
+
   function clearAll() {
     correctnessSuggestions = [];
     claritySuggestions = [];
@@ -553,6 +629,7 @@ const Suggestions = (function () {
     setClarity: setClarity,
     markFullCheckRun: markFullCheckRun,
     dismiss: dismiss,
+    dismissOnce: dismissOnce,
     getAll: getAll,
     clearAll: clearAll,
     selectById: selectById,
