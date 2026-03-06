@@ -305,7 +305,6 @@ const QuickChecks = (function () {
     'frm': 'from',
     'wiht': 'with',
     'wtih': 'with',
-    'whit': 'with',
     'htat': 'that',
     'thsi': 'this',
     'htis': 'this',
@@ -382,7 +381,6 @@ const QuickChecks = (function () {
     'upadte': 'update',
     'updaet': 'update',
     'nede': 'need',
-    'ned': 'need',
     'neeed': 'need',
     'aslo': 'also',
     'alsi': 'also',
@@ -468,7 +466,6 @@ const QuickChecks = (function () {
     'wirte': 'write',
     // More transposed / dropped-letter typos for common words
     'baout': 'about',
-    'abut': 'about',
     'aften': 'after',
     'aftre': 'after',
     'agian': 'again',
