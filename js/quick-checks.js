@@ -174,7 +174,7 @@ const QuickChecks = (function () {
     'begining': 'beginning',
     'beleive': 'believe',
     'buisness': 'business',
-    'calender': 'calendar',
+    'calander': 'calendar',
     'catagory': 'category',
     'comittee': 'committee',
     'commision': 'commission',
@@ -238,7 +238,7 @@ const QuickChecks = (function () {
     'recieve': 'receive',
     'refered': 'referred',
     'relevent': 'relevant',
-    'reoccur': 'recur',
+    'reoccured': 'recurred',
     'reponsible': 'responsible',
     'resourse': 'resource',
     'responsibilty': 'responsibility',
@@ -260,7 +260,7 @@ const QuickChecks = (function () {
     'untill': 'until',
     'usefull': 'useful',
     'vegatable': 'vegetable',
-    'wether': 'whether',
+    'whetehr': 'whether',
     'wich': 'which',
     'wierd': 'weird',
     'withold': 'withhold',
@@ -297,11 +297,10 @@ const QuickChecks = (function () {
     'shping': 'shipping',
     'shoping': 'shopping',
     'shoppping': 'shopping',
-    'ot': 'to',
+    'ot': 'to', // 2-char but "ot" isn't a real word
     'fo': 'of',
     'nad': 'and',
-    'tho': 'the',
-    'fro': 'for',
+    'foir': 'for',
     'fom': 'from',
     'frm': 'from',
     'wiht': 'with',
@@ -326,7 +325,7 @@ const QuickChecks = (function () {
     'htey': 'they',
     'tehy': 'they',
     'thye': 'they',
-    'form': 'from',
+    'fomr': 'from',
     'lsit': 'list',
     'lits': 'list',
     'oen': 'one',
@@ -343,11 +342,9 @@ const QuickChecks = (function () {
     'youve': "you've",
     'youll': "you'll",
     'theyll': "they'll",
-    'well': "we'll",
+    'wll': "we'll",
     'itll': "it'll",
     'ive': "I've",
-    'im': "I'm",
-    'il': "I'll",
     'wer': 'were',
     'wre': 'were',
     'whre': 'where',
@@ -462,7 +459,6 @@ const QuickChecks = (function () {
     'wnat': 'want',
     'awnt': 'want',
     'wyas': 'ways',
-    'wehn': 'when',
     'whihc': 'which',
     'wihch': 'which',
     'iwth': 'with',
@@ -677,8 +673,7 @@ const QuickChecks = (function () {
     'outsdie': 'outside',
     'overal': 'overall',
     'ovrall': 'overall',
-    'prat': 'part',
-    'prat': 'part',
+    'aprt': 'part',
     'pasrt': 'parts',
     'payemnt': 'payment',
     'paymnet': 'payment',
@@ -752,7 +747,6 @@ const QuickChecks = (function () {
     'sevreal': 'several',
     'severla': 'several',
     'shaep': 'shape',
-    'shoudl': 'should',
     'shuold': 'should',
     'simlar': 'similar',
     'similiar': 'similar',
@@ -830,7 +824,6 @@ const QuickChecks = (function () {
     'viwe': 'view',
     'vistit': 'visit',
     'watn': 'want',
-    'wnat': 'want',
     'wehre': 'where',
     'wheer': 'where',
     'whiel': 'while',
@@ -985,7 +978,6 @@ const QuickChecks = (function () {
     'prtoect': 'protect',
     'proteect': 'protect',
     'publihs': 'publish',
-    'publsih': 'publish',
     'recrod': 'record',
     'reocrd': 'record',
     'redcue': 'reduce',
@@ -2572,10 +2564,18 @@ const QuickChecks = (function () {
   };
 
   function runAll(text) {
+    console.log('[QuickChecks] runAll called, text length=' + (text ? text.length : 0) + ', rules=' + rules.length + ', typoLoaded=' + typoLoaded + ', fallbackWordSet=' + !!fallbackWordSet);
     var allResults = [];
     rules.forEach(function (rule) {
-      var results = rule.run(text);
-      allResults = allResults.concat(results);
+      try {
+        var results = rule.run(text);
+        if (results.length > 0) {
+          console.log('[QuickChecks] rule "' + rule.id + '" found ' + results.length + ' issues');
+        }
+        allResults = allResults.concat(results);
+      } catch (e) {
+        console.warn('QuickChecks: rule "' + rule.id + '" threw:', e);
+      }
     });
 
     // Deduplicate: if two results overlap the same text range, keep the
@@ -2623,12 +2623,14 @@ const QuickChecks = (function () {
   function scheduleCheck(text, version, callback) {
     cancelPending();
     pendingVersion = version;
+    console.log('[QuickChecks] Check scheduled (version=' + version + ', debounce=' + DEBOUNCE_MS + 'ms)');
 
     debounceTimer = setTimeout(function () {
       // Check version hasn't changed
       if (version !== pendingVersion) return;
 
       var results = runAll(text);
+      console.log('[QuickChecks] Check complete: ' + results.length + ' results after dedup');
       callback(results, version);
     }, DEBOUNCE_MS);
   }

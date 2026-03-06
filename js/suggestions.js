@@ -85,7 +85,16 @@ const Suggestions = (function () {
   function loadDismissed() {
     try {
       var stored = JSON.parse(localStorage.getItem(DISMISSED_KEY)) || [];
-      dismissedIds = new Set(stored);
+      // Clean out any old spelling/missing-letter dismiss keys that were
+      // permanently stored before we switched them to session-only
+      var cleaned = stored.filter(function (key) {
+        return key.indexOf('spelling:') !== 0 && key.indexOf('missing-letter:') !== 0;
+      });
+      if (cleaned.length !== stored.length) {
+        console.log('[WritingAssistant] Cleaned ' + (stored.length - cleaned.length) + ' stale spelling dismiss keys from localStorage');
+        localStorage.setItem(DISMISSED_KEY, JSON.stringify(cleaned));
+      }
+      dismissedIds = new Set(cleaned);
     } catch (e) {
       dismissedIds = new Set();
     }
@@ -120,10 +129,20 @@ const Suggestions = (function () {
     render();
   }
 
+  /**
+   * Spelling dismissals are session-only to prevent one "ignore" from
+   * silently blocking that misspelling across all future documents.
+   */
+  var SESSION_ONLY_RULES = ['spelling', 'missing-letter'];
+
   function dismiss(suggestion) {
     var key = makeDismissKey(suggestion);
-    dismissedIds.add(key);
-    saveDismissed();
+    if (SESSION_ONLY_RULES.indexOf(suggestion.ruleId) !== -1) {
+      sessionDismissedIds.add(key);
+    } else {
+      dismissedIds.add(key);
+      saveDismissed();
+    }
 
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
     claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
@@ -165,10 +184,13 @@ const Suggestions = (function () {
     if (onApplyAll) onApplyAll(siblings);
 
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
+    var isSessionOnly = SESSION_ONLY_RULES.indexOf(suggestion.ruleId) !== -1;
     siblings.forEach(function (s) {
-      dismissedIds.add(makeDismissKey(s));
+      var key = makeDismissKey(s);
+      if (isSessionOnly) { sessionDismissedIds.add(key); }
+      else { dismissedIds.add(key); }
     });
-    saveDismissed();
+    if (!isSessionOnly) saveDismissed();
 
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
     claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
@@ -182,10 +204,13 @@ const Suggestions = (function () {
     var siblings = getSiblings(suggestion);
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
 
+    var isSessionOnly = SESSION_ONLY_RULES.indexOf(suggestion.ruleId) !== -1;
     siblings.forEach(function (s) {
-      dismissedIds.add(makeDismissKey(s));
+      var key = makeDismissKey(s);
+      if (isSessionOnly) { sessionDismissedIds.add(key); }
+      else { dismissedIds.add(key); }
     });
-    saveDismissed();
+    if (!isSessionOnly) saveDismissed();
 
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
     claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
@@ -635,6 +660,7 @@ const Suggestions = (function () {
     markFullCheckRun: markFullCheckRun,
     dismiss: dismiss,
     dismissOnce: dismissOnce,
+    isDismissed: isDismissed,
     getAll: getAll,
     clearAll: clearAll,
     selectById: selectById,

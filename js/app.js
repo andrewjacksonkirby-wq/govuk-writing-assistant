@@ -407,10 +407,17 @@
    * the sidebar AND show as inline underlines in the editor.
    */
   function processQuickCheckResults(results) {
+    console.log('[WritingAssistant] Quick check returned ' + results.length + ' results');
     Suggestions.setCorrectness(results);
 
-    // Show all issues as inline underlines in the editor
-    Editor.showUnderlines(results, function (mark, markEl) {
+    // Filter out dismissed items from underlines too (must match sidebar)
+    var visibleResults = results.filter(function (s) {
+      return !Suggestions.isDismissed(s);
+    });
+    console.log('[WritingAssistant] Showing ' + visibleResults.length + ' underlines (' + (results.length - visibleResults.length) + ' dismissed)');
+
+    // Show visible issues as inline underlines in the editor
+    Editor.showUnderlines(visibleResults, function (mark, markEl) {
       if (markEl) {
         InlinePopup.show(mark, markEl);
       }
