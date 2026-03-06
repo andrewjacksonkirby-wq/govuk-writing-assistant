@@ -103,10 +103,17 @@ const Documents = (function () {
 
   /**
    * Start autosave loop.
+   * @param {function} getTextFn - returns current editor text
+   * @param {function} [getModeFn] - returns current writing mode ('govuk', 'email', 'chat')
    */
-  function startAutosave(getTextFn) {
+  function startAutosave(getTextFn, getModeFn) {
     stopAutosave();
     autosaveTimer = setInterval(function () {
+      // Skip autosave in email/chat modes (scratchpad behaviour)
+      if (getModeFn) {
+        var mode = getModeFn();
+        if (mode === 'email' || mode === 'chat') return;
+      }
       var text = getTextFn();
       if (text !== lastSavedText) {
         saveText(text);

@@ -39,6 +39,7 @@
   var dictInput = document.getElementById('dictInput');
   var dictAddBtn = document.getElementById('dictAddBtn');
   var dictWordList = document.getElementById('dictWordList');
+  var clearBtn = document.getElementById('clearBtn');
   var ttsUtterance = null;
 
   // ========== Init ==========
@@ -111,9 +112,11 @@
     var mode = Documents.getMode();
     updateModeUI(mode);
 
-    // Start autosave
+    // Start autosave (skips email/chat modes — scratchpad behaviour)
     Documents.startAutosave(function () {
       return Editor.getText();
+    }, function () {
+      return Documents.getMode();
     });
 
     // ========== Event listeners ==========
@@ -141,10 +144,16 @@
 
     // Mode selector
     modeSelect.addEventListener('change', function () {
-      var mode = modeSelect.value;
-      Documents.setMode(mode);
-      QuickChecks.setMode(mode);
-      FullCheck.setMode(mode);
+      var oldMode = Documents.getMode();
+      var newMode = modeSelect.value;
+
+      // If switching away from scratchpad mode with text, prompt to save
+      if ((oldMode === 'email' || oldMode === 'chat') && newMode === 'govuk') {
+        promptSaveIfNeeded();
+      }
+
+      Documents.setMode(newMode);
+      updateModeUI(newMode);
       // Re-run quick checks with new mode
       var text = Editor.getText();
       QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
@@ -225,12 +234,24 @@
     });
 
     // Save version on significant actions (before closing, switching docs)
-    window.addEventListener('beforeunload', function () {
+    window.addEventListener('beforeunload', function (e) {
       var text = Editor.getText();
+      var mode = Documents.getMode();
       if (text.trim().length > 0) {
-        Documents.saveText(text);
+        if (mode === 'email' || mode === 'chat') {
+          // In scratchpad modes, warn before losing unsaved work
+          e.preventDefault();
+          e.returnValue = '';
+        } else {
+          Documents.saveText(text);
+        }
       }
     });
+
+    // ========== Clear button (scratchpad modes) ==========
+    if (clearBtn) {
+      clearBtn.addEventListener('click', handleClear);
+    }
 
     // ========== Text-to-speech ==========
     ttsBtn.addEventListener('click', handleTTS);
@@ -263,6 +284,59 @@
         processQuickCheckResults(results);
       });
     }
+  }
+
+  // ========== Scratchpad save prompt (email/chat modes) ==========
+
+  /**
+   * In email/chat modes, the editor is a scratchpad — text isn't auto-saved.
+   * When the user navigates away (new draft, documents view, mode change),
+   * prompt them to save like Word's "Save your changes?" dialog.
+   * Returns true if we should proceed, false if the user cancelled.
+   */
+  function promptSaveIfNeeded() {
+    var mode = Documents.getMode();
+    var text = Editor.getText();
+    if ((mode === 'email' || mode === 'chat') && text && text.trim().length > 0) {
+      var choice = confirm(
+        'Save this ' + (mode === 'email' ? 'email' : 'message') + ' before moving on?\n\n' +
+        'Click OK to save it to your documents.\n' +
+        'Click Cancel to discard it.'
+      );
+      if (choice) {
+        Documents.saveText(text);
+      }
+      // Either way, proceed (they chose save or discard)
+    }
+    return true;
+  }
+
+  /**
+   * Clear the editor for a fresh start (used after sending an email/message).
+   */
+  function handleClear() {
+    var text = Editor.getText();
+    if (text && text.trim().length > 0) {
+      var mode = Documents.getMode();
+      if (mode === 'govuk') {
+        // In GOV.UK mode, just create a new draft (saves current)
+        createNewDraftAndEdit();
+        return;
+      }
+      var save = confirm(
+        'Save this ' + (mode === 'email' ? 'email' : 'message') + ' before clearing?\n\n' +
+        'OK = Save and clear\n' +
+        'Cancel = Just clear'
+      );
+      if (save) {
+        Documents.saveText(text);
+      }
+    }
+    Editor.setText('');
+    Suggestions.clearAll();
+    Editor.clearUnderlines();
+    Stats.update('');
+    Reports.update('');
   }
 
   // ========== Handlers ==========
@@ -474,6 +548,10 @@
     modeSelect.value = mode;
     QuickChecks.setMode(mode);
     FullCheck.setMode(mode);
+    // Show "Done, clear" button in scratchpad modes (email/chat)
+    if (clearBtn) {
+      clearBtn.hidden = (mode === 'govuk');
+    }
   }
 
   // ========== Modals ==========
@@ -482,10 +560,15 @@
    * Show the documents list view (hides editor).
    */
   function showDocumentsView() {
-    // Save current draft first
+    // In email/chat mode, prompt to save; in GOV.UK mode, auto-save
+    var mode = Documents.getMode();
     var text = Editor.getText();
     if (text && text.trim().length > 0) {
-      Documents.saveText(text);
+      if (mode === 'email' || mode === 'chat') {
+        promptSaveIfNeeded();
+      } else {
+        Documents.saveText(text);
+      }
     }
 
     // Hide editor + sidebar, show documents view
@@ -509,10 +592,15 @@
    * Create a new draft and switch to the editor.
    */
   function createNewDraftAndEdit() {
-    // Save current work first
+    // In email/chat mode, prompt to save; in GOV.UK mode, auto-save
+    var mode = Documents.getMode();
     var text = Editor.getText();
     if (text && text.trim().length > 0) {
-      Documents.saveText(text);
+      if (mode === 'email' || mode === 'chat') {
+        promptSaveIfNeeded();
+      } else {
+        Documents.saveText(text);
+      }
     }
     Documents.newDraft(text);
     Editor.setText('');

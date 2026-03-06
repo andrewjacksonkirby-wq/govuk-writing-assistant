@@ -399,6 +399,14 @@ body {
   flex-shrink: 0;
 }
 
+/* "Done, clear" button for scratchpad modes */
+#clearBtn {
+  color: var(--color-success);
+}
+#clearBtn:hover {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
 
 .editor {
   flex: 1;
