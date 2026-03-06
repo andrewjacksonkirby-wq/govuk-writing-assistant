@@ -586,6 +586,7 @@ const Suggestions = (function () {
    * Finds the sentence boundaries around the flagged text.
    */
   function readSuggestionSentence(suggestion) {
+    if (!window.speechSynthesis) return;
     var text = getEditorText();
     if (!text || suggestion.start === undefined) return;
 
@@ -595,8 +596,9 @@ const Suggestions = (function () {
     var sentStart = start;
     while (sentStart > 0 && !/[.!?\n]/.test(text[sentStart - 1])) sentStart--;
 
-    // Walk forwards to find sentence end
-    var sentEnd = suggestion.end !== undefined ? suggestion.end : start;
+    // Walk forwards from end of the flagged text to find sentence end
+    var end = suggestion.end !== undefined ? suggestion.end : (start + (suggestion.original || '').length);
+    var sentEnd = end;
     while (sentEnd < text.length && !/[.!?\n]/.test(text[sentEnd])) sentEnd++;
     if (sentEnd < text.length && /[.!?]/.test(text[sentEnd])) sentEnd++; // include the punctuation
 
@@ -617,6 +619,7 @@ const Suggestions = (function () {
   function clearAll() {
     correctnessSuggestions = [];
     claritySuggestions = [];
+    sessionDismissedIds = new Set();
     activeSuggestionId = null;
     expandedCardId = null;
     hasRunFullCheck = false;

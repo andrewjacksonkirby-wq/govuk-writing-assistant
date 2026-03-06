@@ -115,7 +115,7 @@ const QuickChecks = (function () {
     'criterias': 'criteria',
     'decison': 'decision',
     'definately': 'definitely',
-    'dependant': 'dependent',
+    'dependance': 'dependence',
     'develope': 'develop',
     'diffrence': 'difference',
     'dissapoint': 'disappoint',
@@ -158,7 +158,7 @@ const QuickChecks = (function () {
     'peice': 'piece',
     'persistant': 'persistent',
     'posession': 'possession',
-    'practise': 'practise',
+    'practize': 'practise',
     'preceeding': 'preceding',
     'privelege': 'privilege',
     'proffesional': 'professional',
@@ -172,9 +172,9 @@ const QuickChecks = (function () {
     'reponsible': 'responsible',
     'resourse': 'resource',
     'responsibilty': 'responsibility',
-    'seize': 'seize',
+    'sieze': 'seize',
     'seperate': 'separate',
-    'sincerely': 'sincerely',
+    'sincerly': 'sincerely',
     'sucessful': 'successful',
     'supercede': 'supersede',
     'supress': 'suppress',
@@ -920,7 +920,7 @@ const QuickChecks = (function () {
       if (lower.length > root.length && lower.indexOf(root) === 0) {
         var suffix = lower.substring(root.length);
         // Only match if suffix looks like a real English suffix
-        if (/^(s|ed|er|es|ing|ly|tion|sion|ment|ness|ise|ize|ised|ized|ising|izing|isation|ization|able|ible|ful|less|ous|ive|al|ial|ary|ery|ory|ity|ity|ance|ence|ant|ent|ist|ism)$/.test(suffix)) {
+        if (/^(s|ed|er|es|ing|ly|tion|sion|ment|ness|ise|ize|ised|ized|ising|izing|isation|ization|able|ible|ful|less|ous|ive|al|ial|ary|ery|ory|ity|ance|ence|ant|ent|ist|ism)$/.test(suffix)) {
           return { root: root, fix: MISSING_FIRST_LETTER[root] + suffix };
         }
       }
@@ -967,37 +967,7 @@ const QuickChecks = (function () {
     return results;
   }
 
-  /**
-   * Check sentence length (GOV.UK recommends under 25 words).
-   */
-  function checkSentenceLength(text) {
-    var results = [];
-    // Split on sentence-ending punctuation
-    var sentenceRegex = /[^.!?]*[.!?]+/g;
-    var match;
-    while ((match = sentenceRegex.exec(text)) !== null) {
-      var sentence = match[0].trim();
-      if (!sentence) continue;
-      var words = sentence.split(/\s+/).filter(function (w) { return w.length > 0; });
-      if (words.length > 25) {
-        results.push({
-          id: makeId(),
-          ruleId: 'sentence-length',
-          source: 'regex',
-          group: 'clarity',
-          category: 'Sentence length',
-          start: match.index,
-          end: match.index + match[0].length,
-          message: 'This sentence is ' + words.length + ' words. Try breaking it at a comma, "and", "but" or "which".',
-          title: 'Sentence too long (' + words.length + ' words)',
-          original: sentence
-        });
-      }
-    }
-    return results;
-  }
-
-  // Passive voice detection lives in full-check.js only (runs via "Check now").
+  // Sentence-length and passive voice detection live in full-check.js only (runs via "Check now").
 
   /**
    * Check date format issues (GOV.UK style: "1 January 2024").
@@ -1546,14 +1516,7 @@ const QuickChecks = (function () {
     var results = [];
     var match;
 
-    // Words that should be lower case mid-sentence
-    var lcWords = [
-      { regex: /(?:^.|\.\s+.{0,50}?).*?\b(Internet)\b/g, word: 'Internet', fix: 'internet', msg: 'GOV.UK style: "internet" is lower case' },
-      { regex: /(?:[.!?]\s+\w.*?\b|\w.*?\b)(Internet)\b/g, word: 'Internet', fix: 'internet', msg: 'GOV.UK style: "internet" is lower case' },
-      { regex: /(?:[.!?]\s+\w.*?\b|\w.*?\b)(Web)\b(?!\s*(?:site|page|browser|server|developer|design|application|service|standard))/g, word: 'Web', fix: 'web', msg: 'GOV.UK style: "web" is lower case' }
-    ];
-
-    // Simpler approach: find mid-sentence occurrences
+    // Find mid-sentence occurrences of words that should be lower case
     var internetMid = /[a-z,;:]\s+(Internet)\b/g;
     while ((match = internetMid.exec(text)) !== null) {
       var wordStart = match.index + match[0].indexOf('Internet');
