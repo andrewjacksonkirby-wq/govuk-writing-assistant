@@ -396,8 +396,11 @@ const QuickChecks = (function () {
           if (word === word.toUpperCase() && /^[A-Z]+$/.test(word)) continue;
           // Skip words with apostrophes that are contractions
           if (word.indexOf("'") !== -1) continue;
-          // Skip words that start with uppercase followed by lowercase (likely proper nouns)
-          if (word.length > 1 && word[0] === word[0].toUpperCase() && word[1] === word[1].toLowerCase()) continue;
+          // Capitalised words: check the lowercase version instead of skipping entirely
+          if (word.length > 1 && word[0] === word[0].toUpperCase() && word[1] === word[1].toLowerCase()) {
+            if (typoDictionary.check(word.toLowerCase())) continue;
+            // Lowercase failed Typo.js — fall through to flag it
+          }
 
           // Check against Hunspell dictionary
           if (!typoDictionary.check(word)) {

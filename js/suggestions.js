@@ -95,8 +95,12 @@ const Suggestions = (function () {
     localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
   }
 
+  function makeDismissKey(s) {
+    return s.ruleId + ':' + (s.original || '').toLowerCase();
+  }
+
   function isDismissed(s) {
-    var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
+    var key = makeDismissKey(s);
     return dismissedIds.has(key) || sessionDismissedIds.has(key);
   }
 
@@ -117,7 +121,7 @@ const Suggestions = (function () {
   }
 
   function dismiss(suggestion) {
-    var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
+    var key = makeDismissKey(suggestion);
     dismissedIds.add(key);
     saveDismissed();
 
@@ -133,7 +137,7 @@ const Suggestions = (function () {
    * Dismiss a suggestion for this session only (comes back next time).
    */
   function dismissOnce(suggestion) {
-    var key = suggestion.ruleId + ':' + suggestion.start + ':' + (suggestion.original || '');
+    var key = makeDismissKey(suggestion);
     sessionDismissedIds.add(key);
 
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
@@ -162,8 +166,7 @@ const Suggestions = (function () {
 
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
     siblings.forEach(function (s) {
-      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
-      dismissedIds.add(key);
+      dismissedIds.add(makeDismissKey(s));
     });
     saveDismissed();
 
@@ -180,8 +183,7 @@ const Suggestions = (function () {
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
 
     siblings.forEach(function (s) {
-      var key = s.ruleId + ':' + s.start + ':' + (s.original || '');
-      dismissedIds.add(key);
+      dismissedIds.add(makeDismissKey(s));
     });
     saveDismissed();
 
