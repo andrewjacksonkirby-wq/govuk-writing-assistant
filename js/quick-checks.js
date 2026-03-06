@@ -11,6 +11,57 @@ const QuickChecks = (function () {
   var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
 
   /**
+   * Typo.js dictionary instance for comprehensive spell-checking (British English).
+   */
+  var typoDictionary = null;
+  var typoLoading = false;
+  var typoLoaded = false;
+
+  function loadTypoDictionary() {
+    if (typoLoading || typoLoaded) return;
+    typoLoading = true;
+    Promise.all([
+      fetch('dictionaries/en_GB.aff').then(function (r) { return r.text(); }),
+      fetch('dictionaries/en_GB.dic').then(function (r) { return r.text(); })
+    ]).then(function (results) {
+      typoDictionary = new Typo('en_GB', results[0], results[1]);
+      typoLoaded = true;
+      typoLoading = false;
+      console.log('Typo.js dictionary loaded (en_GB)');
+      // Notify the app that the dictionary is ready so it can re-check
+      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
+    }).catch(function (err) {
+      console.warn('Failed to load Typo.js dictionary:', err);
+      typoLoading = false;
+    });
+  }
+
+  // Start loading dictionary immediately
+  if (typeof Typo !== 'undefined') {
+    loadTypoDictionary();
+  } else {
+    // Retry once after DOM is ready
+    document.addEventListener('DOMContentLoaded', function () {
+      if (typeof Typo !== 'undefined') loadTypoDictionary();
+    });
+  }
+
+  /**
+   * Words to skip during Typo.js checking — short common words,
+   * abbreviations, and patterns that aren't real misspellings.
+   */
+  var SKIP_WORDS = new Set([
+    'i', 'a', 'ok', 'vs', 'eg', 'ie', 'uk', 'eu', 'hr', 'id',
+    'pm', 'am', 'cv', 'qa', 'jr', 'sr', 'mr', 'ms', 'dr', 'st',
+    'nd', 'rd', 'th', 'gov', 'www', 'http', 'https', 'html', 'css',
+    'pdf', 'doc', 'csv', 'url', 'api', 'btn', 'img', 'src', 'div',
+    'hmrc', 'dvla', 'nhs', 'moj', 'dwp', 'hmcts', 'defra',
+    'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ]);
+
+  /**
    * Common misspellings dictionary (UK English / GOV.UK focus).
    * Each key is a misspelling, value is the correct spelling.
    */
@@ -264,19 +315,22 @@ const QuickChecks = (function () {
 
   /**
    * Check for common misspellings.
+   * Uses COMMON_MISSPELLINGS for fast known corrections, then falls back
+   * to Typo.js (Hunspell en_GB) for comprehensive spell-checking.
    */
   function checkSpelling(text) {
     var results = [];
     var wordRegex = /\b[a-zA-Z']+\b/g;
     var match;
+    var alreadyFlagged = new Set(); // track positions already flagged
+
+    // Pass 1: known misspellings (fast, high-quality suggestions)
     while ((match = wordRegex.exec(text)) !== null) {
       var word = match[0];
       var lower = word.toLowerCase();
-      // Skip words in the custom dictionary
       if (isInCustomDictionary(word)) continue;
       if (COMMON_MISSPELLINGS[lower]) {
         var replacement = COMMON_MISSPELLINGS[lower];
-        // Preserve original case for first letter
         if (word[0] === word[0].toUpperCase()) {
           replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
         }
@@ -294,8 +348,61 @@ const QuickChecks = (function () {
           replacement: replacement,
           original: word
         });
+        alreadyFlagged.add(match.index);
       }
     }
+
+    // Pass 2: Typo.js dictionary check (comprehensive)
+    if (typoDictionary) {
+      wordRegex.lastIndex = 0;
+      while ((match = wordRegex.exec(text)) !== null) {
+        var word = match[0];
+        var lower = word.toLowerCase();
+
+        // Skip if already flagged by pass 1
+        if (alreadyFlagged.has(match.index)) continue;
+        // Skip custom dictionary words
+        if (isInCustomDictionary(word)) continue;
+        // Skip very short words, abbreviations, and known skip-list
+        if (word.length < 2) continue;
+        if (SKIP_WORDS.has(lower)) continue;
+        // Skip words that are all uppercase (likely acronyms)
+        if (word.length <= 4 && word === word.toUpperCase()) continue;
+        // Skip words with apostrophes that are contractions
+        if (word.indexOf("'") !== -1) continue;
+        // Skip words that start with uppercase followed by lowercase (likely proper nouns)
+        if (word.length > 1 && word[0] === word[0].toUpperCase() && word[1] === word[1].toLowerCase()) continue;
+
+        // Check against Hunspell dictionary
+        if (!typoDictionary.check(word)) {
+          var suggestions = typoDictionary.suggest(word, 3);
+          var replacement = suggestions.length > 0 ? suggestions[0] : null;
+          // Preserve case
+          if (replacement && word[0] === word[0].toUpperCase()) {
+            replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+          }
+          var entry = {
+            id: makeId(),
+            ruleId: 'spelling',
+            source: 'typo',
+            group: 'correctness',
+            category: 'Spelling',
+            start: match.index,
+            end: match.index + word.length,
+            message: suggestions.length > 0
+              ? 'Check the spelling of "' + word + '". Did you mean "' + suggestions.slice(0, 3).join('", "') + '"?'
+              : 'Check the spelling of "' + word + '"',
+            title: 'Possible spelling mistake',
+            original: word
+          };
+          if (replacement) {
+            entry.replacement = replacement;
+          }
+          results.push(entry);
+        }
+      }
+    }
+
     return results;
   }
 
@@ -1682,6 +1789,7 @@ const QuickChecks = (function () {
     setMode: setMode,
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
-    isInCustomDictionary: isInCustomDictionary
+    isInCustomDictionary: isInCustomDictionary,
+    isDictionaryLoaded: function () { return typoLoaded; }
   };
 })();

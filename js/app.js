@@ -213,6 +213,17 @@
       historyModal.hidden = true;
     });
 
+    // Re-run checks when Typo.js dictionary finishes loading
+    document.addEventListener('typo-dictionary-loaded', function () {
+      var text = Editor.getText();
+      if (text && text.trim().length > 0) {
+        QuickChecks.scheduleCheck(text, Editor.getVersion(), function (results, v) {
+          lastCheckVersion = v;
+          processQuickCheckResults(results);
+        });
+      }
+    });
+
     // Save version on significant actions (before closing, switching docs)
     window.addEventListener('beforeunload', function () {
       var text = Editor.getText();
