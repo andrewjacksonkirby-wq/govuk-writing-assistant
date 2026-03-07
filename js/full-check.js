@@ -663,7 +663,7 @@ const FullCheck = (function () {
   // ========== AI Allowance tracking ==========
 
   var ALLOWANCE_KEY = 'govuk-wa-ai-allowance';
-  var DEFAULT_DAILY_LIMIT = 96;
+  var DEFAULT_DAILY_LIMIT = 120;
 
   function loadAllowance() {
     try {
