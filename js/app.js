@@ -43,6 +43,9 @@
   var dictAddBtn = document.getElementById('dictAddBtn');
   var dictWordList = document.getElementById('dictWordList');
   var clearBtn = document.getElementById('clearBtn');
+  var settingsBtn = document.getElementById('settingsBtn');
+  var settingsModal = document.getElementById('settingsModal');
+  var closeSettingsModal = document.getElementById('closeSettingsModal');
   var ttsUtterance = null;
   var aiAllowanceBar = document.getElementById('aiAllowanceBar');
   var aiAllowanceValue = document.getElementById('aiAllowanceValue');
@@ -197,6 +200,7 @@
         if (!restoreConfirmModal.hidden) { restoreConfirmModal.hidden = true; releaseFocus(); pendingRestore = null; return; }
         if (!historyModal.hidden) { historyModal.hidden = true; releaseFocus(); return; }
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
+        if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
         return;
       }
@@ -311,6 +315,17 @@
     dictAddBtn.addEventListener('click', addDictWord);
     dictInput.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') { e.preventDefault(); addDictWord(); }
+    });
+
+    // ========== Settings modal ==========
+    settingsBtn.addEventListener('click', function () {
+      updateAllowanceMeter();
+      settingsModal.hidden = false;
+      trapFocus(settingsModal);
+    });
+    closeSettingsModal.addEventListener('click', function () { settingsModal.hidden = true; releaseFocus(); });
+    settingsModal.addEventListener('click', function (e) {
+      if (e.target === settingsModal) { settingsModal.hidden = true; releaseFocus(); }
     });
 
     // Load custom dictionary into QuickChecks
@@ -682,10 +697,6 @@
     var data = FullCheck.getAllowance();
     var remaining = Math.max(0, data.limit - data.used);
     var pct = Math.round((remaining / data.limit) * 100);
-
-    // Show the bar when AI is on
-    var sensitivity = Documents.getSensitivity();
-    aiAllowanceBar.hidden = (sensitivity !== 'safe');
 
     // Update percentage text
     aiAllowanceValue.textContent = pct + '% left';
