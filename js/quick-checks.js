@@ -1683,7 +1683,7 @@ const QuickChecks = (function () {
       { regex: /\bat this point in time\b/gi, fix: 'now', msg: 'Prefer "now" over "at this point in time"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\bin the event that\b/gi, fix: 'if', msg: 'Prefer "if" over "in the event that"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\bwith regards to\b/gi, fix: 'about', msg: 'Prefer "about" over "with regards to"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\ba number of\b/gi, fix: null, msg: 'Be specific — say how many instead of "a number of"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\ba number of\b/gi, fix: 'some', msg: 'Be specific — say how many instead of "a number of"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\bin respect of\b/gi, fix: 'about', msg: 'Prefer "about" or "for" over "in respect of"', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\betc\.?\b/gi, fix: null, msg: 'GOV.UK style: avoid "etc" — list the items or say "for example"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bie\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "ie"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
@@ -1746,7 +1746,7 @@ const QuickChecks = (function () {
       { regex: /\bfill\s+out\b/gi, fix: 'fill in', msg: 'GOV.UK style: use "fill in" not "fill out"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bFAQs?\b/g, fix: null, msg: 'GOV.UK style: do not use FAQs — present information in a user-centred way', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\b(percent)\b/gi, fix: 'per cent', msg: 'GOV.UK style: use "per cent" not "percent"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bfinancial\s+penalt(?:y|ies)\b/gi, fix: null, msg: 'GOV.UK style: use "fine" instead of "financial penalty"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] }
+      { regex: /\bfinancial\s+penalt(?:y|ies)\b/gi, fix: 'fine', msg: 'GOV.UK style: use "fine" instead of "financial penalty"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] }
     ];
 
     patterns.forEach(function (pat) {

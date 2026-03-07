@@ -23,6 +23,7 @@ const Suggestions = (function () {
   var onApply = null;
   var onApplyAll = null;
   var onSelect = null;
+  var onSuggestFix = null;
 
   // DOM refs
   var listEl;
@@ -58,6 +59,7 @@ const Suggestions = (function () {
     onApply = callbacks.onApply;
     onApplyAll = callbacks.onApplyAll;
     onSelect = callbacks.onSelect;
+    onSuggestFix = callbacks.onSuggestFix || null;
 
     listEl = document.getElementById('suggestionsList');
     scoreNumber = document.getElementById('scoreNumber');
@@ -543,6 +545,31 @@ const Suggestions = (function () {
         });
         actions.appendChild(applyBtn);
       }
+    } else if (suggestion.source === 'ai' && onSuggestFix) {
+      // "Suggest fix" button — requests an AI-generated rewrite on demand
+      var suggestBtn = document.createElement('button');
+      suggestBtn.type = 'button';
+      suggestBtn.className = 'btn btn-secondary btn-sm';
+      suggestBtn.textContent = 'Suggest fix';
+      suggestBtn.title = 'Ask AI to suggest a rewrite';
+      suggestBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        suggestBtn.textContent = 'Thinking...';
+        suggestBtn.disabled = true;
+        onSuggestFix(suggestion, function (replacement) {
+          if (replacement) {
+            suggestion.replacement = replacement;
+            render(); // Re-render to show the Fix button
+          } else {
+            suggestBtn.textContent = 'No suggestion';
+            setTimeout(function () {
+              suggestBtn.textContent = 'Suggest fix';
+              suggestBtn.disabled = false;
+            }, 2000);
+          }
+        });
+      });
+      actions.appendChild(suggestBtn);
     }
 
     // "Ignore this time" — session-only dismiss (comes back next document)

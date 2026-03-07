@@ -237,19 +237,24 @@ const FullCheck = (function () {
       var passiveSubject = subjectMatch ? subjectMatch[0].trim() : null;
 
       var tip;
+      var replacement;
       if (byAgent) {
         var agent = byAgent[1].trim();
         var rewrite = capitalise(agent) + ' ' + verb;
         if (passiveSubject) rewrite += ' ' + uncapitalise(passiveSubject);
         tip = 'Passive voice. Try: "' + rewrite + '." \u2014 put "' + agent + '" first as the doer.';
+        // Replacement covers the full passive phrase including "by <agent>"
+        replacement = rewrite;
       } else if (passiveSubject) {
         var govRewrite = 'we ' + verb + ' ' + uncapitalise(passiveSubject);
         tip = 'Passive voice. Who does this? Try: "' + capitalise(govRewrite) + '." On GOV.UK, use "we" for the organisation or name the doer.';
+        replacement = capitalise(govRewrite);
       } else {
         tip = 'Passive voice. Who ' + verb + '? Name the doer and put them first \u2014 e.g. "We ' + verb + '..." or "[Team name] ' + verb + '..."';
+        replacement = undefined; // No fix — need context
       }
 
-      results.push({
+      var result = {
         id: makeId(),
         ruleId: 'passive-voice',
         source: 'ai',
@@ -260,7 +265,19 @@ const FullCheck = (function () {
         message: tip,
         title: 'Passive voice',
         original: fullMatch
-      });
+      };
+
+      if (byAgent) {
+        // Extend the match end to include "by <agent>"
+        result.end = match.index + fullMatch.length + byAgent[0].length;
+        result.original = text.substring(result.start, result.end);
+      }
+
+      if (replacement !== undefined) {
+        result.replacement = replacement;
+      }
+
+      results.push(result);
     }
     return results;
   }
@@ -299,6 +316,7 @@ const FullCheck = (function () {
 
       // Find a split point for contextual advice
       var advice = 'This sentence is ' + words.length + ' words (GOV.UK recommends under 25).';
+      var splitReplacement;
       for (var i = 0; i < SPLIT_CONNECTORS.length; i++) {
         var conn = SPLIT_CONNECTORS[i];
         conn.regex.lastIndex = 0;
@@ -310,23 +328,35 @@ const FullCheck = (function () {
           if (wordsBefore >= 5 && wordsAfter >= 5) {
             var connWord = m[0].replace(/^[,;]\s+/i, '').replace(/\s+$/, '');
             advice += ' Try splitting at "' + connWord + '" \u2014 ' + conn.advice + '.';
+
+            // Build a split replacement: end first sentence, start new one
+            var firstPart = sentence.substring(0, m.index).replace(/\s+$/, '');
+            // Ensure first part ends with a full stop
+            if (!/[.!?]$/.test(firstPart)) firstPart += '.';
+            var afterConn = sentence.substring(m.index + m[0].length);
+            // For semicolons, just capitalise what follows
+            // For connectors like "but", "however", keep the connector word
+            var isSemicolon = /^[;]/.test(m[0]);
+            var secondPart;
+            if (isSemicolon) {
+              secondPart = capitalise(afterConn.replace(/^\s+/, ''));
+            } else {
+              secondPart = capitalise(connWord) + ' ' + afterConn.replace(/^\s+/, '');
+            }
+            splitReplacement = firstPart + ' ' + secondPart;
             break;
           }
         }
       }
 
-      results.push({
+      var sentResult = {
         id: makeId(),
-        ruleId: 'sentence-length',
-        source: 'ai',
-        group: 'clarity',
-        category: 'Sentence length',
-        start: match.index,
-        end: match.index + match[0].length,
-        message: advice,
-        title: 'Long sentence (' + words.length + ' words)',
         original: sentence
-      });
+      };
+      if (splitReplacement) {
+        sentResult.replacement = splitReplacement;
+      }
+      results.push(sentResult);
     }
     return results;
   }
@@ -522,7 +552,7 @@ const FullCheck = (function () {
       '- message: short explanation\n' +
       '- title: short title\n' +
       '- original: the problematic text\n' +
-      '- replacement: suggested fix (optional)\n\n' +
+      '- replacement: suggested fix (REQUIRED — always provide a concrete rewrite)\n\n' +
       'Text to check:\n\n' + text;
 
     var controller = new AbortController();

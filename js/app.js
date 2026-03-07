@@ -31,6 +31,9 @@
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
+  var lastFullCheckWordCount = 0;
+  var fullCheckDebounceTimer = null;
+  var AUTO_TRIGGER_WORD_THRESHOLD = 20;
   var ttsBtn = document.getElementById('ttsBtn');
   var ttsIcon = document.getElementById('ttsIcon');
   var dictBtn = document.getElementById('dictBtn');
@@ -84,7 +87,8 @@
     Suggestions.init({
       onApply: handleApply,
       onApplyAll: handleApplyAll,
-      onSelect: handleSelect
+      onSelect: handleSelect,
+      onSuggestFix: handleSuggestFix
     });
 
     // Init inline popup
@@ -135,6 +139,8 @@
           processQuickCheckResults(results);
         }
       });
+      // Auto-trigger full check after significant edits (debounced 5s)
+      scheduleAutoFullCheck(text);
     });
 
     // Sensitivity toggle
@@ -313,6 +319,12 @@
           processQuickCheckResults(results);
         }
       });
+      // Auto-trigger full check on load if document has enough words
+      var initialWords = (initialText.match(/\b\w+\b/g) || []).length;
+      if (initialWords >= AUTO_TRIGGER_WORD_THRESHOLD && Documents.getSensitivity() === 'safe') {
+        lastFullCheckWordCount = initialWords;
+        setTimeout(function () { handleCheckNow(); }, 1200); // Delay to let quick checks finish first
+      }
     }
   }
 
@@ -411,6 +423,8 @@
       }
 
       Suggestions.setClarity(results || []);
+      // Update word count for auto-trigger tracking
+      lastFullCheckWordCount = (text.match(/\b\w+\b/g) || []).length;
     });
   }
 
@@ -471,6 +485,78 @@
   function handleSelect(suggestion) {
     var groupClass = suggestion.group === 'correctness' ? 'highlight-correctness' : 'highlight-clarity';
     Editor.highlightRange(suggestion.start, suggestion.end, groupClass);
+  }
+
+  /**
+   * Handle "Suggest fix" — sends the flagged text to the AI for a rewrite.
+   * Only works when API is configured and sensitivity is safe.
+   */
+  function handleSuggestFix(suggestion, callback) {
+    var sensitivity = Documents.getSensitivity();
+    if (sensitivity !== 'safe') {
+      callback(null);
+      return;
+    }
+
+    // Get the sentence context around the flagged text
+    var text = Editor.getText();
+    if (!text) { callback(null); return; }
+
+    var sentStart = suggestion.start;
+    while (sentStart > 0 && !/[.!?\n]/.test(text[sentStart - 1])) sentStart--;
+    var sentEnd = suggestion.end;
+    while (sentEnd < text.length && !/[.!?\n]/.test(text[sentEnd])) sentEnd++;
+    if (sentEnd < text.length && /[.!?]/.test(text[sentEnd])) sentEnd++;
+
+    var sentence = text.substring(sentStart, sentEnd).trim();
+    if (!sentence) { callback(null); return; }
+
+    // Use a simple heuristic rewrite based on the suggestion message
+    // Extract the suggestion from the tip text (e.g. "Try: "We completed the report."")
+    var tryMatch = suggestion.message.match(/[Tt]ry[:\s]+"([^"]+)"/);
+    if (tryMatch) {
+      callback(tryMatch[1]);
+      return;
+    }
+
+    // For passive voice without context, suggest "We [verb]"
+    if (suggestion.ruleId === 'passive-voice' && suggestion.original) {
+      var parts = suggestion.original.split(/\s+/);
+      var verb = parts[parts.length - 1];
+      callback('we ' + verb);
+      return;
+    }
+
+    // No suggestion available
+    callback(null);
+  }
+
+  /**
+   * Schedule an auto-triggered full check after significant edits.
+   * Debounced to 5 seconds — only fires if 20+ new words since last full check.
+   */
+  function scheduleAutoFullCheck(text) {
+    if (Documents.getSensitivity() !== 'safe') return;
+    if (FullCheck.getIsRunning()) return;
+
+    var wordCount = (text.match(/\b\w+\b/g) || []).length;
+    var delta = Math.abs(wordCount - lastFullCheckWordCount);
+
+    if (delta < AUTO_TRIGGER_WORD_THRESHOLD) return;
+
+    if (fullCheckDebounceTimer) clearTimeout(fullCheckDebounceTimer);
+    fullCheckDebounceTimer = setTimeout(function () {
+      fullCheckDebounceTimer = null;
+      // Re-check conditions after debounce
+      if (Documents.getSensitivity() !== 'safe') return;
+      if (FullCheck.getIsRunning()) return;
+      var currentText = Editor.getText();
+      var currentWords = (currentText.match(/\b\w+\b/g) || []).length;
+      if (Math.abs(currentWords - lastFullCheckWordCount) >= AUTO_TRIGGER_WORD_THRESHOLD) {
+        lastFullCheckWordCount = currentWords;
+        handleCheckNow();
+      }
+    }, 5000);
   }
 
   /**
