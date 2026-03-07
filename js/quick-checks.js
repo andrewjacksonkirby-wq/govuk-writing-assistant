@@ -1929,7 +1929,48 @@ const QuickChecks = (function () {
       { regex: /\b(due to the fact that)\b/gi, fix: 'because', msg: 'Use "because" instead of "due to the fact that"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(despite the fact that)\b/gi, fix: 'although', msg: 'Use "although" instead of "despite the fact that"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in view of the fact that)\b/gi, fix: 'because', msg: 'Use "because" or "since" instead of "in view of the fact that"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(on the grounds that)\b/gi, fix: 'because', msg: 'Use "because" instead of "on the grounds that"', cat: 'Plain English', title: 'Use plain English' }
+      { regex: /\b(on the grounds that)\b/gi, fix: 'because', msg: 'Use "because" instead of "on the grounds that"', cat: 'Plain English', title: 'Use plain English' },
+
+      // --- More plain English: common word swaps ---
+      { regex: /\b(ensure)\b/gi, fix: 'make sure', msg: 'Use "make sure" instead of "ensure"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(advise)\b(?!\s+(?:against|on\s+(?:the|a|how|what|where|when|which)))/gi, fix: 'tell', msg: 'Use "tell" or "let [someone] know" instead of "advise"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(notify)\b/gi, fix: 'tell', msg: 'Use "tell" instead of "notify"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(inform)\b/gi, fix: 'tell', msg: 'Use "tell" instead of "inform"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(request)\b(?=\s+(?:that|you|the|a|an|this|your))/gi, fix: 'ask for', msg: 'Use "ask for" instead of "request"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(provide)\b/gi, fix: 'give', msg: 'Use "give" instead of "provide"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(receive)\b/gi, fix: 'get', msg: 'Use "get" instead of "receive"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(retain)\b/gi, fix: 'keep', msg: 'Use "keep" instead of "retain"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(permit)\b(?=\s+(?:you|the|a|an|this|them|us|him|her))/gi, fix: 'let', msg: 'Use "let" or "allow" instead of "permit"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(prohibit)\b/gi, fix: 'ban', msg: 'Use "ban", "stop", or "do not allow" instead of "prohibit"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(cease)\b/gi, fix: 'stop', msg: 'Use "stop" instead of "cease"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(acquire)\b/gi, fix: 'get', msg: 'Use "get" or "buy" instead of "acquire"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(reside)\b/gi, fix: 'live', msg: 'Use "live" instead of "reside"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(residence)\b/gi, fix: 'home', msg: 'Use "home" or "address" instead of "residence"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(dwelling)\b/gi, fix: 'home', msg: 'Use "home" or "property" instead of "dwelling"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(expedite)\b/gi, fix: 'speed up', msg: 'Use "speed up" or "hurry" instead of "expedite"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(numerous)\b/gi, fix: 'many', msg: 'Use "many" instead of "numerous"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(remainder)\b/gi, fix: 'rest', msg: 'Use "rest" instead of "remainder"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(substantial)\b/gi, fix: 'large', msg: 'Use "large", "big", or "a lot of" instead of "substantial"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(adjacent to)\b/gi, fix: 'next to', msg: 'Use "next to" or "near" instead of "adjacent to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(forward(?:ed|ing|s)?)\b(?=\s+(?:the|this|a|an|your|their|our))/gi, fix: 'send', msg: 'Use "send" instead of "forward" where possible', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(determine)\b/gi, fix: 'find out', msg: 'Use "find out" or "decide" instead of "determine"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(comply)\b/gi, fix: 'keep to', msg: 'Use "keep to" or "follow" instead of "comply"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in the amount of)\b/gi, fix: 'for', msg: 'Use "for" instead of "in the amount of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(on the basis of)\b/gi, fix: 'based on', msg: 'Use "based on" or "because of" instead of "on the basis of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(with the exception of)\b/gi, fix: 'except', msg: 'Use "except" or "apart from" instead of "with the exception of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in the absence of)\b/gi, fix: 'without', msg: 'Use "without" instead of "in the absence of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in the region of)\b/gi, fix: 'about', msg: 'Use "about" or "around" instead of "in the region of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(as a means of)\b/gi, fix: 'to', msg: 'Use "to" instead of "as a means of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(for the duration of)\b/gi, fix: 'during', msg: 'Use "during" instead of "for the duration of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(at the conclusion of)\b/gi, fix: 'after', msg: 'Use "after" instead of "at the conclusion of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(has the ability to)\b/gi, fix: 'can', msg: 'Use "can" instead of "has the ability to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(have the ability to)\b/gi, fix: 'can', msg: 'Use "can" instead of "have the ability to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(until such time as)\b/gi, fix: 'until', msg: 'Use "until" instead of "until such time as"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(it should be borne in mind that)\b/gi, fix: null, msg: 'Remove \u2014 just state the point', cat: 'Plain English', title: 'Remove filler' },
+      { regex: /\b(as to whether)\b/gi, fix: 'whether', msg: 'Use "whether" instead of "as to whether"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in a position to)\b/gi, fix: 'can', msg: 'Use "can" instead of "in a position to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in light of)\b/gi, fix: 'because of', msg: 'Use "because of" instead of "in light of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in connection with)\b/gi, fix: 'about', msg: 'Use "about" or "for" instead of "in connection with"', cat: 'Plain English', title: 'Use plain English' }
     ];
 
     patterns.forEach(function (pat) {
@@ -1962,6 +2003,34 @@ const QuickChecks = (function () {
         results.push(suggestion);
       }
     });
+
+    // Slash usage: GOV.UK style says use "and" or "or" instead of "/"
+    if (currentMode === 'govuk') {
+      var slashRegex = /\b(\w+)\s*\/\s*(\w+)\b/g;
+      var slashMatch;
+      while ((slashMatch = slashRegex.exec(text)) !== null) {
+        // Skip URLs, file paths, dates
+        if (slashMatch.index > 0 && /[:.\\]/.test(text[slashMatch.index - 1])) continue;
+        if (/^https?$/i.test(slashMatch[1])) continue;
+        // Skip date patterns like 01/02/2024
+        if (/^\d+$/.test(slashMatch[1]) && /^\d+$/.test(slashMatch[2])) continue;
+        var word1 = slashMatch[1], word2 = slashMatch[2];
+        results.push({
+          id: makeId(),
+          ruleId: 'common-grammar',
+          source: 'regex',
+          group: 'style',
+          category: 'GOV.UK style',
+          start: slashMatch.index,
+          end: slashMatch.index + slashMatch[0].length,
+          message: 'GOV.UK style: use "' + word1 + ' and ' + word2 + '" or "' + word1 + ' or ' + word2 + '" instead of "/"',
+          title: 'Avoid slashes',
+          replacement: word1 + ' or ' + word2,
+          original: slashMatch[0]
+        });
+      }
+    }
+
     return results;
   }
 

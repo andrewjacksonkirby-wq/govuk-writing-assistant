@@ -352,6 +352,20 @@ const Suggestions = (function () {
     }
 
     var deduped = deduplicateSuggestions(filtered);
+
+    // Sort: correctness first, then clarity, then style.
+    // Within each category, most frequent issues first, then by document position.
+    var CATEGORY_ORDER = { 'correctness': 0, 'clarity': 1, 'style': 2 };
+    deduped.sort(function (a, b) {
+      var catA = CATEGORY_ORDER[getCardCategory(a.suggestion)] || 1;
+      var catB = CATEGORY_ORDER[getCardCategory(b.suggestion)] || 1;
+      if (catA !== catB) return catA - catB;
+      // Within same category: most occurrences first
+      if (b.siblings.length !== a.siblings.length) return b.siblings.length - a.siblings.length;
+      // Tiebreak: document position
+      return a.suggestion.start - b.suggestion.start;
+    });
+
     deduped.forEach(function (d) {
       listEl.appendChild(createCard(d.suggestion, d.siblings));
     });
