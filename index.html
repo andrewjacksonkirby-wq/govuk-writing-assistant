@@ -78,6 +78,17 @@
           </button>
         </div>
       </div>
+      <div class="ai-allowance-bar" id="aiAllowanceBar" hidden>
+        <div class="ai-allowance-inner">
+          <span class="ai-allowance-label">AI allowance left today</span>
+          <span class="ai-allowance-value" id="aiAllowanceValue">100% left</span>
+          <div class="ai-allowance-track" role="progressbar" aria-label="AI allowance remaining today" aria-valuemin="0" aria-valuemax="100" aria-valuenow="100" id="aiAllowanceTrack">
+            <div class="ai-allowance-fill" id="aiAllowanceFill" style="width: 100%"></div>
+          </div>
+          <span class="ai-allowance-reset" id="aiAllowanceReset">Resets at midnight</span>
+        </div>
+        <div class="ai-allowance-warning" id="aiAllowanceWarning" hidden></div>
+      </div>
       <div
         class="editor"
         id="editor"

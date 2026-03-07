@@ -50,7 +50,22 @@ const FullCheck = (function () {
       return;
     }
 
+    // Check if allowance is exhausted
+    if (isAllowanceExhausted()) {
+      callback(null, 'allowance-exhausted');
+      return;
+    }
+
     isRunning = true;
+
+    // Wrap callback to record usage on success
+    var originalCallback = callback;
+    callback = function (results, error) {
+      if (!error) {
+        recordUsage();
+      }
+      originalCallback(results, error);
+    };
 
     if (config.useSimulation || !config.apiEndpoint) {
       runSimulation(text, callback);
@@ -645,11 +660,70 @@ const FullCheck = (function () {
     currentMode = mode;
   }
 
+  // ========== AI Allowance tracking ==========
+
+  var ALLOWANCE_KEY = 'govuk-wa-ai-allowance';
+  var DEFAULT_DAILY_LIMIT = 50;
+
+  function loadAllowance() {
+    try {
+      var stored = localStorage.getItem(ALLOWANCE_KEY);
+      if (stored) {
+        var data = JSON.parse(stored);
+        // Check if reset time has passed
+        if (data.resetAt && new Date(data.resetAt) <= new Date()) {
+          return resetAllowance();
+        }
+        return data;
+      }
+    } catch (e) {}
+    return resetAllowance();
+  }
+
+  function resetAllowance() {
+    var now = new Date();
+    var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+    var data = {
+      used: 0,
+      limit: DEFAULT_DAILY_LIMIT,
+      resetAt: tomorrow.toISOString()
+    };
+    try {
+      localStorage.setItem(ALLOWANCE_KEY, JSON.stringify(data));
+    } catch (e) {}
+    return data;
+  }
+
+  function saveAllowance(data) {
+    try {
+      localStorage.setItem(ALLOWANCE_KEY, JSON.stringify(data));
+    } catch (e) {}
+  }
+
+  function recordUsage() {
+    var data = loadAllowance();
+    data.used = Math.min(data.used + 1, data.limit);
+    saveAllowance(data);
+    return data;
+  }
+
+  function getAllowance() {
+    return loadAllowance();
+  }
+
+  function isAllowanceExhausted() {
+    var data = loadAllowance();
+    return data.used >= data.limit;
+  }
+
   return {
     run: run,
     isAllowed: isAllowed,
     configure: configure,
     getIsRunning: getIsRunning,
-    setMode: setMode
+    setMode: setMode,
+    getAllowance: getAllowance,
+    recordUsage: recordUsage,
+    isAllowanceExhausted: isAllowanceExhausted
   };
 })();

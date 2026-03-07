@@ -44,6 +44,13 @@
   var dictWordList = document.getElementById('dictWordList');
   var clearBtn = document.getElementById('clearBtn');
   var ttsUtterance = null;
+  var aiAllowanceBar = document.getElementById('aiAllowanceBar');
+  var aiAllowanceValue = document.getElementById('aiAllowanceValue');
+  var aiAllowanceFill = document.getElementById('aiAllowanceFill');
+  var aiAllowanceTrack = document.getElementById('aiAllowanceTrack');
+  var aiAllowanceReset = document.getElementById('aiAllowanceReset');
+  var aiAllowanceWarning = document.getElementById('aiAllowanceWarning');
+  var allowanceIntervalId = null;
 
   // ========== Init ==========
 
@@ -149,6 +156,7 @@
       var value = isSafe ? 'safe' : 'sensitive';
       Documents.setSensitivity(value);
       updateSensitivityUI(value);
+      updateAllowanceMeter();
     });
 
     // Mode selector
@@ -308,6 +316,10 @@
     // Load custom dictionary into QuickChecks
     loadCustomDictionary();
 
+    // Init AI allowance meter
+    updateAllowanceMeter();
+    startAllowanceCountdown();
+
     // Run initial quick check + stats if there's text
     var initialText = Editor.getText();
     if (initialText.trim().length > 0) {
@@ -417,10 +429,18 @@
         return;
       }
 
+      if (error === 'allowance-exhausted') {
+        updateAllowanceMeter();
+        return;
+      }
+
       if (error) {
         alert('AI check failed: ' + error);
         return;
       }
+
+      // Refresh allowance meter after successful check
+      updateAllowanceMeter();
 
       Suggestions.setClarity(results || []);
       // Update word count for auto-trigger tracking
@@ -656,6 +676,92 @@
     }
   }
 
+  // ========== AI Allowance Meter ==========
+
+  function updateAllowanceMeter() {
+    var data = FullCheck.getAllowance();
+    var remaining = Math.max(0, data.limit - data.used);
+    var pct = Math.round((remaining / data.limit) * 100);
+
+    // Show the bar when AI is on
+    var sensitivity = Documents.getSensitivity();
+    aiAllowanceBar.hidden = (sensitivity !== 'safe');
+
+    // Update percentage text
+    aiAllowanceValue.textContent = pct + '% left';
+
+    // Update progress bar
+    aiAllowanceFill.style.width = pct + '%';
+    aiAllowanceTrack.setAttribute('aria-valuenow', pct);
+
+    // Determine level
+    var level;
+    if (pct === 0) {
+      level = 'empty';
+    } else if (pct <= 10) {
+      level = 'critical';
+    } else if (pct <= 20) {
+      level = 'low';
+    } else {
+      level = 'ok';
+    }
+
+    // Update fill colour class
+    aiAllowanceFill.className = 'ai-allowance-fill';
+    if (level !== 'ok') {
+      aiAllowanceFill.classList.add('level-' + level);
+    }
+
+    // Update reset countdown
+    aiAllowanceReset.textContent = formatResetTime(data.resetAt);
+
+    // Update warning message
+    if (level === 'empty') {
+      aiAllowanceWarning.textContent = "You\u2019ve used today\u2019s AI allowance. AI suggestions are off until the allowance resets.";
+      aiAllowanceWarning.className = 'ai-allowance-warning level-empty';
+      aiAllowanceWarning.hidden = false;
+    } else if (level === 'critical') {
+      aiAllowanceWarning.textContent = 'AI allowance is very low. If it runs out, AI suggestions will stop until the daily allowance resets. Turn AI off now if you want to save the rest for later.';
+      aiAllowanceWarning.className = 'ai-allowance-warning level-critical';
+      aiAllowanceWarning.hidden = false;
+    } else if (level === 'low') {
+      aiAllowanceWarning.textContent = 'AI allowance is getting low. If it runs out, AI suggestions will stop until the daily allowance resets. Turn AI off now if you want to save the rest for later.';
+      aiAllowanceWarning.className = 'ai-allowance-warning level-low';
+      aiAllowanceWarning.hidden = false;
+    } else {
+      aiAllowanceWarning.hidden = true;
+    }
+  }
+
+  function formatResetTime(resetAtISO) {
+    if (!resetAtISO) return '';
+    var now = new Date();
+    var reset = new Date(resetAtISO);
+    var diffMs = reset - now;
+    if (diffMs <= 0) return 'Resets now';
+
+    var totalMinutes = Math.floor(diffMs / 60000);
+    var hours = Math.floor(totalMinutes / 60);
+    var minutes = totalMinutes % 60;
+
+    if (hours > 0 && minutes > 0) {
+      return 'Resets in ' + hours + (hours === 1 ? ' hour ' : ' hours ') + minutes + (minutes === 1 ? ' minute' : ' minutes');
+    } else if (hours > 0) {
+      return 'Resets in ' + hours + (hours === 1 ? ' hour' : ' hours');
+    } else if (minutes > 0) {
+      return 'Resets in ' + minutes + (minutes === 1 ? ' minute' : ' minutes');
+    } else {
+      return 'Resets in less than a minute';
+    }
+  }
+
+  function startAllowanceCountdown() {
+    if (allowanceIntervalId) clearInterval(allowanceIntervalId);
+    allowanceIntervalId = setInterval(function () {
+      updateAllowanceMeter();
+    }, 60000);
+  }
+
   function updateSensitivityUI(sensitivity) {
     var isSafe = sensitivity === 'safe';
     sensitivityToggle.checked = isSafe;
@@ -670,6 +776,11 @@
       sensitivityText.className = 'sensitivity-text sensitive';
       checkNowBtn.disabled = true;
       checkNowBtn.title = 'AI check unavailable — draft marked as sensitive';
+    }
+
+    // Keep allowance meter in sync
+    if (aiAllowanceBar) {
+      updateAllowanceMeter();
     }
   }
 
