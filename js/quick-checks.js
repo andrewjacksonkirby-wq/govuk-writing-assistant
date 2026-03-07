@@ -1527,7 +1527,7 @@ const QuickChecks = (function () {
    */
   // Common abbreviations whose trailing period should NOT trigger a capital-letter check
   var ABBREVIATIONS = new Set([
-    'e.g', 'i.e', 'etc', 'vs', 'dr', 'mr', 'mrs', 'ms', 'prof', 'sr', 'jr',
+    'e.g', 'i.e', 'n.b', 'etc', 'viz', 'ibid', 'vs', 'dr', 'mr', 'mrs', 'ms', 'prof', 'sr', 'jr',
     'no', 'nos', 'vol', 'dept', 'govt', 'approx', 'inc', 'ltd', 'st', 'ave',
     'ref', 'fig', 'gen', 'corp', 'est', 'jan', 'feb', 'mar', 'apr', 'jun',
     'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'mon', 'tue', 'wed', 'thu',
@@ -1689,8 +1689,14 @@ const QuickChecks = (function () {
       { regex: /\bie\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "ie"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\beg\b/gi, fix: 'for example', msg: 'Write "for example" instead of "eg"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\bvia\b/gi, fix: 'through', msg: 'GOV.UK style: use "through" or "by" instead of "via"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\bi\.e\.\b/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "i.e."', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
-      { regex: /\be\.g\.\b/gi, fix: 'for example', msg: 'Write "for example" instead of "e.g."', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
+      { regex: /\bi\.e\.(?=\s|,|$)/gi, fix: 'that is', msg: 'Write "that is" or rephrase instead of "i.e."', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\be\.g\.(?=\s|,|$)/gi, fix: 'for example', msg: 'Write "for example" instead of "e.g."', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bN\.B\.(?=\s|,|$)/gi, fix: 'note', msg: 'Write "note" or "please note" instead of "N.B."', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bviz\.(?=\s|,|$)/gi, fix: 'namely', msg: 'Write "namely" or "specifically" instead of "viz."', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bibid\.(?=\s|,|$)/gi, fix: null, msg: 'Avoid "ibid." — give the full reference', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bet\s+al\.(?=\s|,|$)/gi, fix: 'and others', msg: 'Write "and others" instead of "et al."', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bper\s+se\b/gi, fix: 'in itself', msg: 'Write "in itself", "as such", or "by itself" instead of "per se"', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
+      { regex: /\bre\b(?=\s*:)/gi, fix: 'about', msg: 'Write "about" instead of "re:"', cat: 'GOV.UK style', title: 'Latin abbreviation', group: 'style', modes: ['govuk'] },
 
       // --- GOV.UK words to avoid (jargon/buzzwords) ---
       { regex: /\b(agenda)(?!\s+item|\s+for\s+the\s+meeting)\b/gi, fix: 'plan', msg: 'Avoid "agenda" (unless for a meeting) — say what you mean: plan, approach', cat: 'GOV.UK style', title: 'Word to avoid', group: 'style', modes: ['govuk'] },
