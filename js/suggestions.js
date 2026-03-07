@@ -371,16 +371,16 @@ const Suggestions = (function () {
     var end = suggestion.end !== undefined ? suggestion.end : (start + (suggestion.original || '').length);
     if (start < 0 || end > text.length) return null;
 
-    var ctxBefore = text.substring(Math.max(0, start - 40), start);
+    var ctxBefore = text.substring(Math.max(0, start - 80), start);
     var ctxTarget = text.substring(start, end);
-    var ctxAfter = text.substring(end, Math.min(text.length, end + 40));
+    var ctxAfter = text.substring(end, Math.min(text.length, end + 80));
 
-    if (start - 40 > 0) {
+    if (start - 80 > 0) {
       var spaceIdx = ctxBefore.indexOf(' ');
       if (spaceIdx !== -1) ctxBefore = ctxBefore.substring(spaceIdx + 1);
       ctxBefore = '...' + ctxBefore;
     }
-    if (end + 40 < text.length) {
+    if (end + 80 < text.length) {
       var lastSpace = ctxAfter.lastIndexOf(' ');
       if (lastSpace !== -1) ctxAfter = ctxAfter.substring(0, lastSpace);
       ctxAfter = ctxAfter + '...';
