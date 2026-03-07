@@ -1158,6 +1158,16 @@ const QuickChecks = (function () {
       category: 'Style',
       run: checkGovukCapitalisation
     },
+    {
+      id: 'abbreviation-first-use',
+      category: 'Style',
+      run: checkAbbreviationFirstUse
+    },
+    {
+      id: 'govuk-extra-style',
+      category: 'Style',
+      run: checkGovukExtraStyle
+    },
     // NOTE: sentence-length check removed from quick-checks to avoid duplicates.
     // The full-check module provides a better version with split-point advice.
     // See full-check.js checkSentenceLengthContextual()
@@ -1628,38 +1638,36 @@ const QuickChecks = (function () {
 
       // --- Plain English (GOV.UK only): single-word replacements ---
       // These are normal business words in email/chat, but GOV.UK style guide says simplify.
-      { regex: /\b(utilise)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilise" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(utilisation)\b/gi, fix: 'use', msg: 'Prefer "use" over "utilisation" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(commence)\b/gi, fix: 'start', msg: 'Prefer "start" over "commence" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(purchase)\b/gi, fix: 'buy', msg: 'Prefer "buy" over "purchase" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(utili[sz](?:e[ds]?|ing|ation))\b/gi, fix: 'use', msg: 'Prefer "use" over "utilise" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(commenc(?:e[ds]?|ing))\b/gi, fix: 'start', msg: 'Prefer "start" over "commence" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(purchas(?:e[ds]?|ing))\b/gi, fix: 'buy', msg: 'Prefer "buy" over "purchase" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(regarding)\b/gi, fix: 'about', msg: 'Prefer "about" over "regarding" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(facilitate)\b/gi, fix: 'help', msg: 'Prefer "help" over "facilitate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(endeavour)\b/gi, fix: 'try', msg: 'Prefer "try" over "endeavour" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(terminate)\b/gi, fix: 'end', msg: 'Prefer "end" over "terminate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(additional)\b/gi, fix: 'extra', msg: 'Prefer "extra" or "more" over "additional" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(facilitat(?:e[ds]?|ing|ion))\b/gi, fix: 'help', msg: 'Prefer "help" over "facilitate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(endeavou?r(?:ed|s|ing)?)\b/gi, fix: 'try', msg: 'Prefer "try" over "endeavour" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(terminat(?:e[ds]?|ing|ion))\b/gi, fix: 'end', msg: 'Prefer "end" over "terminate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(additional(?:ly)?)\b/gi, fix: 'extra', msg: 'Prefer "extra" or "more" over "additional" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(accordingly)\b/gi, fix: 'so', msg: 'Prefer "so" over "accordingly" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(subsequently)\b/gi, fix: 'then', msg: 'Prefer "then" over "subsequently" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(approximately)\b/gi, fix: 'about', msg: 'Prefer "about" over "approximately" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(furthermore)\b/gi, fix: 'also', msg: 'Prefer "also" over "furthermore" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(nevertheless)\b/gi, fix: 'but', msg: 'Prefer "but" or "however" over "nevertheless" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(notwithstanding)\b/gi, fix: 'despite', msg: 'Prefer "despite" over "notwithstanding" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(ascertain)\b/gi, fix: 'find out', msg: 'Prefer "find out" over "ascertain" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(demonstrate)\b/gi, fix: 'show', msg: 'Prefer "show" over "demonstrate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(ascertain(?:ed|s|ing)?)\b/gi, fix: 'find out', msg: 'Prefer "find out" over "ascertain" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(demonstrat(?:e[ds]?|ing|ion))\b/gi, fix: 'show', msg: 'Prefer "show" over "demonstrate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(consequently)\b/gi, fix: 'so', msg: 'Prefer "so" over "consequently" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(assistance)\b/gi, fix: 'help', msg: 'Prefer "help" over "assistance" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(sufficient)\b/gi, fix: 'enough', msg: 'Prefer "enough" over "sufficient" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(obtain)\b/gi, fix: 'get', msg: 'Prefer "get" over "obtain" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(require)\b/gi, fix: 'need', msg: 'Prefer "need" over "require" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(requirement)\b/gi, fix: 'need', msg: 'Prefer "need" over "requirement" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(modify)\b/gi, fix: 'change', msg: 'Prefer "change" over "modify" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(submit)\b/gi, fix: 'send', msg: 'Prefer "send" over "submit" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(assist(?:ance|ed|s|ing)?)\b/gi, fix: 'help', msg: 'Prefer "help" over "assist" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(sufficient(?:ly)?)\b/gi, fix: 'enough', msg: 'Prefer "enough" over "sufficient" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(obtain(?:ed|s|ing)?)\b/gi, fix: 'get', msg: 'Prefer "get" over "obtain" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(requir(?:e[ds]?|ing|ement))\b/gi, fix: 'need', msg: 'Prefer "need" over "require" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(modif(?:y|ied|ies|ying|ication))\b/gi, fix: 'change', msg: 'Prefer "change" over "modify" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(submit(?:ted|ting|s)?)\b/gi, fix: 'send', msg: 'Prefer "send" over "submit" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(upon)\b/gi, fix: 'on', msg: 'Prefer "on" over "upon" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(whilst)\b/gi, fix: 'while', msg: 'Prefer "while" over "whilst" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(amongst)\b/gi, fix: 'among', msg: 'Prefer "among" over "amongst" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(attempt)\b/gi, fix: 'try', msg: 'Prefer "try" over "attempt" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(initiate)\b/gi, fix: 'start', msg: 'Prefer "start" over "initiate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(implement)\b/gi, fix: 'carry out', msg: 'Prefer "carry out" or "set up" over "implement" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
-      { regex: /\b(indicate)\b/gi, fix: 'show', msg: 'Prefer "show" or "suggest" over "indicate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(attempt(?:ed|s|ing)?)\b/gi, fix: 'try', msg: 'Prefer "try" over "attempt" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(initiat(?:e[ds]?|ing|ive))\b/gi, fix: 'start', msg: 'Prefer "start" over "initiate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(implement(?:ed|s|ing|ation)?)\b/gi, fix: 'carry out', msg: 'Prefer "carry out" or "set up" over "implement" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
+      { regex: /\b(indicat(?:e[ds]?|ing|ion))\b/gi, fix: 'show', msg: 'Prefer "show" or "suggest" over "indicate" for plain English', cat: 'Plain English', title: 'Use plain English', modes: ['govuk'] },
       { regex: /\b(therefore)\b/gi, fix: 'so', msg: 'GOV.UK style: prefer "so" over "therefore"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
       { regex: /\b(however)\b/gi, fix: 'but', msg: 'GOV.UK style: consider "but" instead of "however"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
 
@@ -1954,12 +1962,17 @@ const QuickChecks = (function () {
   /**
    * Check date format issues (GOV.UK style: "1 January 2024").
    */
+  var MONTHS_FULL = 'January|February|March|April|May|June|July|August|September|October|November|December';
+  var MONTHS_ABBR = 'Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';
+  var MONTHS_ALL = MONTHS_FULL + '|' + MONTHS_ABBR;
+
   function checkDateFormat(text) {
     var results = [];
-    // Numeric date formats like 01/01/2024
-    var numericDate = /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g;
     var match;
-    while ((match = numericDate.exec(text)) !== null) {
+
+    // 1. Numeric dates with slashes: 01/01/2024, 1/1/24
+    var numericSlash = /\b(\d{1,2})\/(\d{1,2})\/(\d{2,4})\b/g;
+    while ((match = numericSlash.exec(text)) !== null) {
       results.push({
         id: makeId(),
         ruleId: 'date-format',
@@ -1974,8 +1987,35 @@ const QuickChecks = (function () {
       });
     }
 
-    // Ordinals with dates: "1st January", "2nd March"
-    var ordinalDate = /\b(\d{1,2})(?:st|nd|rd|th)\s+(January|February|March|April|May|June|July|August|September|October|November|December)\b/gi;
+    // 2. Numeric dates with dashes: 01-01-2024, 2024-01-15 (ISO)
+    var numericDash = /\b(\d{1,4})[-.](\d{1,2})[-.](\d{1,4})\b/g;
+    while ((match = numericDash.exec(text)) !== null) {
+      // Skip time-like patterns (e.g. 9.30) and version numbers
+      var p1 = parseInt(match[1], 10);
+      var p3 = parseInt(match[3], 10);
+      if (p1 <= 31 && p3 <= 31 && parseInt(match[2], 10) <= 12) {
+        // Looks like a date
+      } else if ((p1 >= 1900 && p1 <= 2099) || (p3 >= 1900 && p3 <= 2099)) {
+        // Contains a year
+      } else {
+        continue; // Not a date
+      }
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'style',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use "1 January 2024" format instead of numeric dates',
+        title: 'Date format',
+        original: match[0]
+      });
+    }
+
+    // 3. Ordinals with dates: "1st January", "2nd March", "1st Jan"
+    var ordinalDate = new RegExp('\\b(\\d{1,2})(?:st|nd|rd|th)\\s+(' + MONTHS_ALL + ')\\b', 'gi');
     while ((match = ordinalDate.exec(text)) !== null) {
       var fixedDate = match[1] + ' ' + match[2].charAt(0).toUpperCase() + match[2].slice(1).toLowerCase();
       results.push({
@@ -1992,6 +2032,129 @@ const QuickChecks = (function () {
         original: match[0]
       });
     }
+
+    // 4. Month-first format (US style): "January 1st", "January 1, 2024", "January 1 2024"
+    var monthFirst = new RegExp('\\b(' + MONTHS_FULL + ')\\s+(\\d{1,2})(?:st|nd|rd|th)?(?:,?\\s+(\\d{4}))?\\b', 'gi');
+    while ((match = monthFirst.exec(text)) !== null) {
+      var day = match[2];
+      var month = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      var year = match[3] || '';
+      var fix = day + ' ' + month + (year ? ' ' + year : '');
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'style',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: write date as "' + fix + '" (day before month)',
+        title: 'Date format',
+        replacement: fix,
+        original: match[0]
+      });
+    }
+
+    // 5. Abbreviated months: "1 Jan 2024", "15 Sept 2024", "3 Oct"
+    var abbrMonth = new RegExp('\\b(\\d{1,2})\\s+(' + MONTHS_ABBR + ')\\.?(?:\\s+(\\d{4}))?\\b', 'gi');
+    while ((match = abbrMonth.exec(text)) !== null) {
+      // Map abbreviated month to full name
+      var abbrMap = {
+        'jan': 'January', 'feb': 'February', 'mar': 'March', 'apr': 'April',
+        'jun': 'June', 'jul': 'July', 'aug': 'August', 'sep': 'September',
+        'sept': 'September', 'oct': 'October', 'nov': 'November', 'dec': 'December'
+      };
+      var fullMonth = abbrMap[match[2].toLowerCase()];
+      if (fullMonth) {
+        var abbrFix = match[1] + ' ' + fullMonth + (match[3] ? ' ' + match[3] : '');
+        results.push({
+          id: makeId(),
+          ruleId: 'date-format',
+          source: 'regex',
+          group: 'style',
+          category: 'Date format',
+          start: match.index,
+          end: match.index + match[0].length,
+          message: 'GOV.UK style: write months in full — "' + abbrFix + '"',
+          title: 'Date format',
+          replacement: abbrFix,
+          original: match[0]
+        });
+      }
+    }
+
+    // 6. Ordinals after month (US style with ordinals): "January 1st"
+    var monthOrdinal = new RegExp('\\b(' + MONTHS_ALL + ')\\s+(\\d{1,2})(?:st|nd|rd|th)\\b', 'gi');
+    while ((match = monthOrdinal.exec(text)) !== null) {
+      var moMonth = match[1].charAt(0).toUpperCase() + match[1].slice(1).toLowerCase();
+      var moFix = match[2] + ' ' + moMonth;
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'style',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: write "' + moFix + '" — day before month, no ordinals',
+        title: 'Date format',
+        replacement: moFix,
+        original: match[0]
+      });
+    }
+
+    // 7. Financial year formats: 2024/25, 2024-25, 2024/2025, FY2024, FY24/25, FY 2024-25
+    // GOV.UK style: "2024 to 2025"
+    var fySlashShort = /\b((?:FY\s*)?)(20\d{2})\s*[\/\-]\s*(\d{2,4})\b/gi;
+    while ((match = fySlashShort.exec(text)) !== null) {
+      var fyPrefix = match[1];
+      var fyStart = match[2];
+      var fyEndRaw = match[3];
+      // Skip if this is a numeric date (has a third segment)
+      var afterFy = text.substring(match.index + match[0].length, match.index + match[0].length + 3);
+      if (/^[\/\-]\d/.test(afterFy)) continue;
+      // Build full end year
+      var fyEnd = fyEndRaw.length === 2 ? fyStart.substring(0, 2) + fyEndRaw : fyEndRaw;
+      // Validate it's plausible as a financial year (end = start + 1)
+      var startNum = parseInt(fyStart, 10);
+      var endNum = parseInt(fyEnd, 10);
+      if (endNum !== startNum + 1 && endNum !== startNum) continue;
+      var fyFix = fyStart + ' to ' + fyEnd;
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'style',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: write financial years as "' + fyFix + '"',
+        title: 'Financial year format',
+        replacement: fyFix,
+        original: match[0]
+      });
+    }
+
+    // 8. Standalone "FY2024" or "FY 2024" without a range
+    var fyStandalone = /\bFY\s*(\d{4})\b/gi;
+    while ((match = fyStandalone.exec(text)) !== null) {
+      // Skip if already caught by the range regex above
+      var afterStandalone = text.substring(match.index + match[0].length, match.index + match[0].length + 3);
+      if (/^[\/\-]\d/.test(afterStandalone)) continue;
+      results.push({
+        id: makeId(),
+        ruleId: 'date-format',
+        source: 'regex',
+        group: 'style',
+        category: 'Date format',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: avoid "FY" prefix — write the year or financial year in full',
+        title: 'Financial year format',
+        original: match[0]
+      });
+    }
+
     return results;
   }
 
@@ -2573,6 +2736,229 @@ const QuickChecks = (function () {
         original: 'Government'
       });
     }
+
+    // Generic terms that should be lower case mid-sentence (GOV.UK style)
+    // Only flag when NOT part of a proper name (e.g. "the minister said" not "Minister for Defence")
+    var genericTerms = [
+      { word: 'Minister', lower: 'minister', except: /Minister\s+(?:of|for|of\s+State)/i },
+      { word: 'Department', lower: 'department', except: /Department\s+(?:of|for)/i },
+      { word: 'Committee', lower: 'committee', except: /Committee\s+(?:of|on|for)/i },
+      { word: 'Board', lower: 'board', except: /Board\s+(?:of)/i },
+      { word: 'Act', lower: 'act', except: /(?:the\s+\w+\s+)?Act\s+\d{4}/i },
+      { word: 'White Paper', lower: 'white paper', except: null },
+      { word: 'Green Paper', lower: 'green paper', except: null },
+      { word: 'Civil Servant', lower: 'civil servant', except: null },
+      { word: 'Civil Service', lower: 'civil service', except: /Civil\s+Service\s+(?:Commission|Code)/i },
+      { word: 'Council', lower: 'council', except: /Council\s+(?:of|for|Tax)/i },
+      { word: 'Executive', lower: 'executive', except: /(?:Chief|Senior)\s+Executive/i },
+      { word: 'Strategy', lower: 'strategy', except: null },
+      { word: 'Policy', lower: 'policy', except: null },
+      { word: 'Programme', lower: 'programme', except: null },
+      { word: 'Project', lower: 'project', except: null }
+    ];
+
+    genericTerms.forEach(function (term) {
+      var termRegex = new RegExp('[a-z,;:]\\s+(' + term.word.replace(/\s+/g, '\\s+') + ')\\b', 'g');
+      while ((match = termRegex.exec(text)) !== null) {
+        var tStart = match.index + match[0].indexOf(match[1]);
+        // Check exception pattern — skip if this is part of a proper name
+        if (term.except) {
+          var context = text.substring(Math.max(0, tStart - 20), Math.min(text.length, tStart + match[1].length + 30));
+          if (term.except.test(context)) continue;
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'govuk-capitalisation',
+          source: 'regex',
+          group: 'style',
+          category: 'GOV.UK style',
+          start: tStart,
+          end: tStart + match[1].length,
+          message: 'GOV.UK style: "' + term.lower + '" is lower case when used generically',
+          title: 'GOV.UK style',
+          replacement: term.lower,
+          original: match[1]
+        });
+      }
+    });
+
+    // Job titles should be lower case when generic: "the director said" not "the Director said"
+    var jobTitles = [
+      'Director', 'Chair', 'Chairman', 'Chairwoman', 'Chairperson',
+      'Secretary', 'Treasurer', 'Officer', 'Manager', 'Adviser', 'Advisor',
+      'Commissioner', 'Inspector', 'Ombudsman', 'Permanent Secretary'
+    ];
+    jobTitles.forEach(function (title) {
+      var titleRegex = new RegExp('[a-z,;:]\\s+(?:the\\s+)?(' + title.replace(/\s+/g, '\\s+') + ')\\b(?!\\s+(?:of|for|General))', 'g');
+      while ((match = titleRegex.exec(text)) !== null) {
+        var jStart = match.index + match[0].indexOf(match[1]);
+        results.push({
+          id: makeId(),
+          ruleId: 'govuk-capitalisation',
+          source: 'regex',
+          group: 'style',
+          category: 'GOV.UK style',
+          start: jStart,
+          end: jStart + match[1].length,
+          message: 'GOV.UK style: job titles are lower case when used generically — "' + match[1].toLowerCase() + '"',
+          title: 'GOV.UK style',
+          replacement: match[1].toLowerCase(),
+          original: match[1]
+        });
+      }
+    });
+
+    return results;
+  }
+
+  /**
+   * Check that abbreviations/acronyms are spelled out on first use.
+   * Detects uppercase abbreviations (2+ letters) and checks whether
+   * the full form appears earlier in the text with the abbreviation in brackets.
+   * E.g. "Subject Matter Expert (SME)" then "SME" is fine.
+   * But if "SME" appears without prior definition, flag it.
+   */
+  function checkAbbreviationFirstUse(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+
+    // Common abbreviations that don't need spelling out (well-known)
+    var wellKnown = new Set([
+      'UK', 'US', 'USA', 'EU', 'UN', 'NHS', 'BBC', 'GDP', 'VAT', 'MP', 'PM',
+      'CEO', 'IT', 'HR', 'PR', 'CV', 'ID', 'PIN', 'ATM', 'PDF', 'URL', 'HTML',
+      'CSS', 'API', 'FAQ', 'DIY', 'ASAP', 'FYI', 'HMRC', 'DVLA', 'DWP', 'MOD',
+      'MOJ', 'CPS', 'DEFRA', 'OFSTED', 'NATO', 'AIDS', 'HIV', 'DNA', 'RNA',
+      'GCSE', 'PhD', 'MBA', 'BA', 'MA', 'MSc', 'BSc', 'OBE', 'MBE', 'CBE',
+      'KBE', 'AM', 'PM', 'AD', 'BC', 'GP', 'ICU', 'A&E', 'NHS', 'NI', 'GB',
+      'GOV', 'FOI', 'DPA', 'GDPR', 'ICO', 'BAME', 'SEND', 'SEN', 'NEET',
+      'COO', 'CFO', 'CTO', 'CMO', 'CSO', 'CPO', 'OK'
+    ]);
+
+    // Find all uppercase abbreviations (2-8 capital letters, possibly with numbers)
+    var abbrRegex = /\b([A-Z][A-Z0-9]{1,7})\b/g;
+    var match;
+    var found = {}; // track first occurrence of each abbreviation
+
+    while ((match = abbrRegex.exec(text)) !== null) {
+      var abbr = match[1];
+      if (wellKnown.has(abbr)) continue;
+      if (found[abbr]) continue; // Already flagged or defined
+      found[abbr] = true;
+
+      // Check if there's a definition before this point: "Full Name (ABBR)" pattern
+      var before = text.substring(0, match.index);
+      // Look for "(ABBR)" preceded by words that could be the expansion
+      var defPattern = new RegExp('\\(' + abbr + '\\)', 'i');
+      if (defPattern.test(before)) continue; // Defined earlier, OK
+
+      // Also check if the abbreviation appears in brackets right here (this IS the definition)
+      var surroundStart = Math.max(0, match.index - 1);
+      var surroundEnd = Math.min(text.length, match.index + abbr.length + 1);
+      var surrounding = text.substring(surroundStart, surroundEnd);
+      if (/^\(/.test(surrounding) && /\)$/.test(surrounding)) continue; // This is the definition itself
+
+      results.push({
+        id: makeId(),
+        ruleId: 'abbreviation-first-use',
+        source: 'regex',
+        group: 'style',
+        category: 'Abbreviations',
+        start: match.index,
+        end: match.index + abbr.length,
+        message: 'GOV.UK style: spell out "' + abbr + '" in full the first time you use it, then put the abbreviation in brackets — e.g. "Full Name (' + abbr + ')"',
+        title: 'Abbreviation not defined',
+        original: abbr
+      });
+    }
+
+    return results;
+  }
+
+  /**
+   * Additional GOV.UK style guide checks not covered by the plain English rules.
+   */
+  function checkGovukExtraStyle(text) {
+    if (currentMode !== 'govuk') return [];
+    var results = [];
+    var match;
+
+    var extraRules = [
+      // Ampersand — use "and"
+      { regex: /\s(&)\s/g, fix: 'and', msg: 'GOV.UK style: use "and" not "&" (ampersand)', title: 'Use "and"' },
+      // "should" — GOV.UK says use "must" for requirements, "can" for permissions
+      { regex: /\b(should)\b/gi, fix: null, msg: 'GOV.UK style: use "must" for things people have to do, "can" for things they may do — avoid "should"', title: 'Avoid "should"' },
+      // "click" — GOV.UK says "select" for digital content
+      { regex: /\b(click(?:ed|s|ing)?)\b/gi, fix: 'select', msg: 'GOV.UK style: use "select" instead of "click" — not everyone uses a mouse', title: 'Use "select"' },
+      // "smartphone" — use "phone"
+      { regex: /\b(smartphones?)\b/gi, fix: 'phone', msg: 'GOV.UK style: use "phone" instead of "smartphone"', title: 'Use "phone"' },
+      // "shall" — use "will" or "must"
+      { regex: /\b(shall)\b/gi, fix: 'will', msg: 'GOV.UK style: use "will" or "must" instead of "shall"', title: 'Use plain English' },
+      // "aforementioned" — name the specific thing
+      { regex: /\b(aforementioned|above-mentioned|abovementioned)\b/gi, fix: null, msg: 'GOV.UK style: do not use "aforementioned" — name the specific thing', title: 'Use plain English' },
+      // Legal language
+      { regex: /\b(herewith|hereby|herein|hereinafter|hereunder|thereof|therein|thereto|whereby|wherein)\b/gi, fix: null, msg: 'GOV.UK style: avoid legal language — rephrase in plain English', title: 'Avoid legal language' },
+      // "at this time" — use "now"
+      { regex: /\bat\s+this\s+time\b/gi, fix: 'now', msg: 'GOV.UK style: use "now"', title: 'Use plain English' },
+      // "in the event that" — use "if"
+      { regex: /\bin\s+the\s+event\s+that\b/gi, fix: 'if', msg: 'GOV.UK style: use "if"', title: 'Use plain English' },
+      // "with a view to" — use "to"
+      { regex: /\bwith\s+a\s+view\s+to\b/gi, fix: 'to', msg: 'GOV.UK style: use "to"', title: 'Use plain English' },
+      // "on behalf of" can often just be "for"
+      { regex: /\bon\s+behalf\s+of\b/gi, fix: 'for', msg: 'GOV.UK style: consider using "for" instead of "on behalf of"', title: 'Use plain English' },
+      // "in excess of" — use "more than"
+      { regex: /\bin\s+excess\s+of\b/gi, fix: 'more than', msg: 'GOV.UK style: use "more than"', title: 'Use plain English' },
+      // "in conjunction with" — use "with"
+      { regex: /\bin\s+conjunction\s+with\b/gi, fix: 'with', msg: 'GOV.UK style: use "with"', title: 'Use plain English' },
+      // "it should be noted that" — just state the thing
+      { regex: /\bit\s+should\s+be\s+noted\s+that\b/gi, fix: null, msg: 'GOV.UK style: remove "it should be noted that" — just state the point', title: 'Remove filler' },
+      // "please note that" — just state it
+      { regex: /\bplease\s+note\s+that\b/gi, fix: null, msg: 'GOV.UK style: remove "please note that" — just state the point', title: 'Remove filler' },
+      // "as a consequence of" — use "because"
+      { regex: /\bas\s+a\s+(?:consequence|result)\s+of\b/gi, fix: 'because of', msg: 'GOV.UK style: use "because of"', title: 'Use plain English' },
+      // "at the end of the day"
+      { regex: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi, fix: null, msg: 'GOV.UK style: avoid clichés — say what you actually mean', title: 'Avoid clichés' },
+      // "touch base"
+      { regex: /\btouch\s+base\b/gi, fix: 'contact', msg: 'GOV.UK style: use "contact", "speak to", or "meet"', title: 'Avoid clichés' },
+      // "going forward" already handled in words-to-avoid, but "moving forward" too
+      { regex: /\bmoving\s+forwards?\b/gi, fix: 'from now on', msg: 'GOV.UK style: say "from now on" or be specific about timing', title: 'Avoid clichés' },
+      // "best practice" — say what you actually mean
+      { regex: /\bbest\s+practice\b/gi, fix: null, msg: 'GOV.UK style: avoid "best practice" — describe what the practice actually is', title: 'Word to avoid' },
+      // "stakeholder" — say who you mean
+      { regex: /\b(stakeholders?)\b/gi, fix: null, msg: 'GOV.UK style: avoid "stakeholder" — say who you mean specifically', title: 'Word to avoid' },
+      // "robust" — overused, be specific
+      { regex: /\b(robust)\b/gi, fix: null, msg: 'GOV.UK style: avoid "robust" — be specific about what makes it strong', title: 'Word to avoid' },
+      // "streamline" — say what you mean
+      { regex: /\b(streamlin(?:e|ed|ing|es))\b/gi, fix: null, msg: 'GOV.UK style: avoid "streamline" — say what you actually mean', title: 'Word to avoid' },
+      // "drive" (as in "drive change") — be specific
+      { regex: /\b(drive)\b(?=\s+(?:change|growth|improvement|innovation|transformation|value|efficiency|results|outcomes|performance|progress))/gi, fix: null, msg: 'GOV.UK style: avoid "drive" in this sense — be specific about what action you mean', title: 'Word to avoid' },
+      // "pipeline"
+      { regex: /\b(pipeline)\b(?!\s+(?:gas|oil|water|data))/gi, fix: null, msg: 'GOV.UK style: avoid "pipeline" unless literal — say what you mean', title: 'Word to avoid' }
+    ];
+
+    extraRules.forEach(function (rule) {
+      while ((match = rule.regex.exec(text)) !== null) {
+        var mStart = match.index;
+        var mEnd = match.index + match[0].length;
+        // For ampersand, adjust to just the & character
+        if (match[0].trim() === '&') {
+          mStart = match.index + match[0].indexOf('&');
+          mEnd = mStart + 1;
+        }
+        results.push({
+          id: makeId(),
+          ruleId: 'govuk-extra-style',
+          source: 'regex',
+          group: 'style',
+          category: 'GOV.UK style',
+          start: mStart,
+          end: mEnd,
+          message: rule.msg,
+          title: rule.title,
+          replacement: rule.fix || undefined,
+          original: match[0].trim()
+        });
+      }
+    });
 
     return results;
   }
