@@ -1347,7 +1347,8 @@ body {
 
 /* --- Spelling (red, wavy) --- */
 .issue-underline.underline-spelling {
-  border-bottom: 2px wavy var(--color-correctness);
+  text-decoration: underline wavy var(--color-correctness);
+  text-underline-offset: 2px;
 }
 .issue-underline.underline-spelling:hover {
   background: var(--color-correctness-bg);
