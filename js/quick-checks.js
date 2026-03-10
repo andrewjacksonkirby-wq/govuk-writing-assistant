@@ -2555,47 +2555,17 @@ const QuickChecks = (function () {
       'fifty': '50', 'sixty': '60', 'seventy': '70', 'eighty': '80', 'ninety': '90'
     };
 
-    // Match spelled-out numbers (single words like "two", "fifteen", "ninety")
-    var wordPattern = '\\b(' + Object.keys(WORD_TO_DIGIT).join('|') + ')\\b';
-    var wordRegex = new RegExp(wordPattern, 'gi');
+    // First, find compound number ranges to avoid double-flagging
+    var compoundRanges = [];
     var match;
-    while ((match = wordRegex.exec(text)) !== null) {
-      var word = match[1].toLowerCase();
 
-      // Skip ordinals: "first" through "ninth" stay as words per GOV.UK
-      // (These won't match anyway since the list doesn't include them)
-
-      // Skip common phrases where the number word is idiomatic
-      var before = text.substring(Math.max(0, match.index - 15), match.index).toLowerCase();
-      var after = text.substring(match.index + match[0].length, match.index + match[0].length + 15).toLowerCase();
-
-      // Skip "one of", "one by one", "one another" — idiomatic uses of "one"
-      if (word === 'one' && (/\b(the|this|that|each|every|no|any|which)\s*$/.test(before) || /^\s*(of|by|another|way|thing|day)\b/.test(after))) continue;
-
-      var digit = WORD_TO_DIGIT[word];
-      if (digit) {
-        results.push({
-          id: makeId(),
-          ruleId: 'numbers',
-          source: 'regex',
-          group: 'style',
-          category: 'Numbers',
-          start: match.index,
-          end: match.index + match[0].length,
-          message: 'GOV.UK style: use numerals — write "' + digit + '" not "' + match[0] + '"',
-          title: 'Number style',
-          replacement: digit,
-          original: match[0]
-        });
-      }
-    }
-
-    // Also match compound numbers like "twenty-two", "thirty-five"
+    // Match compound numbers like "twenty-two", "thirty-five"
     var compoundRegex = /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[-–\s](one|two|three|four|five|six|seven|eight|nine)\b/gi;
     while ((match = compoundRegex.exec(text)) !== null) {
       var tens = WORD_TO_DIGIT[match[1].toLowerCase()];
       var ones = WORD_TO_DIGIT[match[2].toLowerCase()];
       var numVal = parseInt(tens, 10) + parseInt(ones, 10);
+      compoundRanges.push({ start: match.index, end: match.index + match[0].length });
       results.push({
         id: makeId(),
         ruleId: 'numbers',
@@ -2609,6 +2579,54 @@ const QuickChecks = (function () {
         replacement: String(numVal),
         original: match[0]
       });
+    }
+
+    // Match single spelled-out numbers (skip those inside compound ranges)
+    var wordPattern = '\\b(' + Object.keys(WORD_TO_DIGIT).join('|') + ')\\b';
+    var wordRegex = new RegExp(wordPattern, 'gi');
+    while ((match = wordRegex.exec(text)) !== null) {
+      var word = match[1].toLowerCase();
+      var mStart = match.index;
+      var mEnd = match.index + match[0].length;
+
+      // Skip if inside a compound number range
+      var inCompound = false;
+      for (var ci = 0; ci < compoundRanges.length; ci++) {
+        if (mStart >= compoundRanges[ci].start && mEnd <= compoundRanges[ci].end) { inCompound = true; break; }
+      }
+      if (inCompound) continue;
+
+      var after = text.substring(mEnd, mEnd + 15).toLowerCase();
+
+      // Skip number words before multipliers: "one hundred", "two thousand"
+      if (/^\s*(hundred|thousand|million|billion|trillion)\b/.test(after)) continue;
+
+      // Skip hyphenated compounds: "one-off", "one-time", "two-thirds"
+      if (text[mEnd] === '-') continue;
+
+      // Skip idiomatic uses of "one"
+      if (word === 'one') {
+        var before = text.substring(Math.max(0, mStart - 15), mStart).toLowerCase();
+        if (/\b(the|this|that|each|every|no|any|which)\s*$/.test(before)) continue;
+        if (/^\s*(of|by|another|way|thing|day|more|less|such|reason)\b/.test(after)) continue;
+      }
+
+      var digit = WORD_TO_DIGIT[word];
+      if (digit) {
+        results.push({
+          id: makeId(),
+          ruleId: 'numbers',
+          source: 'regex',
+          group: 'style',
+          category: 'Numbers',
+          start: mStart,
+          end: mEnd,
+          message: 'GOV.UK style: use numerals — write "' + digit + '" not "' + match[0] + '"',
+          title: 'Number style',
+          replacement: digit,
+          original: match[0]
+        });
+      }
     }
 
     return results;
@@ -2658,13 +2676,14 @@ const QuickChecks = (function () {
     }
 
     // Period used as thousand separator (e.g. 1.000 should be 1,000)
+    // Only flag when left side is >= 10 to avoid false positives on decimals like 3.141, 1.500
     var dotThousandRegex = /\b(\d{1,3})\.(\d{3})\b(?!\.?\d)/g;
     while ((match = dotThousandRegex.exec(text)) !== null) {
       var full = match[0];
       var combined = parseInt(match[1] + match[2], 10);
-      // Skip decimals like "3.14" or "0.500" — only flag when right side is exactly 3 digits of zeros or looks like thousands
       if (parseInt(match[1], 10) === 0) continue;
-      // Skip version numbers like "2.000" in tech context — but 1.000, 2.000 etc. are likely thousand-separator mistakes
+      // Skip single-digit left side — likely a real decimal (e.g. 3.141, 1.500, 2.000)
+      if (parseInt(match[1], 10) < 10) continue;
       var fixed = combined.toLocaleString('en-GB');
       results.push({
         id: makeId(),
@@ -3260,8 +3279,6 @@ const QuickChecks = (function () {
     var match;
 
     var extraRules = [
-      // Ampersand — use "and"
-      { regex: /\s(&)\s/g, fix: 'and', msg: 'GOV.UK style: use "and" not "&" (ampersand)', title: 'Use "and"' },
       // "should" — GOV.UK says use "must" for requirements, "can" for permissions
       { regex: /\b(should)\b/gi, fix: null, msg: 'GOV.UK style: use "must" for things people have to do, "can" for things they may do — avoid "should"', title: 'Avoid "should"' },
       // "click" — GOV.UK says "select" for digital content
@@ -3276,8 +3293,6 @@ const QuickChecks = (function () {
       { regex: /\b(herewith|hereby|herein|hereinafter|hereunder|thereof|therein|thereto|whereby|wherein)\b/gi, fix: null, msg: 'GOV.UK style: avoid legal language — rephrase in plain English', title: 'Avoid legal language' },
       // "at this time" — use "now"
       { regex: /\bat\s+this\s+time\b/gi, fix: 'now', msg: 'GOV.UK style: use "now"', title: 'Use plain English' },
-      // "in the event that" — use "if"
-      { regex: /\bin\s+the\s+event\s+that\b/gi, fix: 'if', msg: 'GOV.UK style: use "if"', title: 'Use plain English' },
       // "with a view to" — use "to"
       { regex: /\bwith\s+a\s+view\s+to\b/gi, fix: 'to', msg: 'GOV.UK style: use "to"', title: 'Use plain English' },
       // "on behalf of" can often just be "for"
@@ -3296,16 +3311,10 @@ const QuickChecks = (function () {
       { regex: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi, fix: null, msg: 'GOV.UK style: avoid clichés — say what you actually mean', title: 'Avoid clichés' },
       // "touch base"
       { regex: /\btouch\s+base\b/gi, fix: 'contact', msg: 'GOV.UK style: use "contact", "speak to", or "meet"', title: 'Avoid clichés' },
-      // "going forward" already handled in words-to-avoid, but "moving forward" too
-      { regex: /\bmoving\s+forwards?\b/gi, fix: 'from now on', msg: 'GOV.UK style: say "from now on" or be specific about timing', title: 'Avoid clichés' },
       // "best practice" — say what you actually mean
       { regex: /\bbest\s+practice\b/gi, fix: null, msg: 'GOV.UK style: avoid "best practice" — describe what the practice actually is', title: 'Word to avoid' },
       // "stakeholder" — say who you mean
       { regex: /\b(stakeholders?)\b/gi, fix: null, msg: 'GOV.UK style: avoid "stakeholder" — say who you mean specifically', title: 'Word to avoid' },
-      // "robust" — overused, be specific
-      { regex: /\b(robust)\b/gi, fix: null, msg: 'GOV.UK style: avoid "robust" — be specific about what makes it strong', title: 'Word to avoid' },
-      // "streamline" — say what you mean
-      { regex: /\b(streamlin(?:e|ed|ing|es))\b/gi, fix: null, msg: 'GOV.UK style: avoid "streamline" — say what you actually mean', title: 'Word to avoid' },
       // "drive" (as in "drive change") — be specific
       { regex: /\b(drive)\b(?=\s+(?:change|growth|improvement|innovation|transformation|value|efficiency|results|outcomes|performance|progress))/gi, fix: null, msg: 'GOV.UK style: avoid "drive" in this sense — be specific about what action you mean', title: 'Word to avoid' },
       // "pipeline"

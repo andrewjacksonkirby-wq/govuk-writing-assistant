@@ -99,7 +99,7 @@ const Documents = (function () {
     if (!currentDocId) return;
     setStatus('saving');
     var docs = getAllDocs();
-    if (!docs[currentDocId]) return;
+    if (!docs[currentDocId]) { setStatus('saved'); return; }
 
     docs[currentDocId].text = text;
     docs[currentDocId].updatedAt = new Date().toISOString();
@@ -184,10 +184,12 @@ const Documents = (function () {
     var versions = getVersions();
     if (reversedIndex < 0 || reversedIndex >= versions.length) return null;
 
+    // Capture the version BEFORE saving current state (which shifts the array)
+    var version = versions[reversedIndex];
+
     // Save current state as a version first
     saveVersion(currentText);
 
-    var version = versions[reversedIndex];
     saveText(version.text);
     return version.text;
   }

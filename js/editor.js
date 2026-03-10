@@ -297,12 +297,12 @@ const Editor = (function () {
         structEl.className = 'structural-mark ' + getStructuralClass(sm);
         structEl.title = sm.title || sm.message || '';
         structEl.dataset.issueId = sm.id || '';
-        (function (issueRef) {
-          structEl.addEventListener('click', function (e) {
+        (function (issueRef, el) {
+          el.addEventListener('click', function (e) {
             // Only fire if the click wasn't caught by a nested word-mark
-            if (underlineCallback) underlineCallback(issueRef);
+            if (underlineCallback) underlineCallback(issueRef, e.currentTarget);
           });
-        })(sm);
+        })(sm, structEl);
 
         // Fill the structural mark with text + nested word-level marks
         var innerPos = sm.start;

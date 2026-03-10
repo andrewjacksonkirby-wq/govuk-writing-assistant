@@ -105,7 +105,11 @@ const Suggestions = (function () {
   }
 
   function saveDismissed() {
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(Array.from(dismissedIds)));
+    } catch (e) {
+      console.warn('[WritingAssistant] Could not save dismissed items:', e.message);
+    }
   }
 
   function makeDismissKey(s) {
@@ -190,20 +194,14 @@ const Suggestions = (function () {
     if (onApplyAll) onApplyAll(siblings);
 
     var siblingIds = new Set(siblings.map(function (s) { return s.id; }));
-    var isSessionOnly = SESSION_ONLY_RULES.indexOf(suggestion.ruleId) !== -1;
-    siblings.forEach(function (s) {
-      var key = makeDismissKey(s);
-      if (isSessionOnly) { sessionDismissedIds.add(key); }
-      else { dismissedIds.add(key); }
-    });
-    if (!isSessionOnly) saveDismissed();
-
+    // Don't permanently dismiss — the text is being changed so issues resolve naturally
     correctnessSuggestions = correctnessSuggestions.filter(function (s) { return !siblingIds.has(s.id); });
     claritySuggestions = claritySuggestions.filter(function (s) { return !siblingIds.has(s.id); });
 
     if (siblingIds.has(activeSuggestionId)) activeSuggestionId = null;
     if (siblingIds.has(expandedCardId)) expandedCardId = null;
     render();
+    if (onDismiss) onDismiss();
   }
 
   function dismissAll(suggestion) {
@@ -362,8 +360,10 @@ const Suggestions = (function () {
     // Within each category, most frequent issues first, then by document position.
     var CATEGORY_ORDER = { 'correctness': 0, 'clarity': 1, 'style': 2 };
     deduped.sort(function (a, b) {
-      var catA = CATEGORY_ORDER[getCardCategory(a.suggestion)] || 1;
-      var catB = CATEGORY_ORDER[getCardCategory(b.suggestion)] || 1;
+      var catKeyA = getCardCategory(a.suggestion);
+      var catA = catKeyA in CATEGORY_ORDER ? CATEGORY_ORDER[catKeyA] : 1;
+      var catKeyB = getCardCategory(b.suggestion);
+      var catB = catKeyB in CATEGORY_ORDER ? CATEGORY_ORDER[catKeyB] : 1;
       if (catA !== catB) return catA - catB;
       // Within same category: most occurrences first
       if (b.siblings.length !== a.siblings.length) return b.siblings.length - a.siblings.length;
@@ -560,7 +560,14 @@ const Suggestions = (function () {
         applyBtn.addEventListener('click', function (e) {
           e.stopPropagation();
           if (onApply) onApply(suggestion);
-          dismiss(suggestion);
+          // Remove from arrays without permanently dismissing the rule
+          // (dismiss() would add to dismissedIds, silencing future occurrences)
+          correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
+          if (expandedCardId === suggestion.id) expandedCardId = null;
+          render();
+          if (onDismiss) onDismiss();
         });
         actions.appendChild(applyBtn);
       }

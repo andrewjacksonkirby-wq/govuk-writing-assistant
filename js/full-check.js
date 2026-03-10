@@ -58,19 +58,23 @@ const FullCheck = (function () {
 
     isRunning = true;
 
-    // Wrap callback to record usage on success
-    var originalCallback = callback;
-    callback = function (results, error) {
-      if (!error) {
-        recordUsage();
-      }
-      originalCallback(results, error);
-    };
+    var useAPI = !config.useSimulation && config.apiEndpoint;
 
-    if (config.useSimulation || !config.apiEndpoint) {
-      runSimulation(text, callback);
-    } else {
+    // Only record usage for real API calls, not local simulations
+    if (useAPI) {
+      var originalCallback = callback;
+      callback = function (results, error) {
+        if (!error) {
+          recordUsage();
+        }
+        originalCallback(results, error);
+      };
+    }
+
+    if (useAPI) {
       runAPI(text, callback);
+    } else {
+      runSimulation(text, callback);
     }
   }
 
@@ -512,8 +516,18 @@ const FullCheck = (function () {
         }
       }
 
+      var sentStart = match.index;
+      var sentEnd = match.index + match[0].length;
       var sentResult = {
         id: makeId(),
+        ruleId: 'sentence-length',
+        source: 'ai',
+        group: 'clarity',
+        category: 'Sentence length',
+        start: sentStart,
+        end: sentEnd,
+        message: advice,
+        title: 'Long sentence',
         original: sentence
       };
       if (splitReplacement) {
