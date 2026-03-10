@@ -551,8 +551,8 @@
   }
 
   function handleSelect(suggestion) {
-    var groupClass = suggestion.group === 'correctness' ? 'highlight-correctness' : 'highlight-clarity';
-    Editor.highlightRange(suggestion.start, suggestion.end, groupClass);
+    var markEl = document.querySelector('[data-issue-id="' + suggestion.id + '"]');
+    if (markEl) markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /**
