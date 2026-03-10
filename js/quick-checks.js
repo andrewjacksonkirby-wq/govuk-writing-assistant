@@ -1189,6 +1189,11 @@ const QuickChecks = (function () {
       category: 'Style',
       run: checkGovukExtraStyle
     },
+    {
+      id: 'list-formatting',
+      category: 'Lists',
+      run: checkListFormatting
+    },
     // NOTE: sentence-length check removed from quick-checks to avoid duplicates.
     // The full-check module provides a better version with split-point advice.
     // See full-check.js checkSentenceLengthContextual()
@@ -2098,7 +2103,7 @@ const QuickChecks = (function () {
           end: slashMatch.index + slashMatch[0].length,
           message: 'GOV.UK style: use "' + word1 + ' and ' + word2 + '" or "' + word1 + ' or ' + word2 + '" instead of "/"',
           title: 'Avoid slashes',
-          replacement: word1 + ' or ' + word2,
+          replacement: null,
           original: slashMatch[0]
         });
       }
@@ -3275,6 +3280,227 @@ const QuickChecks = (function () {
     return results;
   }
 
+  // ---------------------------------------------------------------------------
+  // List formatting checks
+  // ---------------------------------------------------------------------------
+  function checkListFormatting(text) {
+    var results = [];
+    var lines = text.split('\n');
+
+    // Build array of {line, offset, text} with absolute char offsets
+    var entries = [];
+    var offset = 0;
+    for (var i = 0; i < lines.length; i++) {
+      entries.push({ idx: i, offset: offset, text: lines[i] });
+      offset += lines[i].length + 1; // +1 for '\n'
+    }
+
+    var bulletRe = /^([\t ]*)([-*\u2022\u2013\u2014]|\d+[.):])(\s+)(.*)/;
+
+    // Group consecutive list items
+    var groups = [];
+    var current = null;
+    for (var i = 0; i < entries.length; i++) {
+      var m = bulletRe.exec(entries[i].text);
+      if (m) {
+        var item = {
+          entry: entries[i],
+          indent: m[1],
+          marker: m[2],
+          space: m[3],
+          content: m[4],
+          contentStart: entries[i].offset + m[1].length + m[2].length + m[3].length,
+          contentEnd: entries[i].offset + entries[i].text.length
+        };
+        if (!current) {
+          // Find lead-in: last non-blank line before this group
+          var leadIn = null;
+          for (var j = i - 1; j >= 0; j--) {
+            if (entries[j].text.trim() !== '') {
+              leadIn = entries[j];
+              break;
+            }
+          }
+          current = { items: [item], leadIn: leadIn };
+        } else {
+          current.items.push(item);
+        }
+      } else {
+        if (current && current.items.length >= 2) {
+          groups.push(current);
+        }
+        current = null;
+      }
+    }
+    if (current && current.items.length >= 2) {
+      groups.push(current);
+    }
+
+    groups.forEach(function (group) {
+      var items = group.items;
+
+      // Check 1: Inconsistent end punctuation
+      var endings = items.map(function (it) {
+        var c = it.content.trim();
+        if (!c) return 'none';
+        var last = c[c.length - 1];
+        if (last === ',' || last === ';' || last === '.') return last;
+        return 'none';
+      });
+      var endCounts = {};
+      endings.forEach(function (e) { endCounts[e] = (endCounts[e] || 0) + 1; });
+      var majorEnd = 'none';
+      var majorCount = 0;
+      for (var k in endCounts) {
+        if (endCounts[k] > majorCount) { majorCount = endCounts[k]; majorEnd = k; }
+      }
+      if (Object.keys(endCounts).length > 1) {
+        items.forEach(function (it, idx) {
+          if (endings[idx] !== majorEnd) {
+            results.push({
+              id: makeId(),
+              ruleId: 'list-formatting',
+              source: 'regex',
+              group: 'style',
+              category: 'Lists',
+              start: it.contentStart,
+              end: it.contentEnd,
+              message: 'List items have mixed punctuation endings. Pick one style for all items.',
+              title: 'Inconsistent list punctuation',
+              replacement: null,
+              original: it.content
+            });
+          }
+        });
+      }
+
+      // Check 2: Capitalisation inconsistency
+      var allSentences = items.every(function (it) {
+        var c = it.content.trim();
+        return c.length > 0 && /^[A-Z]/.test(c) && /\.$/.test(c);
+      });
+      if (!allSentences) {
+        items.forEach(function (it) {
+          var c = it.content.trim();
+          if (c.length > 0 && /^[A-Z]/.test(c)) {
+            var lowered = c[0].toLowerCase() + c.slice(1);
+            results.push({
+              id: makeId(),
+              ruleId: 'list-formatting',
+              source: 'regex',
+              group: 'style',
+              category: 'Lists',
+              start: it.contentStart,
+              end: it.contentStart + 1,
+              message: 'GOV.UK style: list items should start with a lowercase letter (they continue the lead-in sentence).',
+              title: 'Lowercase list items',
+              replacement: c[0].toLowerCase(),
+              original: c[0]
+            });
+          }
+        });
+      }
+
+      // Check 3: Lead-in line missing colon
+      if (group.leadIn) {
+        var leadText = group.leadIn.text.trimRight();
+        if (leadText.length > 0 && !/:$/.test(leadText)) {
+          var leadEnd = group.leadIn.offset + group.leadIn.text.length;
+          var trailingPunc = /[.;,!?]$/.test(leadText);
+          var replStart, replEnd, repl;
+          if (trailingPunc) {
+            replStart = leadEnd - 1;
+            replEnd = leadEnd;
+            repl = ':';
+          } else {
+            replStart = leadEnd;
+            replEnd = leadEnd;
+            repl = ':';
+          }
+          results.push({
+            id: makeId(),
+            ruleId: 'list-formatting',
+            source: 'regex',
+            group: 'style',
+            category: 'Lists',
+            start: replStart,
+            end: replEnd,
+            message: 'A lead-in line before a bullet list should end with a colon.',
+            title: 'Lead-in needs colon',
+            replacement: repl,
+            original: trailingPunc ? leadText[leadText.length - 1] : ''
+          });
+        }
+      }
+
+      // Check 4: Nested/sub-bullets
+      var baseIndent = items[0].indent.length;
+      items.forEach(function (it) {
+        if (it.indent.length > baseIndent) {
+          var nestStart = it.entry.offset;
+          results.push({
+            id: makeId(),
+            ruleId: 'list-formatting',
+            source: 'regex',
+            group: 'style',
+            category: 'Lists',
+            start: nestStart,
+            end: it.contentEnd,
+            message: 'GOV.UK style: avoid nested (sub) bullets. Restructure as a flat list or separate lists.',
+            title: 'Avoid nested bullets',
+            replacement: null,
+            original: it.entry.text
+          });
+        }
+      });
+
+      // Check 5: Repeated trailing punctuation
+      items.forEach(function (it) {
+        var repMatch = /([,;.!?])\1+$/.exec(it.content);
+        if (repMatch) {
+          var repStart = it.contentStart + repMatch.index;
+          var repEnd = it.contentStart + repMatch.index + repMatch[0].length;
+          results.push({
+            id: makeId(),
+            ruleId: 'list-formatting',
+            source: 'regex',
+            group: 'correctness',
+            category: 'Lists',
+            start: repStart,
+            end: repEnd,
+            message: 'Repeated punctuation at the end of a list item.',
+            title: 'Repeated punctuation',
+            replacement: repMatch[1],
+            original: repMatch[0]
+          });
+        }
+      });
+
+      // Check 6: "etc" in list items
+      items.forEach(function (it) {
+        var etcRe = /\betc\b\.?/gi;
+        var etcMatch;
+        while ((etcMatch = etcRe.exec(it.content)) !== null) {
+          results.push({
+            id: makeId(),
+            ruleId: 'list-formatting',
+            source: 'regex',
+            group: 'style',
+            category: 'Lists',
+            start: it.contentStart + etcMatch.index,
+            end: it.contentStart + etcMatch.index + etcMatch[0].length,
+            message: 'Lists already imply there may be more items. Rephrase the lead-in with "such as" or "includes" instead of using "etc".',
+            title: 'Avoid "etc" in lists',
+            replacement: null,
+            original: etcMatch[0]
+          });
+        }
+      });
+    });
+
+    return results;
+  }
+
   /**
    * Run all quick checks on the given text.
    * Returns an array of suggestion objects.
@@ -3286,6 +3512,7 @@ const QuickChecks = (function () {
     'spelling': 8,
     'common-grammar': 7,
     'repeated-word': 6,
+    'list-formatting': 4,
     'capitalisation': 3,
     'double-space': 2,
     'punctuation-spacing': 2
