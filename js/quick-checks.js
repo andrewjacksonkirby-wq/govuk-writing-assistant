@@ -2538,28 +2538,42 @@ const QuickChecks = (function () {
   }
 
   /**
-   * GOV.UK number style: spell out one to nine, use digits for 10+.
+   * GOV.UK number style: use numerals (digits) for all numbers.
+   * Flags spelled-out numbers and suggests the digit form.
+   * Exceptions: ordinals "first" to "ninth" stay as words.
    */
   function checkNumbers(text) {
     if (currentMode !== 'govuk') return [];
 
     var results = [];
-    var DIGIT_TO_WORD = { '1': 'one', '2': 'two', '3': 'three', '4': 'four', '5': 'five', '6': 'six', '7': 'seven', '8': 'eight', '9': 'nine' };
+    var WORD_TO_DIGIT = {
+      'one': '1', 'two': '2', 'three': '3', 'four': '4', 'five': '5',
+      'six': '6', 'seven': '7', 'eight': '8', 'nine': '9', 'ten': '10',
+      'eleven': '11', 'twelve': '12', 'thirteen': '13', 'fourteen': '14',
+      'fifteen': '15', 'sixteen': '16', 'seventeen': '17', 'eighteen': '18',
+      'nineteen': '19', 'twenty': '20', 'thirty': '30', 'forty': '40',
+      'fifty': '50', 'sixty': '60', 'seventy': '70', 'eighty': '80', 'ninety': '90'
+    };
 
-    // Standalone digits 1-9 (not part of a larger number, date, or measurement)
-    // Avoids lookbehind for browser compatibility
-    var digitRegex = /\b([1-9])\b(?!\d|\/|\.|,\d|%|st|nd|rd|th|:|pm|am)/g;
+    // Match spelled-out numbers (single words like "two", "fifteen", "ninety")
+    var wordPattern = '\\b(' + Object.keys(WORD_TO_DIGIT).join('|') + ')\\b';
+    var wordRegex = new RegExp(wordPattern, 'gi');
     var match;
-    while ((match = digitRegex.exec(text)) !== null) {
-      // Skip if preceded by a digit (e.g. "12" — \b doesn't prevent this for digits)
-      if (match.index > 0 && /\d/.test(text[match.index - 1])) continue;
+    while ((match = wordRegex.exec(text)) !== null) {
+      var word = match[1].toLowerCase();
 
-      // Skip if part of a range like "5 to 10" or list with larger numbers
-      var after = text.substring(match.index + match[0].length, match.index + match[0].length + 10);
-      if (/^\s*(-|to|–)\s*\d{2,}/.test(after)) continue;
+      // Skip ordinals: "first" through "ninth" stay as words per GOV.UK
+      // (These won't match anyway since the list doesn't include them)
 
-      var word = DIGIT_TO_WORD[match[1]];
-      if (word) {
+      // Skip common phrases where the number word is idiomatic
+      var before = text.substring(Math.max(0, match.index - 15), match.index).toLowerCase();
+      var after = text.substring(match.index + match[0].length, match.index + match[0].length + 15).toLowerCase();
+
+      // Skip "one of", "one by one", "one another" — idiomatic uses of "one"
+      if (word === 'one' && (/\b(the|this|that|each|every|no|any|which)\s*$/.test(before) || /^\s*(of|by|another|way|thing|day)\b/.test(after))) continue;
+
+      var digit = WORD_TO_DIGIT[word];
+      if (digit) {
         results.push({
           id: makeId(),
           ruleId: 'numbers',
@@ -2567,14 +2581,36 @@ const QuickChecks = (function () {
           group: 'style',
           category: 'Numbers',
           start: match.index,
-          end: match.index + match[1].length,
-          message: 'GOV.UK style: spell out numbers one to nine',
+          end: match.index + match[0].length,
+          message: 'GOV.UK style: use numerals — write "' + digit + '" not "' + match[0] + '"',
           title: 'Number style',
-          replacement: word,
-          original: match[1]
+          replacement: digit,
+          original: match[0]
         });
       }
     }
+
+    // Also match compound numbers like "twenty-two", "thirty-five"
+    var compoundRegex = /\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[-–\s](one|two|three|four|five|six|seven|eight|nine)\b/gi;
+    while ((match = compoundRegex.exec(text)) !== null) {
+      var tens = WORD_TO_DIGIT[match[1].toLowerCase()];
+      var ones = WORD_TO_DIGIT[match[2].toLowerCase()];
+      var numVal = parseInt(tens, 10) + parseInt(ones, 10);
+      results.push({
+        id: makeId(),
+        ruleId: 'numbers',
+        source: 'regex',
+        group: 'style',
+        category: 'Numbers',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'GOV.UK style: use numerals — write "' + numVal + '" not "' + match[0] + '"',
+        title: 'Number style',
+        replacement: String(numVal),
+        original: match[0]
+      });
+    }
+
     return results;
   }
 
