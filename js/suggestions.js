@@ -24,6 +24,7 @@ const Suggestions = (function () {
   var onApplyAll = null;
   var onSelect = null;
   var onSuggestFix = null;
+  var onDismiss = null;
 
   // DOM refs
   var listEl;
@@ -60,6 +61,7 @@ const Suggestions = (function () {
     onApplyAll = callbacks.onApplyAll;
     onSelect = callbacks.onSelect;
     onSuggestFix = callbacks.onSuggestFix || null;
+    onDismiss = callbacks.onDismiss || null;
 
     listEl = document.getElementById('suggestionsList');
     scoreNumber = document.getElementById('scoreNumber');
@@ -152,6 +154,7 @@ const Suggestions = (function () {
     if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
     if (expandedCardId === suggestion.id) expandedCardId = null;
     render();
+    if (onDismiss) onDismiss();
   }
 
   /**
@@ -167,6 +170,7 @@ const Suggestions = (function () {
     if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
     if (expandedCardId === suggestion.id) expandedCardId = null;
     render();
+    if (onDismiss) onDismiss();
   }
 
   function getSiblingKey(suggestion) {
@@ -220,6 +224,7 @@ const Suggestions = (function () {
     if (siblingIds.has(activeSuggestionId)) activeSuggestionId = null;
     if (siblingIds.has(expandedCardId)) expandedCardId = null;
     render();
+    if (onDismiss) onDismiss();
   }
 
   function getAll() {

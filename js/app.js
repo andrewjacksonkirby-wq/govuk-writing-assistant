@@ -109,7 +109,15 @@
       onApply: handleApply,
       onApplyAll: handleApplyAll,
       onSelect: handleSelect,
-      onSuggestFix: handleSuggestFix
+      onSuggestFix: handleSuggestFix,
+      onDismiss: function () {
+        // Re-render underlines so dismissed items disappear from the editor
+        var visible = Suggestions.getAll();
+        Editor.showUnderlines(visible, function (mark, markEl) {
+          if (markEl) InlinePopup.show(mark, markEl);
+          Suggestions.selectById(mark.id);
+        });
+      }
     });
 
     // Init inline popup
