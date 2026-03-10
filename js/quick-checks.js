@@ -2603,7 +2603,7 @@ const QuickChecks = (function () {
       if (match.index > 0 && /[+\-()]/.test(text[match.index - 1])) continue;
       // Only flag if it should have commas
       var numVal = parseInt(num, 10);
-      if (numVal >= 10000) {
+      if (numVal >= 1000) {
         var formatted = numVal.toLocaleString('en-GB');
         results.push({
           id: makeId(),
@@ -2619,6 +2619,30 @@ const QuickChecks = (function () {
           original: num
         });
       }
+    }
+
+    // Period used as thousand separator (e.g. 1.000 should be 1,000)
+    var dotThousandRegex = /\b(\d{1,3})\.(\d{3})\b(?!\.?\d)/g;
+    while ((match = dotThousandRegex.exec(text)) !== null) {
+      var full = match[0];
+      var combined = parseInt(match[1] + match[2], 10);
+      // Skip decimals like "3.14" or "0.500" — only flag when right side is exactly 3 digits of zeros or looks like thousands
+      if (parseInt(match[1], 10) === 0) continue;
+      // Skip version numbers like "2.000" in tech context — but 1.000, 2.000 etc. are likely thousand-separator mistakes
+      var fixed = combined.toLocaleString('en-GB');
+      results.push({
+        id: makeId(),
+        ruleId: 'number-formatting',
+        source: 'regex',
+        group: 'style',
+        category: 'Number formatting',
+        start: match.index,
+        end: match.index + full.length,
+        message: 'Use a comma for thousands — "' + fixed + '" not "' + full + '"',
+        title: 'Number formatting',
+        replacement: fixed,
+        original: full
+      });
     }
 
     // Number ranges with hyphens: "500-900" should be "500 to 900"
