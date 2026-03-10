@@ -6,6 +6,9 @@
 (function () {
   'use strict';
 
+  // Feature flag — flip to true when AI backend is available
+  var AI_ENABLED = false;
+
   // DOM elements
   var saveStatusEl = document.getElementById('saveStatus');
   var sensitivityToggle = document.getElementById('sensitivityToggle');
@@ -120,10 +123,30 @@
       Editor.setText(doc.text);
     }
 
-    // Set sensitivity state
-    var sensitivity = Documents.getSensitivity();
-    updateSensitivityUI(sensitivity);
-    sensitivityToggle.checked = sensitivity === 'safe';
+    // AI UI: hide toggle, check-now button, and allowance meter when AI is disabled
+    if (!AI_ENABLED) {
+      sensitivityToggle.parentElement.style.display = 'none';
+      checkNowBtn.style.display = 'none';
+      // Hide the toolbar divider before check-now button
+      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
+        checkNowBtn.previousElementSibling.style.display = 'none';
+      }
+      // Hide AI allowance section in settings
+      if (aiAllowanceBar) {
+        aiAllowanceBar.style.display = 'none';
+        var aiHeading = aiAllowanceBar.previousElementSibling;
+        if (aiHeading && aiHeading.textContent.trim() === 'AI allowance') {
+          aiHeading.style.display = 'none';
+        }
+      }
+    }
+
+    // Set sensitivity state (AI only)
+    if (AI_ENABLED) {
+      var sensitivity = Documents.getSensitivity();
+      updateSensitivityUI(sensitivity);
+      sensitivityToggle.checked = sensitivity === 'safe';
+    }
 
     // Set writing mode
     var mode = Documents.getMode();
@@ -150,17 +173,19 @@
         }
       });
       // Auto-trigger full check after significant edits (debounced 5s)
-      scheduleAutoFullCheck(text);
+      if (AI_ENABLED) scheduleAutoFullCheck(text);
     });
 
-    // Sensitivity toggle
-    sensitivityToggle.addEventListener('change', function () {
-      var isSafe = sensitivityToggle.checked;
-      var value = isSafe ? 'safe' : 'sensitive';
-      Documents.setSensitivity(value);
-      updateSensitivityUI(value);
-      updateAllowanceMeter();
-    });
+    // Sensitivity toggle (AI only)
+    if (AI_ENABLED) {
+      sensitivityToggle.addEventListener('change', function () {
+        var isSafe = sensitivityToggle.checked;
+        var value = isSafe ? 'safe' : 'sensitive';
+        Documents.setSensitivity(value);
+        updateSensitivityUI(value);
+        updateAllowanceMeter();
+      });
+    }
 
     // Mode selector
     modeSelect.addEventListener('change', function () {
@@ -184,8 +209,10 @@
       });
     });
 
-    // Check now button
-    checkNowBtn.addEventListener('click', handleCheckNow);
+    // Check now button (AI only)
+    if (AI_ENABLED) {
+      checkNowBtn.addEventListener('click', handleCheckNow);
+    }
 
     // Upload handler
     uploadFile.addEventListener('change', handleUpload);
@@ -209,8 +236,8 @@
         e.preventDefault();
         Documents.saveText(Editor.getText());
       }
-      // Ctrl+Shift+C / Cmd+Shift+C = check now
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
+      // Ctrl+Shift+C / Cmd+Shift+C = check now (AI only)
+      if (AI_ENABLED && (e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
         e.preventDefault();
         handleCheckNow();
       }
@@ -257,14 +284,16 @@
       releaseFocus();
     });
 
-    // Paste & check: auto-trigger full check on large pastes (50+ words)
-    Editor.onPaste(function (pastedText) {
-      var words = pastedText.trim().split(/\s+/).length;
-      if (words >= 50 && Documents.getSensitivity() === 'safe' && !FullCheck.getIsRunning()) {
-        // Short delay so the editor onChange fires first (quick checks run)
-        setTimeout(function () { handleCheckNow(); }, 300);
-      }
-    });
+    // Paste & check: auto-trigger full check on large pastes (AI only)
+    if (AI_ENABLED) {
+      Editor.onPaste(function (pastedText) {
+        var words = pastedText.trim().split(/\s+/).length;
+        if (words >= 50 && Documents.getSensitivity() === 'safe' && !FullCheck.getIsRunning()) {
+          // Short delay so the editor onChange fires first (quick checks run)
+          setTimeout(function () { handleCheckNow(); }, 300);
+        }
+      });
+    }
 
     // Re-run checks when dictionary finishes loading
     document.addEventListener('typo-dictionary-loaded', function () {
@@ -319,7 +348,7 @@
 
     // ========== Settings modal ==========
     settingsBtn.addEventListener('click', function () {
-      updateAllowanceMeter();
+      if (AI_ENABLED) updateAllowanceMeter();
       settingsModal.hidden = false;
       trapFocus(settingsModal);
     });
@@ -331,9 +360,11 @@
     // Load custom dictionary into QuickChecks
     loadCustomDictionary();
 
-    // Init AI allowance meter
-    updateAllowanceMeter();
-    startAllowanceCountdown();
+    // Init AI allowance meter (AI only)
+    if (AI_ENABLED) {
+      updateAllowanceMeter();
+      startAllowanceCountdown();
+    }
 
     // Run initial quick check + stats if there's text
     var initialText = Editor.getText();
@@ -346,11 +377,13 @@
           processQuickCheckResults(results);
         }
       });
-      // Auto-trigger full check on load if document has enough words
-      var initialWords = (initialText.match(/\b\w+\b/g) || []).length;
-      if (initialWords >= AUTO_TRIGGER_WORD_THRESHOLD && Documents.getSensitivity() === 'safe') {
-        lastFullCheckWordCount = initialWords;
-        setTimeout(function () { handleCheckNow(); }, 1200); // Delay to let quick checks finish first
+      // Auto-trigger full check on load if document has enough words (AI only)
+      if (AI_ENABLED) {
+        var initialWords = (initialText.match(/\b\w+\b/g) || []).length;
+        if (initialWords >= AUTO_TRIGGER_WORD_THRESHOLD && Documents.getSensitivity() === 'safe') {
+          lastFullCheckWordCount = initialWords;
+          setTimeout(function () { handleCheckNow(); }, 1200); // Delay to let quick checks finish first
+        }
       }
     }
   }
@@ -859,7 +892,7 @@
     Editor.clearUnderlines();
     Stats.update('');
     Reports.update('');
-    updateSensitivityUI(Documents.getSensitivity());
+    if (AI_ENABLED) updateSensitivityUI(Documents.getSensitivity());
     updateModeUI(Documents.getMode());
     showEditorView();
   }
@@ -876,7 +909,7 @@
       Editor.clearUnderlines();
       Stats.update(switched.text || '');
       Reports.update(switched.text || '');
-      updateSensitivityUI(switched.sensitivity || 'safe');
+      if (AI_ENABLED) updateSensitivityUI(switched.sensitivity || 'safe');
       updateModeUI(switched.mode || 'govuk');
       QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
         if (v >= lastCheckVersion) {
@@ -902,7 +935,7 @@
       Suggestions.clearAll();
       Stats.update(doc.text || '');
       Reports.update(doc.text || '');
-      updateSensitivityUI(Documents.getSensitivity());
+      if (AI_ENABLED) updateSensitivityUI(Documents.getSensitivity());
       updateModeUI(Documents.getMode());
     }
     renderDocumentsList();
