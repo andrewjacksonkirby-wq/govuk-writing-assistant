@@ -73,7 +73,15 @@
     // Init reports
     Reports.init({
       onHighlight: function (start, end) {
-        Editor.highlightRange(start, end, 'highlight-clarity');
+        // Scroll to the nearest underline mark within the highlighted range
+        var marks = document.querySelectorAll('.issue-underline, .structural-mark');
+        for (var i = 0; i < marks.length; i++) {
+          var rect = marks[i].getBoundingClientRect();
+          if (rect.width > 0) {
+            marks[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+          }
+        }
       }
     });
 
@@ -520,7 +528,7 @@
   }
 
   function handleApply(suggestion) {
-    if (suggestion.replacement !== undefined) {
+    if (suggestion.replacement != null) {
       Editor.applyReplacement(suggestion.start, suggestion.end, suggestion.replacement, suggestion.original);
     }
     // Immediately re-check (don't wait for debounce) since offsets have shifted
@@ -531,7 +539,7 @@
     // Already sorted descending by position in Suggestions.applyAll
     // so later replacements don't shift earlier offsets
     suggestions.forEach(function (s) {
-      if (s.replacement !== undefined) {
+      if (s.replacement != null) {
         Editor.applyReplacement(s.start, s.end, s.replacement, s.original);
       }
     });

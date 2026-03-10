@@ -79,7 +79,7 @@ const InlinePopup = (function () {
     }
 
     // Replacement preview
-    if (suggestion.replacement !== undefined && suggestion.original) {
+    if (suggestion.replacement != null && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'ip-preview';
       preview.innerHTML =
@@ -93,7 +93,7 @@ const InlinePopup = (function () {
     var actions = document.createElement('div');
     actions.className = 'ip-actions';
 
-    if (suggestion.replacement !== undefined) {
+    if (suggestion.replacement != null) {
       var fixBtn = document.createElement('button');
       fixBtn.type = 'button';
       fixBtn.className = 'btn btn-primary btn-sm';

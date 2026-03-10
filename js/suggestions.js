@@ -510,7 +510,7 @@ const Suggestions = (function () {
     body.appendChild(msgEl);
 
     // Replacement preview
-    if (suggestion.replacement !== undefined && suggestion.original) {
+    if (suggestion.replacement != null && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'suggestion-preview';
       preview.innerHTML =
@@ -536,7 +536,7 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
-    if (suggestion.replacement !== undefined) {
+    if (suggestion.replacement != null) {
       if (hasSiblings) {
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
