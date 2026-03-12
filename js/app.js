@@ -70,6 +70,19 @@
     // Init stats
     Stats.init();
 
+    // Dictionary loading indicator
+    var statsBar = document.getElementById('statsBar');
+    var dictLoadingEl = document.createElement('span');
+    dictLoadingEl.className = 'stat-item dict-loading';
+    dictLoadingEl.textContent = 'Loading dictionary\u2026';
+    dictLoadingEl.style.color = 'var(--color-text-muted)';
+    dictLoadingEl.style.fontSize = '11px';
+    dictLoadingEl.style.fontStyle = 'italic';
+    if (statsBar) statsBar.querySelector('.stats-left').appendChild(dictLoadingEl);
+    document.addEventListener('typo-dictionary-loaded', function () {
+      if (dictLoadingEl.parentNode) dictLoadingEl.parentNode.removeChild(dictLoadingEl);
+    });
+
     // Init reports
     Reports.init({
       onHighlight: function (start, end) {
@@ -177,11 +190,20 @@
 
     // ========== Event listeners ==========
 
+    // Debounced stats/reports update (300ms)
+    var statsDebounceTimer = null;
+    function debouncedStatsUpdate(text) {
+      if (statsDebounceTimer) clearTimeout(statsDebounceTimer);
+      statsDebounceTimer = setTimeout(function () {
+        Stats.update(text);
+        Reports.update(text);
+      }, 300);
+    }
+
     // Editor changes -> trigger quick checks + update stats
     Editor.onChange(function (text, version) {
       updateSaveStatus('unsaved');
-      Stats.update(text);
-      Reports.update(text);
+      debouncedStatsUpdate(text);
       QuickChecks.scheduleCheck(text, version, function (results, checkedVersion) {
         if (checkedVersion >= lastCheckVersion) {
           lastCheckVersion = checkedVersion;
@@ -236,6 +258,18 @@
     // Export handler
     exportBtn.addEventListener('click', handleExport);
 
+    // Shortcuts modal
+    var shortcutsModal = document.getElementById('shortcutsModal');
+    var closeShortcutsModal = document.getElementById('closeShortcutsModal');
+    if (closeShortcutsModal) {
+      closeShortcutsModal.addEventListener('click', function () { shortcutsModal.hidden = true; releaseFocus(); });
+    }
+    if (shortcutsModal) {
+      shortcutsModal.addEventListener('click', function (e) {
+        if (e.target === shortcutsModal) { shortcutsModal.hidden = true; releaseFocus(); }
+      });
+    }
+
     // Keyboard shortcuts
     document.addEventListener('keydown', function (e) {
       // Escape = close modals and inline popup
@@ -244,8 +278,18 @@
         if (!historyModal.hidden) { historyModal.hidden = true; releaseFocus(); return; }
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
         if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
+        if (shortcutsModal && !shortcutsModal.hidden) { shortcutsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
         return;
+      }
+      // ? = show keyboard shortcuts (only when not typing in editor or input)
+      if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        var tag = document.activeElement ? document.activeElement.tagName : '';
+        var isEditable = document.activeElement && (document.activeElement.contentEditable === 'true' || tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT');
+        if (!isEditable && shortcutsModal) {
+          shortcutsModal.hidden = false;
+          trapFocus(shortcutsModal);
+        }
       }
       // Ctrl+S / Cmd+S = save
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -463,7 +507,7 @@
     var sensitivity = Documents.getSensitivity();
 
     if (!FullCheck.isAllowed(sensitivity)) {
-      alert('AI check is not available for this draft.\n\nThis draft is marked as "Do not send to external AI". Change the classification to use AI checks.');
+      showToast('AI check is not available. This draft is marked as sensitive.', 'warning');
       return;
     }
 
@@ -489,7 +533,7 @@
       if (Documents.getCurrentId() !== checkDocId) return;
 
       if (error === 'blocked') {
-        alert('AI check blocked: this draft is marked as sensitive.');
+        showToast('AI check blocked: this draft is marked as sensitive.', 'warning');
         return;
       }
 
@@ -499,7 +543,7 @@
       }
 
       if (error) {
-        alert('AI check failed: ' + error);
+        showToast('AI check failed: ' + error, 'error');
         return;
       }
 
@@ -660,7 +704,7 @@
       reader.readAsText(file);
     } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
       if (typeof mammoth === 'undefined') {
-        alert('Word document support is loading. Please try again in a moment.');
+        showToast('Word document support is loading. Please try again in a moment.', 'warning');
         return;
       }
       var reader2 = new FileReader();
@@ -670,12 +714,12 @@
             loadUploadedText(result.value);
           })
           .catch(function (err) {
-            alert('Could not read document: ' + err.message);
+            showToast('Could not read document: ' + err.message, 'error');
           });
       };
       reader2.readAsArrayBuffer(file);
     } else {
-      alert('Unsupported file type. Please upload a .docx or .txt file.');
+      showToast('Unsupported file type. Please upload a .docx or .txt file.', 'warning');
     }
 
     // Reset the input so the same file can be re-uploaded
@@ -702,7 +746,7 @@
   function handleExport() {
     var text = Editor.getText();
     if (!text || text.trim().length === 0) {
-      alert('Nothing to export.');
+      showToast('Nothing to export.');
       return;
     }
     var blob = new Blob([text], { type: 'text/plain' });
@@ -1109,6 +1153,29 @@
       document.removeEventListener('keydown', activeTrap);
       activeTrap = null;
     }
+  }
+
+  // ========== Toast notifications ==========
+
+  var toastContainer = document.getElementById('toastContainer');
+
+  function showToast(message, type, duration) {
+    if (!toastContainer) return;
+    type = type || 'info';
+    duration = duration || 4000;
+    var el = document.createElement('div');
+    el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-warning' : '');
+    el.textContent = message;
+    toastContainer.appendChild(el);
+    // Trigger reflow then show
+    el.offsetHeight; // force reflow
+    el.classList.add('toast-visible');
+    setTimeout(function () {
+      el.classList.remove('toast-visible');
+      setTimeout(function () {
+        if (el.parentNode) el.parentNode.removeChild(el);
+      }, 200);
+    }, duration);
   }
 
   // ========== Helpers ==========

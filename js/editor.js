@@ -13,22 +13,55 @@ const Editor = (function () {
 
     editorEl.addEventListener('input', handleInput);
     editorEl.addEventListener('paste', handlePaste);
+    editorEl.addEventListener('compositionstart', function () { isComposing = true; });
+    editorEl.addEventListener('compositionend', function () {
+      isComposing = false;
+      handleInput(); // Process the completed composition
+    });
   }
 
   function handleInput() {
+    if (isComposing) return; // Skip during IME composition
+    var savedOffset = saveCaretOffset();
     clearHighlights();
     currentUnderlines = []; // Clear stale underlines; new ones arrive after debounce
+    if (savedOffset !== null) restoreCaretOffset(savedOffset);
     documentVersion++;
     notifyChange();
   }
 
+  // IME composition handling — prevent text corruption during CJK/accent input
+  var isComposing = false;
+
   let onPasteCallbacks = [];
+
+  /**
+   * Insert text at the current selection, preserving browser undo if possible.
+   * Falls back to Selection API if execCommand is unavailable.
+   */
+  function insertTextAtSelection(text) {
+    if (typeof document.execCommand === 'function') {
+      var result = document.execCommand('insertText', false, text);
+      if (result) return;
+    }
+    // Fallback: Selection API (loses undo history but works everywhere)
+    var sel = window.getSelection();
+    if (!sel.rangeCount) return;
+    var range = sel.getRangeAt(0);
+    range.deleteContents();
+    var textNode = document.createTextNode(text);
+    range.insertNode(textNode);
+    range.setStartAfter(textNode);
+    range.collapse(true);
+    sel.removeAllRanges();
+    sel.addRange(range);
+  }
 
   function handlePaste(e) {
     // Force plain text paste to keep the editor clean
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
-    document.execCommand('insertText', false, text);
+    insertTextAtSelection(text);
     // Notify paste listeners with the pasted text length
     onPasteCallbacks.forEach(function (cb) { cb(text); });
   }
@@ -116,7 +149,7 @@ const Editor = (function () {
       range.setEnd(endInfo.node, endInfo.offset);
       sel.removeAllRanges();
       sel.addRange(range);
-      document.execCommand('insertText', false, replacement);
+      insertTextAtSelection(replacement);
       // Flash the replaced text green so the user sees what changed
       showFixFlash(startOffset, replacement.length);
       return true;

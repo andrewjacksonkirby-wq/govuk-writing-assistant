@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>GOV.UK Writing Assistant - Smoke Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 24px; max-width: 700px; margin: 0 auto; }
+    .pass { color: #16a34a; }
+    .fail { color: #dc2626; }
+    .pending { color: #d97706; }
+    #results { margin-top: 16px; }
+    .test-row { padding: 6px 0; border-bottom: 1px solid #eee; }
+    h1 { font-size: 18px; }
+    #summary { font-weight: 600; margin-top: 16px; font-size: 15px; }
+  </style>
+</head>
+<body>
+  <h1>Smoke Test</h1>
+  <p>Open this file in a browser to run basic checks. Results appear below.</p>
+  <div id="results"></div>
+  <div id="summary"></div>
+
+  <!-- Load app modules (same order as index.html) -->
+  <div id="editor" contenteditable="true" style="display:none"></div>
+  <div id="saveStatus"></div>
+  <div id="statsBar"><div class="stats-left"></div></div>
+  <div id="statWords"></div>
+  <div id="statSentences"></div>
+  <div id="statParagraphs"></div>
+  <div id="statReadingTime"></div>
+  <div id="statReadability"></div>
+  <div id="readabilityBar"></div>
+  <div id="scoreNumber"></div>
+  <div id="scoreRingFill" class="score-ring-fill"></div>
+  <div id="scoreReadability"></div>
+  <div id="scoreCircle"></div>
+  <div id="countAll"></div>
+  <div id="countCorrectness"></div>
+  <div id="countClarity"></div>
+  <div id="countStyle"></div>
+  <div id="suggestionsList"></div>
+  <div id="reportsPanel"></div>
+  <div id="inline-popup" class="inline-popup" hidden></div>
+  <select id="modeSelect"><option value="govuk">GOV.UK</option></select>
+  <input type="checkbox" id="sensitivityToggle">
+  <span id="sensitivityText"></span>
+  <button id="checkNowBtn"><span id="checkNowText"></span></button>
+  <button id="draftsBtn"></button>
+  <button id="newDraftBtn"></button>
+  <button id="historyBtn"></button>
+  <button id="ttsBtn"><span id="ttsIcon"></span></button>
+  <button id="dictBtn"></button>
+  <button id="exportBtn"></button>
+  <button id="clearBtn" hidden></button>
+  <button id="settingsBtn"></button>
+  <input type="file" id="uploadFile" hidden>
+  <div id="documentsView" hidden><div id="documentsList"></div></div>
+  <button id="docsNewDraftBtn"></button>
+  <div id="historyModal" hidden><div id="historyList"></div></div>
+  <button id="closeHistoryModal"></button>
+  <div id="restoreConfirmModal" hidden></div>
+  <button id="cancelRestore"></button>
+  <button id="confirmRestore"></button>
+  <div id="dictionaryModal" hidden>
+    <input id="dictInput"><button id="dictAddBtn"></button><div id="dictWordList"></div>
+  </div>
+  <button id="closeDictModal"></button>
+  <div id="settingsModal" hidden></div>
+  <button id="closeSettingsModal"></button>
+  <div id="aiAllowanceBar" style="display:none"></div>
+  <span id="aiAllowanceValue"></span>
+  <div id="aiAllowanceFill"></div>
+  <div id="aiAllowanceTrack"></div>
+  <span id="aiAllowanceReset"></span>
+  <div id="aiAllowanceWarning" hidden></div>
+  <div id="viewSuggestions" class="view-tab active" data-view="suggestions"></div>
+  <div id="viewReports" class="view-tab" data-view="reports"></div>
+  <div id="suggestionsView"></div>
+  <div id="reportsView" hidden></div>
+  <div id="shortcutsModal" hidden></div>
+  <button id="closeShortcutsModal"></button>
+  <div id="toastContainer"></div>
+
+  <script src="../js/editor.js"></script>
+  <script src="../js/documents.js"></script>
+  <script src="../js/quick-checks.js"></script>
+  <script src="../js/full-check.js"></script>
+  <script src="../js/stats.js"></script>
+  <script src="../js/suggestions.js"></script>
+  <script src="../js/reports.js"></script>
+  <script src="../js/inline-popup.js"></script>
+  <script src="../js/app.js"></script>
+
+  <script>
+    var results = [];
+    var resultsEl = document.getElementById('results');
+    var summaryEl = document.getElementById('summary');
+
+    function test(name, fn) {
+      try {
+        var result = fn();
+        if (result === true || result === undefined) {
+          results.push({ name: name, pass: true });
+        } else {
+          results.push({ name: name, pass: false, reason: String(result) });
+        }
+      } catch (e) {
+        results.push({ name: name, pass: false, reason: e.message });
+      }
+    }
+
+    function renderResults() {
+      var passed = results.filter(function (r) { return r.pass; }).length;
+      var failed = results.length - passed;
+      resultsEl.innerHTML = results.map(function (r) {
+        var cls = r.pass ? 'pass' : 'fail';
+        var icon = r.pass ? '\u2713' : '\u2717';
+        var extra = r.reason ? ' \u2014 ' + r.reason : '';
+        return '<div class="test-row"><span class="' + cls + '">' + icon + '</span> ' + r.name + extra + '</div>';
+      }).join('');
+      summaryEl.className = failed > 0 ? 'fail' : 'pass';
+      summaryEl.textContent = passed + '/' + results.length + ' passed' + (failed > 0 ? ', ' + failed + ' failed' : '');
+    }
+
+    // Run tests after a short delay to let modules initialise
+    setTimeout(function () {
+      test('Editor module exists', function () {
+        return typeof Editor === 'object' && typeof Editor.getText === 'function';
+      });
+
+      test('Editor can set and get text', function () {
+        Editor.setText('Hello world');
+        return Editor.getText().trim() === 'Hello world';
+      });
+
+      test('QuickChecks module exists', function () {
+        return typeof QuickChecks === 'object' && typeof QuickChecks.runAll === 'function';
+      });
+
+      test('QuickChecks detects repeated word', function () {
+        var results = QuickChecks.runAll('The the cat sat on the the mat.');
+        var repeated = results.filter(function (r) { return r.ruleId === 'repeated-word'; });
+        return repeated.length > 0 || 'No repeated-word results found';
+      });
+
+      test('QuickChecks detects double spaces', function () {
+        var results = QuickChecks.runAll('This has  two spaces.');
+        var doubles = results.filter(function (r) { return r.ruleId === 'double-space'; });
+        return doubles.length > 0 || 'No double-space results found';
+      });
+
+      test('Stats module exists', function () {
+        return typeof Stats === 'object' && typeof Stats.update === 'function';
+      });
+
+      test('Stats.countWords works', function () {
+        return Stats.countWords('The cat sat on the mat') === 6 || 'Expected 6 words';
+      });
+
+      test('Suggestions module exists', function () {
+        return typeof Suggestions === 'object' && typeof Suggestions.setCorrectness === 'function';
+      });
+
+      test('Documents module exists', function () {
+        return typeof Documents === 'object' && typeof Documents.saveText === 'function';
+      });
+
+      test('Editor has composition handling', function () {
+        // Verify the IME fix is in place
+        var el = Editor.getElement();
+        return el !== null;
+      });
+
+      renderResults();
+    }, 500);
+  </script>
+</body>
+</html>

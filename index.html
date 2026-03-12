@@ -253,6 +253,27 @@
     </div>
   </div>
 
+  <!-- Keyboard shortcuts modal -->
+  <div class="modal-overlay" id="shortcutsModal" hidden aria-modal="true" role="dialog">
+    <div class="modal modal-small" role="dialog" aria-label="Keyboard shortcuts">
+      <div class="modal-header">
+        <h2>Keyboard shortcuts</h2>
+        <button type="button" class="btn btn-close" id="closeShortcutsModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcuts-list">
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>S</kbd></span><span>Save document</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>C</kbd></span><span>Run AI check</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>Esc</kbd></span><span>Close modal or popup</span></div>
+          <div class="shortcut-row"><span class="shortcut-keys"><kbd>?</kbd></span><span>Show this help</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
   <!-- Inline suggestion popup -->
   <div id="inline-popup" class="inline-popup" hidden></div>
 
