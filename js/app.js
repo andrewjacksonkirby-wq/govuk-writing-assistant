@@ -49,6 +49,14 @@
   var settingsBtn = document.getElementById('settingsBtn');
   var settingsModal = document.getElementById('settingsModal');
   var closeSettingsModal = document.getElementById('closeSettingsModal');
+  var customRulesBtn = document.getElementById('customRulesBtn');
+  var customRulesModal = document.getElementById('customRulesModal');
+  var closeRulesModal = document.getElementById('closeRulesModal');
+  var rulePhrase = document.getElementById('rulePhrase');
+  var ruleReplacement = document.getElementById('ruleReplacement');
+  var ruleMessage = document.getElementById('ruleMessage');
+  var ruleAddBtn = document.getElementById('ruleAddBtn');
+  var rulesList = document.getElementById('rulesList');
   var ttsUtterance = null;
   var aiAllowanceBar = document.getElementById('aiAllowanceBar');
   var aiAllowanceValue = document.getElementById('aiAllowanceValue');
@@ -86,15 +94,7 @@
     // Init reports
     Reports.init({
       onHighlight: function (start, end) {
-        // Scroll to the nearest underline mark within the highlighted range
-        var marks = document.querySelectorAll('.issue-underline, .structural-mark');
-        for (var i = 0; i < marks.length; i++) {
-          var rect = marks[i].getBoundingClientRect();
-          if (rect.width > 0) {
-            marks[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-            return;
-          }
-        }
+        Editor.highlightRange(start, end, 'report-highlight');
       }
     });
 
@@ -278,6 +278,7 @@
         if (!historyModal.hidden) { historyModal.hidden = true; releaseFocus(); return; }
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
         if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
+        if (!customRulesModal.hidden) { customRulesModal.hidden = true; releaseFocus(); return; }
         if (shortcutsModal && !shortcutsModal.hidden) { shortcutsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
         return;
@@ -419,6 +420,24 @@
 
     // Load custom dictionary into QuickChecks
     loadCustomDictionary();
+
+    // ========== Custom style rules ==========
+    customRulesBtn.addEventListener('click', function () {
+      customRulesModal.hidden = false;
+      renderCustomRules();
+      trapFocus(customRulesModal);
+    });
+    closeRulesModal.addEventListener('click', function () { customRulesModal.hidden = true; releaseFocus(); });
+    customRulesModal.addEventListener('click', function (e) {
+      if (e.target === customRulesModal) { customRulesModal.hidden = true; releaseFocus(); }
+    });
+    ruleAddBtn.addEventListener('click', addCustomRule);
+    rulePhrase.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); addCustomRule(); }
+    });
+
+    // Load custom rules into QuickChecks
+    loadCustomRules();
 
     // Init AI allowance meter (AI only)
     if (AI_ENABLED) {
@@ -1314,6 +1333,119 @@
       removeBtn.addEventListener('click', function () { removeDictWord(word); });
       chip.appendChild(removeBtn);
       dictWordList.appendChild(chip);
+    });
+  }
+
+  // ========== Custom style rules ==========
+  var RULES_STORAGE_KEY = 'wa-custom-rules';
+
+  function getStoredRules() {
+    try {
+      var stored = localStorage.getItem(RULES_STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch (e) {}
+    return [];
+  }
+
+  function saveStoredRules(rules) {
+    localStorage.setItem(RULES_STORAGE_KEY, JSON.stringify(rules));
+  }
+
+  function loadCustomRules() {
+    var rules = getStoredRules();
+    if (typeof QuickChecks.setCustomRules === 'function') {
+      QuickChecks.setCustomRules(rules);
+    }
+  }
+
+  function addCustomRule() {
+    var phrase = (rulePhrase.value || '').trim();
+    if (!phrase) return;
+    var rules = getStoredRules();
+    var lower = phrase.toLowerCase();
+    var exists = rules.some(function (r) { return r.phrase.toLowerCase() === lower; });
+    if (exists) return;
+    rules.push({
+      id: 'cr_' + Date.now(),
+      phrase: phrase,
+      replacement: (ruleReplacement.value || '').trim() || null,
+      message: (ruleMessage.value || '').trim() || 'Custom rule: consider replacing "' + phrase + '"',
+      category: 'Custom rule',
+      enabled: true
+    });
+    saveStoredRules(rules);
+    loadCustomRules();
+    recheckNow();
+    rulePhrase.value = '';
+    ruleReplacement.value = '';
+    ruleMessage.value = '';
+    renderCustomRules();
+  }
+
+  function removeCustomRule(id) {
+    var rules = getStoredRules().filter(function (r) { return r.id !== id; });
+    saveStoredRules(rules);
+    loadCustomRules();
+    recheckNow();
+    renderCustomRules();
+  }
+
+  function toggleCustomRule(id) {
+    var rules = getStoredRules();
+    rules.forEach(function (r) { if (r.id === id) r.enabled = !r.enabled; });
+    saveStoredRules(rules);
+    loadCustomRules();
+    recheckNow();
+    renderCustomRules();
+  }
+
+  function renderCustomRules() {
+    var rules = getStoredRules();
+    rulesList.innerHTML = '';
+    if (rules.length === 0) {
+      rulesList.innerHTML = '<p class="rules-empty">No custom rules yet.</p>';
+      return;
+    }
+    rules.forEach(function (rule) {
+      var row = document.createElement('div');
+      row.className = 'rules-item' + (rule.enabled ? '' : ' rules-item-disabled');
+
+      var info = document.createElement('div');
+      info.className = 'rules-item-info';
+      var phraseEl = document.createElement('strong');
+      phraseEl.textContent = rule.phrase;
+      info.appendChild(phraseEl);
+      if (rule.replacement) {
+        info.appendChild(document.createTextNode(' \u2192 '));
+        var replEl = document.createElement('span');
+        replEl.textContent = rule.replacement;
+        info.appendChild(replEl);
+      }
+      var msgEl = document.createElement('div');
+      msgEl.className = 'rules-item-msg';
+      msgEl.textContent = rule.message;
+      info.appendChild(msgEl);
+      row.appendChild(info);
+
+      var actions = document.createElement('div');
+      actions.className = 'rules-item-actions';
+      var toggleBtn = document.createElement('button');
+      toggleBtn.type = 'button';
+      toggleBtn.className = 'btn btn-sm';
+      toggleBtn.textContent = rule.enabled ? 'Disable' : 'Enable';
+      toggleBtn.addEventListener('click', function () { toggleCustomRule(rule.id); });
+      actions.appendChild(toggleBtn);
+      var delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.className = 'rules-remove';
+      delBtn.textContent = '\u00d7';
+      delBtn.title = 'Delete rule';
+      delBtn.setAttribute('aria-label', 'Delete rule for "' + rule.phrase + '"');
+      delBtn.addEventListener('click', function () { removeCustomRule(rule.id); });
+      actions.appendChild(delBtn);
+      row.appendChild(actions);
+
+      rulesList.appendChild(row);
     });
   }
 

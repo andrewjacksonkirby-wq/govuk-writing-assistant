@@ -1223,7 +1223,11 @@ const QuickChecks = (function () {
     // NOTE: sentence-length check removed from quick-checks to avoid duplicates.
     // The full-check module provides a better version with split-point advice.
     // See full-check.js checkSentenceLengthContextual()
-
+    {
+      id: 'custom-rule',
+      category: 'Custom rule',
+      run: checkCustomRules
+    }
   ];
 
   var idCounter = 0;
@@ -3729,6 +3733,54 @@ const QuickChecks = (function () {
     return customDictSet.has(word.toLowerCase());
   }
 
+  // ========== Custom style rules ==========
+  var customRules = [];
+
+  function setCustomRules(rulesArray) {
+    customRules = Array.isArray(rulesArray) ? rulesArray : [];
+  }
+
+  function getCustomRules() {
+    return customRules;
+  }
+
+  function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function checkCustomRules(text) {
+    var results = [];
+    if (!customRules || customRules.length === 0) return results;
+    customRules.forEach(function (cr) {
+      if (!cr.enabled || !cr.phrase) return;
+      var escaped = escapeRegex(cr.phrase);
+      var regex = new RegExp('\\b(' + escaped + ')\\b', 'gi');
+      var match;
+      while ((match = regex.exec(text)) !== null) {
+        var matched = match[1] || match[0];
+        var replacement = cr.replacement || null;
+        if (replacement && matched[0] === matched[0].toUpperCase() && matched[0] !== matched[0].toLowerCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        var suggestion = {
+          id: makeId(),
+          ruleId: 'custom-rule',
+          source: 'custom',
+          group: 'style',
+          category: cr.category || 'Custom rule',
+          start: match.index,
+          end: match.index + matched.length,
+          message: cr.message || 'Custom rule: consider replacing "' + matched + '"',
+          title: 'Custom rule',
+          original: matched
+        };
+        if (replacement) suggestion.replacement = replacement;
+        results.push(suggestion);
+      }
+    });
+    return results;
+  }
+
   return {
     runAll: runAll,
     scheduleCheck: scheduleCheck,
@@ -3737,6 +3789,8 @@ const QuickChecks = (function () {
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
     isInCustomDictionary: isInCustomDictionary,
-    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; }
+    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; },
+    setCustomRules: setCustomRules,
+    getCustomRules: getCustomRules
   };
 })();

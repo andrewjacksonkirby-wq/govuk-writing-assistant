@@ -22,7 +22,7 @@ const Reports = (function () {
   /**
    * Common abbreviations that end with a period but don't end a sentence.
    */
-  var ABBREVS = /(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|Prof|Sr|Jr|No|Vol|dept|govt|approx|Inc|Ltd|St|Ave|Ref|Fig|Gen|Corp|Est|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\./gi;
+  var ABBREVS = /\b(?:e\.g|i\.e|etc|vs|Dr|Mr|Mrs|Ms|Prof|Sr|Jr|No|Vol|dept|govt|approx|Inc|Ltd|St|Ave|Ref|Fig|Gen|Corp|Est|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\./gi;
 
   /**
    * Split text into sentences with their start/end offsets.
@@ -152,12 +152,19 @@ const Reports = (function () {
     render();
   }
 
+  function statusText(status) {
+    if (status === 'good') return 'Good';
+    if (status === 'warn') return 'Warning';
+    if (status === 'over') return 'Over target';
+    return '';
+  }
+
   function render() {
     if (!containerEl) return;
     containerEl.innerHTML = '';
 
     if (lastSentences.length === 0) {
-      containerEl.innerHTML = '<p class="report-empty">Write some text to see sentence analysis.</p>';
+      containerEl.innerHTML = '<p class="report-empty">Start writing to see sentence-by-sentence analysis.<br><small>This report shows sentence lengths and highlights sentences over ' + TARGET_MAX + ' words.</small></p>';
       return;
     }
 
@@ -176,23 +183,31 @@ const Reports = (function () {
     // Summary cards
     var summary = document.createElement('div');
     summary.className = 'report-summary';
+    summary.setAttribute('role', 'region');
+    summary.setAttribute('aria-label', 'Sentence statistics summary');
 
-    summary.appendChild(makeStat(avg, 'Avg length', avg <= TARGET_MAX ? 'good' : (avg <= WARN_MAX ? 'warn' : 'over')));
+    var avgStatus = avg <= TARGET_MAX ? 'good' : (avg <= WARN_MAX ? 'warn' : 'over');
+    var varietyStatus = variety >= 5 ? 'good' : (variety >= 3 ? 'warn' : 'over');
+    var overStatus = overCount === 0 ? 'good' : 'over';
+
+    summary.appendChild(makeStat(avg, 'Avg length', avgStatus));
     summary.appendChild(makeStat(sentences.length, 'Sentences', 'neutral'));
-    summary.appendChild(makeStat(variety, 'Variety', variety >= 5 ? 'good' : (variety >= 3 ? 'warn' : 'over')));
-    summary.appendChild(makeStat(overCount, 'Over ' + TARGET_MAX, overCount === 0 ? 'good' : 'over'));
+    summary.appendChild(makeStat(variety, 'Variety', varietyStatus));
+    summary.appendChild(makeStat(overCount, 'Over ' + TARGET_MAX, overStatus));
 
     containerEl.appendChild(summary);
 
     // Target line label
     var targetLabel = document.createElement('div');
     targetLabel.className = 'report-target-label';
-    targetLabel.innerHTML = '<span class="report-target-line-key"></span> ' + TARGET_MAX + ' word target (GOV.UK)';
+    targetLabel.innerHTML = '<span class="report-target-line-key" aria-hidden="true"></span> ' + TARGET_MAX + ' word target (GOV.UK)';
     containerEl.appendChild(targetLabel);
 
     // Bar chart
     var chart = document.createElement('div');
     chart.className = 'report-chart';
+    chart.setAttribute('role', 'list');
+    chart.setAttribute('aria-label', 'Sentence length bar chart');
 
     // Calculate the max bar width based on the longest sentence
     var maxWords = Math.max(longest, TARGET_MAX + 10);
@@ -200,18 +215,25 @@ const Reports = (function () {
     sentences.forEach(function (s, i) {
       var row = document.createElement('div');
       row.className = 'report-bar-row';
+      row.setAttribute('role', 'listitem');
+      row.setAttribute('tabindex', '0');
+      var rowStatus = s.words <= TARGET_MAX ? 'within target' : 'over target';
+      row.setAttribute('aria-label', 'Sentence ' + (i + 1) + ': ' + s.words + ' words, ' + rowStatus);
 
       var num = document.createElement('span');
       num.className = 'report-bar-num';
       num.textContent = (i + 1);
+      num.setAttribute('aria-hidden', 'true');
 
       var track = document.createElement('div');
       track.className = 'report-bar-track';
+      track.setAttribute('aria-hidden', 'true');
 
       // Target line
       var targetLine = document.createElement('div');
       targetLine.className = 'report-target-line';
       targetLine.style.left = (TARGET_MAX / maxWords * 100) + '%';
+      targetLine.setAttribute('aria-hidden', 'true');
       track.appendChild(targetLine);
 
       var bar = document.createElement('div');
@@ -233,11 +255,28 @@ const Reports = (function () {
 
       // Click to highlight in editor
       row.addEventListener('click', function () {
-        // Remove active from all rows
         var rows = chart.querySelectorAll('.report-bar-row');
         rows.forEach(function (r) { r.classList.remove('active'); });
         row.classList.add('active');
         if (onHighlight) onHighlight(s.start, s.end);
+      });
+
+      // Keyboard support
+      row.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          row.click();
+        }
+        if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+          e.preventDefault();
+          var next = row.nextElementSibling;
+          if (next) next.focus();
+        }
+        if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+          e.preventDefault();
+          var prev = row.previousElementSibling;
+          if (prev) prev.focus();
+        }
       });
 
       chart.appendChild(row);
@@ -251,7 +290,7 @@ const Reports = (function () {
       var section = document.createElement('div');
       section.className = 'report-long-section';
 
-      var heading = document.createElement('h4');
+      var heading = document.createElement('h3');
       heading.className = 'report-section-title';
       heading.textContent = longOnes.length + ' sentence' + (longOnes.length > 1 ? 's' : '') + ' over ' + TARGET_MAX + ' words';
       section.appendChild(heading);
@@ -259,6 +298,9 @@ const Reports = (function () {
       longOnes.forEach(function (s) {
         var card = document.createElement('div');
         card.className = 'report-long-card';
+        card.setAttribute('role', 'button');
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('aria-label', 'Long sentence: ' + s.words + ' words. Click to highlight in editor.');
 
         var preview = document.createElement('div');
         preview.className = 'report-long-preview';
@@ -278,6 +320,13 @@ const Reports = (function () {
           if (onHighlight) onHighlight(s.start, s.end);
         });
 
+        card.addEventListener('keydown', function (e) {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            card.click();
+          }
+        });
+
         section.appendChild(card);
       });
 
@@ -288,14 +337,21 @@ const Reports = (function () {
   function makeStat(value, label, status) {
     var el = document.createElement('div');
     el.className = 'report-stat';
+    el.setAttribute('aria-label', label + ': ' + value + (statusText(status) ? ', ' + statusText(status) : ''));
     var valEl = document.createElement('div');
     valEl.className = 'report-stat-value report-stat-' + status;
     valEl.textContent = value;
+    el.appendChild(valEl);
     var labelEl = document.createElement('div');
     labelEl.className = 'report-stat-label';
     labelEl.textContent = label;
-    el.appendChild(valEl);
     el.appendChild(labelEl);
+    if (status !== 'neutral') {
+      var srEl = document.createElement('span');
+      srEl.className = 'sr-only';
+      srEl.textContent = statusText(status);
+      el.appendChild(srEl);
+    }
     return el;
   }
 

@@ -53,6 +53,10 @@
             <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke="currentColor" stroke-width="1.3"/><path d="M5 7h6M5 10h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
             <span>Dictionary</span>
           </button>
+          <button type="button" class="toolbar-btn" id="customRulesBtn" title="Custom style rules">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 3h12M2 7h8M2 11h10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><circle cx="13" cy="10" r="2.5" stroke="currentColor" stroke-width="1.2"/></svg>
+            <span>Rules</span>
+          </button>
           <button type="button" class="toolbar-btn" id="settingsBtn" title="Settings">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6.5 1.5h3l.4 1.9.7.3 1.7-.9 2.1 2.1-.9 1.7.3.7 1.9.4v3l-1.9.4-.3.7.9 1.7-2.1 2.1-1.7-.9-.7.3-.4 1.9h-3l-.4-1.9-.7-.3-1.7.9-2.1-2.1.9-1.7-.3-.7L.3 9.5v-3l1.9-.4.3-.7-.9-1.7L3.7 1.6l1.7.9.7-.3z" stroke="currentColor" stroke-width="1.2"/><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.2"/></svg>
             <span>Settings</span>
@@ -249,6 +253,35 @@
           </div>
           <div class="ai-allowance-warning" id="aiAllowanceWarning" hidden></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom style rules modal -->
+  <div class="modal-overlay" id="customRulesModal" hidden aria-modal="true" role="dialog">
+    <div class="modal" role="dialog" aria-label="Custom style rules">
+      <div class="modal-header">
+        <h2>Custom style rules</h2>
+        <button type="button" class="btn btn-close" id="closeRulesModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <p>Add words or phrases to flag while writing. These work alongside the built-in checks.</p>
+        <div class="rules-add-form">
+          <div class="rules-field">
+            <label for="rulePhrase">Word or phrase to flag</label>
+            <input type="text" class="rules-input" id="rulePhrase" placeholder="e.g. leverage" autocomplete="off">
+          </div>
+          <div class="rules-field">
+            <label for="ruleReplacement">Suggested replacement (optional)</label>
+            <input type="text" class="rules-input" id="ruleReplacement" placeholder="e.g. use" autocomplete="off">
+          </div>
+          <div class="rules-field">
+            <label for="ruleMessage">Message (optional)</label>
+            <input type="text" class="rules-input" id="ruleMessage" placeholder="e.g. Avoid jargon" autocomplete="off">
+          </div>
+          <button type="button" class="btn btn-primary btn-sm" id="ruleAddBtn">Add rule</button>
+        </div>
+        <div class="rules-list" id="rulesList"></div>
       </div>
     </div>
   </div>
