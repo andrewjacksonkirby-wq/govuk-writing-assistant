@@ -82,6 +82,7 @@ const QuickChecks = (function () {
     var hi = d + maxDist;
     var keys = Object.keys(node.children);
     for (var i = 0; i < keys.length; i++) {
+      if (results.length >= limit) break; // Stop traversal once we have enough
       var k = parseInt(keys[i], 10);
       if (k >= lo && k <= hi) {
         searchBK(node.children[k], word, maxDist, results, limit);
@@ -89,50 +90,75 @@ const QuickChecks = (function () {
     }
   }
 
+  var DICT_CACHE_KEY = 'govuk-wa-dict-cache';
+  var DICT_VERSION_KEY = 'govuk-wa-dict-version';
+  var DICT_VERSION = '1'; // Bump to invalidate cache
+
+  function processDictionaryData(data) {
+    var lines = data.split('\n');
+    wordSet = new Set();
+    for (var i = 0; i < lines.length; i++) {
+      var w = lines[i].trim();
+      if (w) wordSet.add(w);
+    }
+    console.log('[QuickChecks] Word list loaded: ' + wordSet.size + ' words');
+
+    // Build BK-tree from a sample of words (3-12 chars) for suggestions
+    var sampleWords = [];
+    var iter = wordSet.values();
+    var entry;
+    while ((entry = iter.next()) && !entry.done) {
+      var w = entry.value;
+      if (w.length >= 3 && w.length <= 12) {
+        sampleWords.push(w);
+      }
+    }
+    // Shuffle and take up to 30k for the BK-tree
+    if (sampleWords.length > 30000) {
+      for (var i = sampleWords.length - 1; i > 0 && i > sampleWords.length - 30001; i--) {
+        var j = Math.floor(Math.random() * (i + 1));
+        var tmp = sampleWords[i];
+        sampleWords[i] = sampleWords[j];
+        sampleWords[j] = tmp;
+      }
+      sampleWords = sampleWords.slice(0, 30000);
+    }
+    bkTree = buildBKTree(sampleWords);
+    console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
+
+    dictLoaded = true;
+    dictLoading = false;
+    document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
+  }
+
   function loadDictionary() {
     if (dictLoading || dictLoaded) return;
     dictLoading = true;
+
+    // Try loading from localStorage cache first
+    try {
+      var cachedVersion = localStorage.getItem(DICT_VERSION_KEY);
+      var cachedData = localStorage.getItem(DICT_CACHE_KEY);
+      if (cachedVersion === DICT_VERSION && cachedData) {
+        processDictionaryData(cachedData);
+        return;
+      }
+    } catch (e) {
+      // localStorage unavailable; fall through to fetch
+    }
 
     fetch('dictionaries/words.txt').then(function (r) {
       if (!r.ok) throw new Error('words.txt returned HTTP ' + r.status);
       return r.text();
     }).then(function (data) {
-      var lines = data.split('\n');
-      wordSet = new Set();
-      for (var i = 0; i < lines.length; i++) {
-        var w = lines[i].trim();
-        if (w) wordSet.add(w);
+      // Cache in localStorage for next session
+      try {
+        localStorage.setItem(DICT_CACHE_KEY, data);
+        localStorage.setItem(DICT_VERSION_KEY, DICT_VERSION);
+      } catch (e) {
+        // Quota exceeded — dictionary still works, just not cached
       }
-      console.log('[QuickChecks] Word list loaded: ' + wordSet.size + ' words');
-
-      // Build BK-tree from a sample of words (4-10 chars) for suggestions
-      // Sampling keeps memory and build time reasonable
-      var sampleWords = [];
-      var iter = wordSet.values();
-      var entry;
-      while ((entry = iter.next()) && !entry.done) {
-        var w = entry.value;
-        if (w.length >= 3 && w.length <= 12) {
-          sampleWords.push(w);
-        }
-      }
-      // Shuffle and take up to 30k for the BK-tree (covers most common words)
-      if (sampleWords.length > 30000) {
-        // Fisher-Yates partial shuffle
-        for (var i = sampleWords.length - 1; i > 0 && i > sampleWords.length - 30001; i--) {
-          var j = Math.floor(Math.random() * (i + 1));
-          var tmp = sampleWords[i];
-          sampleWords[i] = sampleWords[j];
-          sampleWords[j] = tmp;
-        }
-        sampleWords = sampleWords.slice(0, 30000);
-      }
-      bkTree = buildBKTree(sampleWords);
-      console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
-
-      dictLoaded = true;
-      dictLoading = false;
-      document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
+      processDictionaryData(data);
     }).catch(function (err) {
       console.warn('[QuickChecks] Failed to load word list (attempt ' + (dictRetries + 1) + '):', err);
       dictLoading = false;
@@ -1197,7 +1223,11 @@ const QuickChecks = (function () {
     // NOTE: sentence-length check removed from quick-checks to avoid duplicates.
     // The full-check module provides a better version with split-point advice.
     // See full-check.js checkSentenceLengthContextual()
-
+    {
+      id: 'custom-rule',
+      category: 'Custom rule',
+      run: checkCustomRules
+    }
   ];
 
   var idCounter = 0;
@@ -3590,9 +3620,15 @@ const QuickChecks = (function () {
   function runAll(text) {
     console.log('[QuickChecks] runAll called, text length=' + (text ? text.length : 0) + ', rules=' + rules.length + ', dictLoaded=' + dictLoaded + ', wordSet=' + !!wordSet);
     var allResults = [];
+    var RULE_TIMEOUT_MS = 50;
     rules.forEach(function (rule) {
       try {
+        var t0 = performance.now();
         var results = rule.run(text);
+        var elapsed = performance.now() - t0;
+        if (elapsed > RULE_TIMEOUT_MS) {
+          console.warn('[QuickChecks] rule "' + rule.id + '" took ' + Math.round(elapsed) + 'ms (slow)');
+        }
         if (results.length > 0) {
           console.log('[QuickChecks] rule "' + rule.id + '" found ' + results.length + ' issues');
         }
@@ -3697,6 +3733,54 @@ const QuickChecks = (function () {
     return customDictSet.has(word.toLowerCase());
   }
 
+  // ========== Custom style rules ==========
+  var customRules = [];
+
+  function setCustomRules(rulesArray) {
+    customRules = Array.isArray(rulesArray) ? rulesArray : [];
+  }
+
+  function getCustomRules() {
+    return customRules;
+  }
+
+  function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function checkCustomRules(text) {
+    var results = [];
+    if (!customRules || customRules.length === 0) return results;
+    customRules.forEach(function (cr) {
+      if (!cr.enabled || !cr.phrase) return;
+      var escaped = escapeRegex(cr.phrase);
+      var regex = new RegExp('\\b(' + escaped + ')\\b', 'gi');
+      var match;
+      while ((match = regex.exec(text)) !== null) {
+        var matched = match[1] || match[0];
+        var replacement = cr.replacement || null;
+        if (replacement && matched[0] === matched[0].toUpperCase() && matched[0] !== matched[0].toLowerCase()) {
+          replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
+        }
+        var suggestion = {
+          id: makeId(),
+          ruleId: 'custom-rule',
+          source: 'custom',
+          group: 'style',
+          category: cr.category || 'Custom rule',
+          start: match.index,
+          end: match.index + matched.length,
+          message: cr.message || 'Custom rule: consider replacing "' + matched + '"',
+          title: 'Custom rule',
+          original: matched
+        };
+        if (replacement) suggestion.replacement = replacement;
+        results.push(suggestion);
+      }
+    });
+    return results;
+  }
+
   return {
     runAll: runAll,
     scheduleCheck: scheduleCheck,
@@ -3705,6 +3789,8 @@ const QuickChecks = (function () {
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
     isInCustomDictionary: isInCustomDictionary,
-    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; }
+    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; },
+    setCustomRules: setCustomRules,
+    getCustomRules: getCustomRules
   };
 })();

@@ -231,15 +231,19 @@ const Suggestions = (function () {
 
   // ===== Score calculation =====
 
+  // Score deduction weights per category
+  var DEDUCTION_CORRECTNESS = 4;
+  var DEDUCTION_CLARITY = 2;
+  var DEDUCTION_STYLE = 1;
+
   function calculateScore(allSuggestions) {
     if (allSuggestions.length === 0) return 100;
-    // Deduct points per issue, weighted by type
     var deductions = 0;
     allSuggestions.forEach(function (s) {
       var cat = getCardCategory(s);
-      if (cat === 'correctness') deductions += 4;
-      else if (cat === 'clarity') deductions += 2;
-      else deductions += 1;
+      if (cat === 'correctness') deductions += DEDUCTION_CORRECTNESS;
+      else if (cat === 'clarity') deductions += DEDUCTION_CLARITY;
+      else deductions += DEDUCTION_STYLE;
     });
     return Math.max(0, Math.min(100, 100 - deductions));
   }
