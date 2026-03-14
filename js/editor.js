@@ -516,6 +516,38 @@ const Editor = (function () {
     onPasteCallbacks.push(cb);
   }
 
+  /**
+   * Get the currently selected text in the editor.
+   */
+  function getSelectedText() {
+    var sel = window.getSelection();
+    if (!sel.rangeCount || !editorEl || !editorEl.contains(sel.anchorNode)) return '';
+    return sel.toString();
+  }
+
+  /**
+   * Get character offsets of the current selection within the editor.
+   * Returns { start, end } or null if no selection.
+   */
+  function getSelectionOffsets() {
+    var sel = window.getSelection();
+    if (!sel.rangeCount || !editorEl || !editorEl.contains(sel.anchorNode)) return null;
+    var range = sel.getRangeAt(0);
+
+    var preStart = document.createRange();
+    preStart.selectNodeContents(editorEl);
+    preStart.setEnd(range.startContainer, range.startOffset);
+    var start = preStart.toString().length;
+
+    var preEnd = document.createRange();
+    preEnd.selectNodeContents(editorEl);
+    preEnd.setEnd(range.endContainer, range.endOffset);
+    var end = preEnd.toString().length;
+
+    if (start === end) return null;
+    return { start: start, end: end };
+  }
+
   return {
     init: init,
     getText: getText,
@@ -528,6 +560,8 @@ const Editor = (function () {
     highlightRange: highlightRange,
     clearHighlights: clearHighlights,
     showUnderlines: showUnderlines,
-    clearUnderlines: clearUnderlines
+    clearUnderlines: clearUnderlines,
+    getSelectedText: getSelectedText,
+    getSelectionOffsets: getSelectionOffsets
   };
 })();
