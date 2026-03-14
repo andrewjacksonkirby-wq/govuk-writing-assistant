@@ -447,6 +447,14 @@ const Suggestions = (function () {
     catBadge.textContent = suggestion.category || cat;
     headerText.appendChild(catBadge);
 
+    // AI badge for AI-enhanced suggestions
+    if (suggestion.aiEnhanced || (suggestion.source === 'ai' && suggestion.ruleId && suggestion.ruleId.indexOf('ai-') === 0)) {
+      var aiBadge = document.createElement('span');
+      aiBadge.className = 'ai-badge';
+      aiBadge.textContent = 'AI';
+      headerText.appendChild(aiBadge);
+    }
+
     var titleEl = document.createElement('div');
     titleEl.className = 'card-title';
     titleEl.textContent = suggestion.title || suggestion.message;

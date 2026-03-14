@@ -9,13 +9,76 @@ const FullCheck = (function () {
   var idCounter = 0;
   var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
 
-  // Default API config - user can configure this
+  // Default API config
+  var CONFIG_STORAGE_KEY = 'wa-ai-config';
   var config = {
-    apiEndpoint: '', // Set to a real endpoint to enable AI checks
+    provider: 'anthropic',   // 'anthropic' or 'gemini'
+    apiEndpoint: '',
     apiKey: '',
     model: 'claude-sonnet-4-20250514',
-    useSimulation: true // If true, uses local simulation instead of API
+    useSimulation: true
   };
+
+  // Provider-specific defaults
+  var PROVIDERS = {
+    anthropic: {
+      label: 'Anthropic (Claude)',
+      defaultEndpoint: 'https://api.anthropic.com/v1/messages',
+      models: [
+        { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+        { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' }
+      ]
+    },
+    gemini: {
+      label: 'Google AI Studio (Gemini)',
+      defaultEndpoint: 'https://generativelanguage.googleapis.com/v1beta',
+      models: [
+        { id: 'gemini-2.0-flash', label: 'Gemini 2.0 Flash' },
+        { id: 'gemini-2.5-pro-preview-05-06', label: 'Gemini 2.5 Pro' }
+      ]
+    }
+  };
+
+  function loadConfig() {
+    try {
+      var stored = JSON.parse(localStorage.getItem(CONFIG_STORAGE_KEY));
+      if (stored) {
+        config.provider = stored.provider || 'anthropic';
+        config.apiEndpoint = stored.apiEndpoint || '';
+        config.apiKey = stored.apiKey || '';
+        config.model = stored.model || 'claude-sonnet-4-20250514';
+        config.useSimulation = !config.apiEndpoint || !config.apiKey;
+      }
+    } catch (e) { /* use defaults */ }
+  }
+
+  function saveConfig(provider, endpoint, key, model) {
+    config.provider = provider || 'anthropic';
+    config.apiEndpoint = endpoint;
+    config.apiKey = key;
+    config.model = model;
+    config.useSimulation = !endpoint || !key;
+    localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify({
+      provider: config.provider,
+      apiEndpoint: endpoint,
+      apiKey: key,
+      model: model
+    }));
+  }
+
+  function getConfig() {
+    return {
+      provider: config.provider,
+      apiEndpoint: config.apiEndpoint,
+      apiKey: config.apiKey,
+      model: config.model,
+      useSimulation: config.useSimulation
+    };
+  }
+
+  function hasValidConfig() {
+    return !!(config.apiEndpoint && config.apiKey);
+  }
 
   function makeId() {
     return 'fc-' + (++idCounter);
@@ -58,18 +121,7 @@ const FullCheck = (function () {
 
     isRunning = true;
 
-    var useAPI = !config.useSimulation && config.apiEndpoint;
-
-    // Only record usage for real API calls, not local simulations
-    if (useAPI) {
-      var originalCallback = callback;
-      callback = function (results, error) {
-        if (!error) {
-          recordUsage();
-        }
-        originalCallback(results, error);
-      };
-    }
+    var useAPI = !config.useSimulation && config.apiEndpoint && config.apiKey;
 
     if (useAPI) {
       runAPI(text, callback);
@@ -760,48 +812,60 @@ const FullCheck = (function () {
     }, 800); // Simulate slight delay
   }
 
+  // ========== Shared API call helper ==========
+
   /**
-   * Run via external API.
-   * This function is only called when config.useSimulation is false
-   * and an API endpoint is configured.
+   * Send a prompt to the configured LLM and return the text response.
+   * Handles both Anthropic and Gemini API formats.
+   * @param {string} prompt - The user prompt
+   * @param {function} callback - callback(responseText, error)
+   * @param {object} [options] - { timeout: ms }
    */
-  function runAPI(text, callback) {
-    var prompt = 'You are a GOV.UK content style checker. Analyse the following text and return a JSON array of issues.\n\n' +
-      'Check for:\n' +
-      '- GOV.UK style violations\n' +
-      '- Sentence length over 25 words\n' +
-      '- Poor link text like "click here"\n' +
-      '- Incorrect date formats (should be "1 January 2024")\n' +
-      '- Unclear phrasing\n' +
-      '- Passive voice\n' +
-      '- Tone issues\n\n' +
-      'Return a JSON array where each item has:\n' +
-      '- category: one of "GOV.UK style", "Sentence length", "Links", "Dates", "Tone"\n' +
-      '- start: character offset start\n' +
-      '- end: character offset end\n' +
-      '- message: short explanation\n' +
-      '- title: short title\n' +
-      '- original: the problematic text\n' +
-      '- replacement: suggested fix (REQUIRED — always provide a concrete rewrite)\n\n' +
-      'Text to check:\n\n' + text;
+  function callAPI(prompt, callback, options) {
+    if (config.useSimulation || !config.apiEndpoint || !config.apiKey) {
+      callback(null, 'no-api');
+      return;
+    }
+    if (isAllowanceExhausted()) {
+      callback(null, 'allowance-exhausted');
+      return;
+    }
 
+    var timeout = (options && options.timeout) || 30000;
     var controller = new AbortController();
-    var timeoutId = setTimeout(function () { controller.abort(); }, 30000);
+    var timeoutId = setTimeout(function () { controller.abort(); }, timeout);
 
-    fetch(config.apiEndpoint, {
-      method: 'POST',
-      headers: {
+    var url, headers, body;
+
+    if (config.provider === 'gemini') {
+      // Google AI Studio / Gemini API
+      url = config.apiEndpoint + '/models/' + config.model + ':generateContent?key=' + config.apiKey;
+      headers = { 'Content-Type': 'application/json' };
+      body = JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: { maxOutputTokens: 2048 }
+      });
+    } else {
+      // Anthropic Claude API (default)
+      url = config.apiEndpoint;
+      headers = {
         'Content-Type': 'application/json',
         'x-api-key': config.apiKey,
-        'anthropic-version': '2023-06-01'
-      },
-      signal: controller.signal,
-      body: JSON.stringify({
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      };
+      body = JSON.stringify({
         model: config.model,
         max_tokens: 2048,
-        source: { type: 'web_app' },
         messages: [{ role: 'user', content: prompt }]
-      })
+      });
+    }
+
+    fetch(url, {
+      method: 'POST',
+      headers: headers,
+      signal: controller.signal,
+      body: body
     })
     .then(function (response) {
       clearTimeout(timeoutId);
@@ -809,15 +873,68 @@ const FullCheck = (function () {
       return response.json();
     })
     .then(function (data) {
-      var content = data.content && data.content[0] && data.content[0].text;
-      if (!content) {
+      var text;
+      if (config.provider === 'gemini') {
+        // Gemini response format
+        text = data.candidates && data.candidates[0] &&
+               data.candidates[0].content && data.candidates[0].content.parts &&
+               data.candidates[0].content.parts[0] && data.candidates[0].content.parts[0].text;
+      } else {
+        // Anthropic response format
+        text = data.content && data.content[0] && data.content[0].text;
+      }
+      if (!text) {
+        callback(null, 'Empty response from AI');
+        return;
+      }
+      recordUsage();
+      callback(text, null);
+    })
+    .catch(function (err) {
+      clearTimeout(timeoutId);
+      var msg = err.name === 'AbortError' ? 'Request timed out' : err.message;
+      callback(null, msg);
+    });
+  }
+
+  /**
+   * Run via external API.
+   */
+  function runAPI(text, callback) {
+    var modeDesc = currentMode === 'govuk' ? 'GOV.UK government content' :
+                   currentMode === 'email' ? 'professional email' : 'Slack/Teams message';
+
+    var prompt = 'You are a writing style checker for ' + modeDesc + '. Analyse the following text and return a JSON array of issues.\n\n' +
+      'For each issue:\n' +
+      '- Reference the EXACT problematic phrase in the message\n' +
+      '- Explain WHY it is a problem in this context (1 sentence, under 25 words)\n' +
+      '- Provide a concrete rewrite in the replacement field\n\n' +
+      'Check for:\n' +
+      '- Style violations and unclear phrasing\n' +
+      '- Sentence length over 25 words\n' +
+      '- Passive voice\n' +
+      '- Poor link text like "click here"\n' +
+      '- Tone issues\n\n' +
+      'Return a JSON array where each item has:\n' +
+      '- category: one of "Style", "Sentence length", "Links", "Passive voice", "Tone", "Clarity"\n' +
+      '- start: character offset start\n' +
+      '- end: character offset end\n' +
+      '- message: contextual explanation referencing the specific text\n' +
+      '- title: short title (2-4 words)\n' +
+      '- original: the problematic text\n' +
+      '- replacement: suggested fix (REQUIRED)\n\n' +
+      'Return ONLY the JSON array, no other text.\n\n' +
+      'Text to check:\n\n' + text;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
         isRunning = false;
-        callback([], null);
+        callback(null, error);
         return;
       }
 
       // Parse the JSON from the response
-      var jsonMatch = content.match(/\[[\s\S]*\]/);
+      var jsonMatch = responseText.match(/\[[\s\S]*\]/);
       if (!jsonMatch) {
         isRunning = false;
         callback([], null);
@@ -844,19 +961,78 @@ const FullCheck = (function () {
           message: issue.message || '',
           title: issue.title || 'Style issue',
           original: issue.original || '',
-          replacement: issue.replacement
+          replacement: issue.replacement,
+          aiEnhanced: true
         };
       });
 
       results.sort(function (a, b) { return a.start - b.start; });
       isRunning = false;
       callback(results, null);
-    })
-    .catch(function (err) {
-      clearTimeout(timeoutId);
-      isRunning = false;
-      var msg = err.name === 'AbortError' ? 'Check timed out after 30 seconds' : err.message;
-      callback(null, msg);
+    });
+  }
+
+  // ========== Tone rewrite ==========
+
+  var TONE_PROMPTS = {
+    govuk: 'Rewrite in GOV.UK style: clear, direct, no jargon, address the reader as "you", active voice, short sentences (under 25 words). Follow the GOV.UK style guide.',
+    plain: 'Rewrite in Plain English: short sentences, common everyday words, active voice, reading age 9. Remove all jargon and technical terms.',
+    email: 'Rewrite as a friendly professional email: warm but clear, conversational tone, contractions are fine. Keep it concise.',
+    chat: 'Rewrite as a brief Slack/Teams message: concise, casual, under 100 words. Get straight to the point.'
+  };
+
+  function rewriteTone(text, targetTone, callback) {
+    if (!hasValidConfig()) {
+      callback(null, 'no-api');
+      return;
+    }
+    var prompt = 'Rewrite the following text.\n\n' +
+      'Style: ' + (TONE_PROMPTS[targetTone] || TONE_PROMPTS.plain) + '\n\n' +
+      'Return ONLY the rewritten text. No preamble, no explanation, no quotes.\n\n' +
+      'Text:\n\n' + text;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
+        callback(null, error);
+        return;
+      }
+      // Strip any wrapping quotes the model might add
+      var cleaned = (responseText || '').trim().replace(/^["']|["']$/g, '');
+      callback(cleaned, null);
+    });
+  }
+
+  // ========== AI rule generation ==========
+
+  function generateRule(description, existingPhrases, callback) {
+    if (!hasValidConfig()) {
+      callback(null, 'no-api');
+      return;
+    }
+    var prompt = 'Convert this plain English description into a writing style rule.\n\n' +
+      'Return JSON only: { "phrase": "word or phrase to flag", "replacement": "suggested fix or null", "message": "short explanation" }\n\n' +
+      'Existing rules already flag these phrases (do NOT duplicate): ' +
+      (existingPhrases.length > 0 ? existingPhrases.join(', ') : 'none') + '\n\n' +
+      'If the described rule duplicates an existing one, return: { "duplicate": true, "existingPhrase": "the matching phrase" }\n\n' +
+      'Description: ' + description;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
+        callback(null, error);
+        return;
+      }
+      // Extract JSON from response
+      var jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        callback(null, 'Could not parse AI response');
+        return;
+      }
+      try {
+        var result = JSON.parse(jsonMatch[0]);
+        callback(result, null);
+      } catch (e) {
+        callback(null, 'Could not parse AI response');
+      }
     });
   }
 
@@ -931,6 +1107,9 @@ const FullCheck = (function () {
     return data.used >= data.limit;
   }
 
+  // Load config from localStorage on init
+  loadConfig();
+
   return {
     run: run,
     isAllowed: isAllowed,
@@ -939,6 +1118,14 @@ const FullCheck = (function () {
     setMode: setMode,
     getAllowance: getAllowance,
     recordUsage: recordUsage,
-    isAllowanceExhausted: isAllowanceExhausted
+    isAllowanceExhausted: isAllowanceExhausted,
+    loadConfig: loadConfig,
+    saveConfig: saveConfig,
+    getConfig: getConfig,
+    hasValidConfig: hasValidConfig,
+    getProviders: function () { return PROVIDERS; },
+    rewriteTone: rewriteTone,
+    generateRule: generateRule,
+    callAPI: callAPI
   };
 })();

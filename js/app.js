@@ -6,8 +6,8 @@
 (function () {
   'use strict';
 
-  // Feature flag — flip to true when AI backend is available
-  var AI_ENABLED = false;
+  // Feature flag — dynamically set based on whether API is configured
+  var AI_ENABLED = FullCheck.hasValidConfig();
 
   // DOM elements
   var saveStatusEl = document.getElementById('saveStatus');
@@ -65,6 +65,39 @@
   var aiAllowanceReset = document.getElementById('aiAllowanceReset');
   var aiAllowanceWarning = document.getElementById('aiAllowanceWarning');
   var allowanceIntervalId = null;
+
+  // AI settings elements
+  var settingsProvider = document.getElementById('settingsProvider');
+  var settingsApiEndpoint = document.getElementById('settingsApiEndpoint');
+  var settingsApiKey = document.getElementById('settingsApiKey');
+  var settingsModel = document.getElementById('settingsModel');
+  var settingsSaveAI = document.getElementById('settingsSaveAI');
+  var settingsSaveStatus = document.getElementById('settingsSaveStatus');
+  var toggleApiKeyVisibility = document.getElementById('toggleApiKeyVisibility');
+
+  // Tone elements
+  var toneBtn = document.getElementById('toneBtn');
+  var toneModal = document.getElementById('toneModal');
+  var closeToneModal = document.getElementById('closeToneModal');
+  var toneRewriteBtn = document.getElementById('toneRewriteBtn');
+  var toneApplyBtn = document.getElementById('toneApplyBtn');
+  var toneCancelBtn = document.getElementById('toneCancelBtn');
+  var tonePreview = document.getElementById('tonePreview');
+  var toneLoading = document.getElementById('toneLoading');
+  var toneError = document.getElementById('toneError');
+  var toneSourceInfo = document.getElementById('toneSourceInfo');
+  var toneOriginalText = document.getElementById('toneOriginalText');
+  var toneRewrittenText = document.getElementById('toneRewrittenText');
+  var toneOptions = document.getElementById('toneOptions');
+
+  // AI rule elements
+  var aiRuleSection = document.getElementById('aiRuleSection');
+  var ruleDescription = document.getElementById('ruleDescription');
+  var ruleGenerateBtn = document.getElementById('ruleGenerateBtn');
+  var ruleGenerateStatus = document.getElementById('ruleGenerateStatus');
+
+  // Pending tone rewrite state
+  var pendingToneRewrite = null;
 
   // ========== Init ==========
 
@@ -152,23 +185,8 @@
       Editor.setText(doc.text);
     }
 
-    // AI UI: hide toggle, check-now button, and allowance meter when AI is disabled
-    if (!AI_ENABLED) {
-      sensitivityToggle.parentElement.style.display = 'none';
-      checkNowBtn.style.display = 'none';
-      // Hide the toolbar divider before check-now button
-      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
-        checkNowBtn.previousElementSibling.style.display = 'none';
-      }
-      // Hide AI allowance section in settings
-      if (aiAllowanceBar) {
-        aiAllowanceBar.style.display = 'none';
-        var aiHeading = aiAllowanceBar.previousElementSibling;
-        if (aiHeading && aiHeading.textContent.trim() === 'AI allowance') {
-          aiHeading.style.display = 'none';
-        }
-      }
-    }
+    // Show/hide AI-dependent UI based on config
+    updateAIEnabledUI();
 
     // Set sensitivity state (AI only)
     if (AI_ENABLED) {
@@ -214,16 +232,16 @@
       if (AI_ENABLED) scheduleAutoFullCheck(text);
     });
 
-    // Sensitivity toggle (AI only)
-    if (AI_ENABLED) {
-      sensitivityToggle.addEventListener('change', function () {
-        var isSafe = sensitivityToggle.checked;
-        var value = isSafe ? 'safe' : 'sensitive';
-        Documents.setSensitivity(value);
-        updateSensitivityUI(value);
-        updateAllowanceMeter();
-      });
-    }
+    // Sensitivity toggle (always listen, visibility controlled by updateAIEnabledUI)
+    sensitivityToggle.addEventListener('change', function () {
+      var isSafe = sensitivityToggle.checked;
+      var value = isSafe ? 'safe' : 'sensitive';
+      Documents.setSensitivity(value);
+      updateSensitivityUI(value);
+      if (AI_ENABLED) updateAllowanceMeter();
+      // Update tone button visibility based on sensitivity
+      if (toneBtn) toneBtn.hidden = !AI_ENABLED || value !== 'safe';
+    });
 
     // Mode selector
     modeSelect.addEventListener('change', function () {
@@ -247,10 +265,8 @@
       });
     });
 
-    // Check now button (AI only)
-    if (AI_ENABLED) {
-      checkNowBtn.addEventListener('click', handleCheckNow);
-    }
+    // Check now button (always register, visibility controlled by updateAIEnabledUI)
+    checkNowBtn.addEventListener('click', handleCheckNow);
 
     // Upload handler
     uploadFile.addEventListener('change', handleUpload);
@@ -278,6 +294,7 @@
         if (!historyModal.hidden) { historyModal.hidden = true; releaseFocus(); return; }
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
         if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
+        if (toneModal && !toneModal.hidden) { toneModal.hidden = true; releaseFocus(); return; }
         if (!customRulesModal.hidden) { customRulesModal.hidden = true; releaseFocus(); return; }
         if (shortcutsModal && !shortcutsModal.hidden) { shortcutsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
@@ -410,6 +427,7 @@
     // ========== Settings modal ==========
     settingsBtn.addEventListener('click', function () {
       if (AI_ENABLED) updateAllowanceMeter();
+      populateAISettings();
       settingsModal.hidden = false;
       trapFocus(settingsModal);
     });
@@ -417,6 +435,56 @@
     settingsModal.addEventListener('click', function (e) {
       if (e.target === settingsModal) { settingsModal.hidden = true; releaseFocus(); }
     });
+
+    // AI settings handlers
+    if (settingsProvider) {
+      settingsProvider.addEventListener('change', function () {
+        updateModelOptions(settingsProvider.value);
+        updateEndpointPlaceholder(settingsProvider.value);
+      });
+    }
+    if (toggleApiKeyVisibility) {
+      toggleApiKeyVisibility.addEventListener('click', function () {
+        var isPassword = settingsApiKey.type === 'password';
+        settingsApiKey.type = isPassword ? 'text' : 'password';
+        toggleApiKeyVisibility.textContent = isPassword ? 'Hide' : 'Show';
+      });
+    }
+    if (settingsSaveAI) {
+      settingsSaveAI.addEventListener('click', saveAISettings);
+    }
+
+    // ========== Tone rewrite modal ==========
+    if (toneBtn) {
+      toneBtn.addEventListener('click', openToneModal);
+    }
+    if (closeToneModal) {
+      closeToneModal.addEventListener('click', function () { toneModal.hidden = true; releaseFocus(); });
+    }
+    if (toneModal) {
+      toneModal.addEventListener('click', function (e) {
+        if (e.target === toneModal) { toneModal.hidden = true; releaseFocus(); }
+      });
+    }
+    if (toneOptions) {
+      toneOptions.addEventListener('change', function () {
+        toneRewriteBtn.disabled = false;
+      });
+    }
+    if (toneRewriteBtn) {
+      toneRewriteBtn.addEventListener('click', handleToneRewrite);
+    }
+    if (toneApplyBtn) {
+      toneApplyBtn.addEventListener('click', handleToneApply);
+    }
+    if (toneCancelBtn) {
+      toneCancelBtn.addEventListener('click', function () { toneModal.hidden = true; releaseFocus(); });
+    }
+
+    // ========== AI rule generation ==========
+    if (ruleGenerateBtn) {
+      ruleGenerateBtn.addEventListener('click', handleGenerateRule);
+    }
 
     // Load custom dictionary into QuickChecks
     loadCustomDictionary();
@@ -636,30 +704,45 @@
 
   /**
    * Handle "Suggest fix" — sends the flagged text to the AI for a rewrite.
-   * Only works when API is configured and sensitivity is safe.
+   * Falls back to heuristics when API is not available.
    */
   function handleSuggestFix(suggestion, callback) {
     var sensitivity = Documents.getSensitivity();
-    if (sensitivity !== 'safe') {
-      callback(null);
-      return;
-    }
-
-    // Get the sentence context around the flagged text
     var text = Editor.getText();
     if (!text) { callback(null); return; }
 
+    // Get the sentence context around the flagged text
     var sentStart = suggestion.start;
     while (sentStart > 0 && !/[.!?\n]/.test(text[sentStart - 1])) sentStart--;
     var sentEnd = suggestion.end;
     while (sentEnd < text.length && !/[.!?\n]/.test(text[sentEnd])) sentEnd++;
     if (sentEnd < text.length && /[.!?]/.test(text[sentEnd])) sentEnd++;
-
     var sentence = text.substring(sentStart, sentEnd).trim();
-    if (!sentence) { callback(null); return; }
 
-    // Use a simple heuristic rewrite based on the suggestion message
-    // Extract the suggestion from the tip text (e.g. "Try: "We completed the report."")
+    // Try AI if available and sensitivity is safe
+    if (AI_ENABLED && sensitivity === 'safe' && FullCheck.hasValidConfig() && sentence) {
+      var prompt = 'Rewrite this sentence to fix the issue described.\n\n' +
+        'Issue: ' + suggestion.message + '\n' +
+        'Problematic text: "' + suggestion.original + '"\n' +
+        'Full sentence: "' + sentence + '"\n\n' +
+        'Return ONLY the rewritten sentence. No explanation.';
+
+      FullCheck.callAPI(prompt, function (result, error) {
+        if (result && !error) {
+          callback(result.trim().replace(/^["']|["']$/g, ''));
+        } else {
+          // Fall back to heuristic
+          fallbackSuggestFix(suggestion, callback);
+        }
+      });
+      return;
+    }
+
+    fallbackSuggestFix(suggestion, callback);
+  }
+
+  function fallbackSuggestFix(suggestion, callback) {
+    // Extract suggestion from tip text (e.g. "Try: "We completed the report."")
     var tryMatch = suggestion.message.match(/[Tt]ry[:\s]+"([^"]+)"/);
     if (tryMatch) {
       callback(tryMatch[1]);
@@ -674,7 +757,6 @@
       return;
     }
 
-    // No suggestion available
     callback(null);
   }
 
@@ -1446,6 +1528,276 @@
       row.appendChild(actions);
 
       rulesList.appendChild(row);
+    });
+  }
+
+  // ========== AI Settings ==========
+
+  function updateAIEnabledUI() {
+    if (!AI_ENABLED) {
+      sensitivityToggle.parentElement.style.display = 'none';
+      checkNowBtn.style.display = 'none';
+      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
+        checkNowBtn.previousElementSibling.style.display = 'none';
+      }
+      if (aiAllowanceBar) {
+        aiAllowanceBar.style.display = 'none';
+        var aiHeading = aiAllowanceBar.previousElementSibling;
+        if (aiHeading && aiHeading.textContent.trim() === 'AI allowance') {
+          aiHeading.style.display = 'none';
+        }
+      }
+      if (toneBtn) toneBtn.hidden = true;
+      if (aiRuleSection) aiRuleSection.hidden = true;
+    } else {
+      sensitivityToggle.parentElement.style.display = '';
+      checkNowBtn.style.display = '';
+      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
+        checkNowBtn.previousElementSibling.style.display = '';
+      }
+      if (aiAllowanceBar) {
+        aiAllowanceBar.style.display = '';
+        var aiHeading2 = aiAllowanceBar.previousElementSibling;
+        if (aiHeading2 && aiHeading2.textContent.trim() === 'AI allowance') {
+          aiHeading2.style.display = '';
+        }
+      }
+      if (toneBtn) toneBtn.hidden = false;
+      if (aiRuleSection) aiRuleSection.hidden = false;
+    }
+  }
+
+  function populateAISettings() {
+    var cfg = FullCheck.getConfig();
+    if (settingsProvider) settingsProvider.value = cfg.provider || 'anthropic';
+    if (settingsApiEndpoint) settingsApiEndpoint.value = cfg.apiEndpoint || '';
+    if (settingsApiKey) settingsApiKey.value = cfg.apiKey || '';
+    updateModelOptions(cfg.provider || 'anthropic');
+    if (settingsModel) settingsModel.value = cfg.model || '';
+    updateEndpointPlaceholder(cfg.provider || 'anthropic');
+    if (settingsSaveStatus) settingsSaveStatus.hidden = true;
+  }
+
+  function updateModelOptions(provider) {
+    if (!settingsModel) return;
+    var providers = FullCheck.getProviders();
+    var models = (providers[provider] && providers[provider].models) || [];
+    settingsModel.innerHTML = '';
+    models.forEach(function (m) {
+      var opt = document.createElement('option');
+      opt.value = m.id;
+      opt.textContent = m.label;
+      settingsModel.appendChild(opt);
+    });
+  }
+
+  function updateEndpointPlaceholder(provider) {
+    if (!settingsApiEndpoint) return;
+    var providers = FullCheck.getProviders();
+    var p = providers[provider];
+    settingsApiEndpoint.placeholder = p ? p.defaultEndpoint : '';
+  }
+
+  function saveAISettings() {
+    var provider = settingsProvider ? settingsProvider.value : 'anthropic';
+    var endpoint = settingsApiEndpoint ? settingsApiEndpoint.value.trim() : '';
+    var key = settingsApiKey ? settingsApiKey.value.trim() : '';
+    var model = settingsModel ? settingsModel.value : '';
+
+    // Auto-fill endpoint if user only entered a key
+    if (key && !endpoint) {
+      var providers = FullCheck.getProviders();
+      endpoint = providers[provider] ? providers[provider].defaultEndpoint : '';
+      if (settingsApiEndpoint) settingsApiEndpoint.value = endpoint;
+    }
+
+    FullCheck.saveConfig(provider, endpoint, key, model);
+
+    // Update AI_ENABLED based on new config
+    var wasEnabled = AI_ENABLED;
+    AI_ENABLED = FullCheck.hasValidConfig();
+    updateAIEnabledUI();
+
+    if (AI_ENABLED && !wasEnabled) {
+      // Newly enabled — set up sensitivity and allowance
+      var sensitivity = Documents.getSensitivity();
+      updateSensitivityUI(sensitivity);
+      sensitivityToggle.checked = sensitivity === 'safe';
+      updateAllowanceMeter();
+      startAllowanceCountdown();
+    }
+
+    if (settingsSaveStatus) {
+      settingsSaveStatus.textContent = 'Saved';
+      settingsSaveStatus.className = 'settings-save-status';
+      settingsSaveStatus.hidden = false;
+      setTimeout(function () { settingsSaveStatus.hidden = true; }, 2000);
+    }
+  }
+
+  // ========== Tone rewrite ==========
+
+  function openToneModal() {
+    // Capture selection before opening modal (browser may clear it on focus change)
+    var selText = Editor.getSelectedText();
+    var selOffsets = Editor.getSelectionOffsets();
+    var fullText = Editor.getText();
+
+    var sourceText, isFullDoc;
+    if (selText && selText.trim().length > 0) {
+      sourceText = selText;
+      isFullDoc = false;
+    } else {
+      sourceText = fullText;
+      isFullDoc = true;
+      selOffsets = { start: 0, end: fullText.length };
+    }
+
+    if (!sourceText || !sourceText.trim()) {
+      showToast('Nothing to rewrite. Type or select some text first.');
+      return;
+    }
+
+    var wordCount = sourceText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
+    toneSourceInfo.textContent = isFullDoc
+      ? 'Rewriting full document (' + wordCount + ' words)'
+      : 'Rewriting selected text (' + wordCount + ' words)';
+
+    pendingToneRewrite = {
+      text: sourceText,
+      startOffset: selOffsets ? selOffsets.start : 0,
+      endOffset: selOffsets ? selOffsets.end : fullText.length,
+      isFullDoc: isFullDoc,
+      rewritten: null
+    };
+
+    // Reset UI
+    tonePreview.hidden = true;
+    toneLoading.hidden = true;
+    toneError.hidden = true;
+    toneApplyBtn.hidden = true;
+    toneRewriteBtn.hidden = false;
+    toneRewriteBtn.disabled = true;
+    // Clear radio selection
+    var radios = toneOptions.querySelectorAll('input[type="radio"]');
+    radios.forEach(function (r) { r.checked = false; });
+
+    toneModal.hidden = false;
+    trapFocus(toneModal);
+  }
+
+  function handleToneRewrite() {
+    var selected = toneOptions.querySelector('input[name="targetTone"]:checked');
+    if (!selected || !pendingToneRewrite) return;
+
+    var targetTone = selected.value;
+
+    // Show loading
+    toneRewriteBtn.hidden = true;
+    toneLoading.hidden = false;
+    tonePreview.hidden = true;
+    toneError.hidden = true;
+
+    FullCheck.rewriteTone(pendingToneRewrite.text, targetTone, function (result, error) {
+      toneLoading.hidden = true;
+
+      if (error) {
+        toneError.textContent = 'Rewrite failed: ' + error;
+        toneError.hidden = false;
+        toneRewriteBtn.hidden = false;
+        return;
+      }
+
+      pendingToneRewrite.rewritten = result;
+
+      // Show preview
+      toneOriginalText.textContent = pendingToneRewrite.text;
+      toneRewrittenText.textContent = result;
+      tonePreview.hidden = false;
+      toneApplyBtn.hidden = false;
+    });
+  }
+
+  function handleToneApply() {
+    if (!pendingToneRewrite || !pendingToneRewrite.rewritten) return;
+
+    if (pendingToneRewrite.isFullDoc) {
+      Editor.setText(pendingToneRewrite.rewritten);
+    } else {
+      Editor.applyReplacement(
+        pendingToneRewrite.startOffset,
+        pendingToneRewrite.endOffset,
+        pendingToneRewrite.rewritten,
+        pendingToneRewrite.text
+      );
+    }
+
+    toneModal.hidden = true;
+    releaseFocus();
+    pendingToneRewrite = null;
+    recheckNow();
+    showToast('Tone rewrite applied.');
+  }
+
+  // ========== AI rule generation ==========
+
+  function handleGenerateRule() {
+    var description = ruleDescription ? ruleDescription.value.trim() : '';
+    if (!description) return;
+
+    ruleGenerateBtn.disabled = true;
+    ruleGenerateBtn.textContent = 'Generating...';
+    if (ruleGenerateStatus) {
+      ruleGenerateStatus.hidden = true;
+    }
+
+    // Get existing phrases for dedup
+    var existingRules = getStoredRules();
+    var existingPhrases = existingRules.map(function (r) { return r.phrase; });
+
+    FullCheck.generateRule(description, existingPhrases, function (result, error) {
+      ruleGenerateBtn.disabled = false;
+      ruleGenerateBtn.textContent = 'Generate rule';
+
+      if (error) {
+        if (ruleGenerateStatus) {
+          ruleGenerateStatus.textContent = 'Failed: ' + error;
+          ruleGenerateStatus.className = 'settings-save-status error';
+          ruleGenerateStatus.hidden = false;
+        }
+        return;
+      }
+
+      if (result && result.duplicate) {
+        if (ruleGenerateStatus) {
+          ruleGenerateStatus.textContent = 'A rule for "' + (result.existingPhrase || result.phrase) + '" already exists.';
+          ruleGenerateStatus.className = 'settings-save-status error';
+          ruleGenerateStatus.hidden = false;
+        }
+        return;
+      }
+
+      if (result && result.phrase) {
+        // Pre-fill the form
+        rulePhrase.value = result.phrase;
+        ruleReplacement.value = result.replacement || '';
+        ruleMessage.value = result.message || '';
+        ruleDescription.value = '';
+
+        if (ruleGenerateStatus) {
+          ruleGenerateStatus.textContent = 'Rule generated — review and click "Add rule"';
+          ruleGenerateStatus.className = 'settings-save-status';
+          ruleGenerateStatus.hidden = false;
+        }
+        // Scroll to the form
+        rulePhrase.focus();
+      } else {
+        if (ruleGenerateStatus) {
+          ruleGenerateStatus.textContent = 'Could not generate a rule from that description.';
+          ruleGenerateStatus.className = 'settings-save-status error';
+          ruleGenerateStatus.hidden = false;
+        }
+      }
     });
   }
 
