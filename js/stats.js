@@ -53,7 +53,7 @@ const Stats = (function () {
   }
 
   function countWords(text) {
-    var matches = text.match(/\b[a-zA-Z0-9']+\b/g);
+    var matches = text.match(/[\p{L}\p{N}']+/gu);
     return matches ? matches.length : 0;
   }
 
@@ -122,6 +122,9 @@ const Stats = (function () {
    * Grade 10-12: Hard (orange) - complex
    * Grade 13+: Very hard (red) - postgraduate level
    */
+  var lastReadabilityScore = null;
+  var lastGradeLevel = null;
+
   function setReadability(grade, ease) {
     lastReadabilityScore = ease;
     lastGradeLevel = grade;
@@ -160,9 +163,6 @@ const Stats = (function () {
       els.readabilityBar.className = 'readability-bar-fill ' + cls;
     }
   }
-
-  var lastReadabilityScore = null;
-  var lastGradeLevel = null;
 
   function getReadabilityScore() {
     return lastReadabilityScore;

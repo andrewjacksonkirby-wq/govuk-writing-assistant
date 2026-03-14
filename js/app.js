@@ -57,7 +57,6 @@
   var ruleMessage = document.getElementById('ruleMessage');
   var ruleAddBtn = document.getElementById('ruleAddBtn');
   var rulesList = document.getElementById('rulesList');
-  var ttsUtterance = null;
   var aiAllowanceBar = document.getElementById('aiAllowanceBar');
   var aiAllowanceValue = document.getElementById('aiAllowanceValue');
   var aiAllowanceFill = document.getElementById('aiAllowanceFill');
@@ -249,7 +248,7 @@
       var newMode = modeSelect.value;
 
       // If switching away from scratchpad mode with text, prompt to save
-      if ((oldMode === 'email' || oldMode === 'chat') && newMode === 'govuk') {
+      if ((oldMode === 'email' || oldMode === 'chat') && newMode !== oldMode) {
         promptSaveIfNeeded();
       }
 
@@ -648,14 +647,12 @@
    * the sidebar AND show as inline underlines in the editor.
    */
   function processQuickCheckResults(results) {
-    console.log('[WritingAssistant] Quick check returned ' + results.length + ' results');
     Suggestions.setCorrectness(results);
 
     // Filter out dismissed items from underlines too (must match sidebar)
     var visibleResults = results.filter(function (s) {
       return !Suggestions.isDismissed(s);
     });
-    console.log('[WritingAssistant] Showing ' + visibleResults.length + ' underlines (' + (results.length - visibleResults.length) + ' dismissed)');
 
     // Show visible issues as inline underlines in the editor
     Editor.showUnderlines(visibleResults, function (mark, markEl) {
@@ -698,7 +695,7 @@
   }
 
   function handleSelect(suggestion) {
-    var markEl = document.querySelector('[data-issue-id="' + suggestion.id + '"]');
+    var markEl = document.querySelector('[data-issue-id="' + CSS.escape(suggestion.id) + '"]');
     if (markEl) markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -802,6 +799,9 @@
       reader.onload = function (ev) {
         loadUploadedText(ev.target.result);
       };
+      reader.onerror = function () {
+        showToast('Could not read file.', 'error');
+      };
       reader.readAsText(file);
     } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
       if (typeof mammoth === 'undefined') {
@@ -817,6 +817,9 @@
           .catch(function (err) {
             showToast('Could not read document: ' + err.message, 'error');
           });
+      };
+      reader2.onerror = function () {
+        showToast('Could not read file.', 'error');
       };
       reader2.readAsArrayBuffer(file);
     } else {
@@ -857,7 +860,7 @@
     // Use the document title for the filename
     var docs = Documents.loadCurrent();
     var title = (docs && docs.title) || 'draft';
-    a.download = title.replace(/[^a-zA-Z0-9 _-]/g, '').substring(0, 50) + '.txt';
+    a.download = title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').substring(0, 50) + '.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -1110,7 +1113,10 @@
     documentsList.innerHTML = '';
 
     if (drafts.length === 0) {
-      documentsList.innerHTML = '<p class="empty-state">No documents yet. Click "New draft" to get started.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'No documents yet. Click "New draft" to get started.';
+      documentsList.appendChild(emptyP);
       return;
     }
 
@@ -1185,7 +1191,10 @@
     historyList.innerHTML = '';
 
     if (versions.length === 0) {
-      historyList.innerHTML = '<p class="empty-state">No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.';
+      historyList.appendChild(emptyP);
       historyModal.hidden = false;
       trapFocus(historyModal);
       return;
@@ -1228,12 +1237,12 @@
 
   // ========== Focus trapping ==========
 
-  var activeTrap = null;
+  var trapStack = [];
 
   function trapFocus(modalEl) {
-    activeTrap = function (e) {
+    var handler = function (e) {
       if (e.key !== 'Tab') return;
-      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
+      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), select:not([hidden]):not([disabled]), textarea:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
       if (focusable.length === 0) return;
       var first = focusable[0];
       var last = focusable[focusable.length - 1];
@@ -1243,16 +1252,17 @@
         if (document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-    document.addEventListener('keydown', activeTrap);
+    trapStack.push(handler);
+    document.addEventListener('keydown', handler);
     // Focus the first focusable element
     var firstFocusable = modalEl.querySelector('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled])');
     if (firstFocusable) firstFocusable.focus();
   }
 
   function releaseFocus() {
-    if (activeTrap) {
-      document.removeEventListener('keydown', activeTrap);
-      activeTrap = null;
+    var handler = trapStack.pop();
+    if (handler) {
+      document.removeEventListener('keydown', handler);
     }
   }
 
@@ -1285,6 +1295,7 @@
     if (!isoString) return '';
     try {
       var d = new Date(isoString);
+      if (isNaN(d.getTime())) return isoString;
       var now = new Date();
       var diffMs = now - d;
       var diffMins = Math.floor(diffMs / 60000);
@@ -1485,7 +1496,10 @@
     var rules = getStoredRules();
     rulesList.innerHTML = '';
     if (rules.length === 0) {
-      rulesList.innerHTML = '<p class="rules-empty">No custom rules yet.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'rules-empty';
+      emptyP.textContent = 'No custom rules yet.';
+      rulesList.appendChild(emptyP);
       return;
     }
     rules.forEach(function (rule) {

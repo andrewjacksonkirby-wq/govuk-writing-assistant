@@ -5,6 +5,7 @@
  * Never calls external APIs.
  */
 const QuickChecks = (function () {
+  'use strict';
   var debounceTimer = null;
   var DEBOUNCE_MS = 1000; // 1 second, within 800-1500ms range
   var pendingVersion = -1;
@@ -115,13 +116,18 @@ const QuickChecks = (function () {
     }
     // Shuffle and take up to 30k for the BK-tree
     if (sampleWords.length > 30000) {
-      for (var i = sampleWords.length - 1; i > 0 && i > sampleWords.length - 30001; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var tmp = sampleWords[i];
-        sampleWords[i] = sampleWords[j];
-        sampleWords[j] = tmp;
-      }
-      sampleWords = sampleWords.slice(0, 30000);
+      // Reservoir sampling: pick 30000 random items without bias
+      var sample = [];
+      var k = 0;
+      sampleWords.forEach(function(w, idx) {
+        if (idx < 30000) {
+          sample.push(w);
+        } else {
+          var j = Math.floor(Math.random() * (idx + 1));
+          if (j < 30000) sample[j] = w;
+        }
+      });
+      sampleWords = sample;
     }
     bkTree = buildBKTree(sampleWords);
     console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
@@ -392,7 +398,7 @@ const QuickChecks = (function () {
     'youve': "you've",
     'youll': "you'll",
     'theyll': "they'll",
-    'wll': "we'll",
+    'wll': 'will',
     'itll': "it'll",
     'ive': "I've",
     'wer': 'were',
@@ -913,7 +919,7 @@ const QuickChecks = (function () {
     'calim': 'claim',
     'compiance': 'compliance',
     'complianec': 'compliance',
-    'complaine': 'complaint',
+    'complaine': 'complain',
     'comunity': 'community',
     'commuity': 'community',
     'condtion': 'condition',
@@ -1095,8 +1101,8 @@ const QuickChecks = (function () {
     { regex: /\b(its)\s+(a|the|been|not|going|very|really|quite|also|important)\b/gi, msg: 'Did you mean "it\'s" (it is)?', fix: "it's", matchGroup: 1 },
     { regex: /\b(there)\s+(is|are|was|were|will|has|have|would|could|should|might|may|must)\s+(?:be\s+)?(?:a\s+|an\s+|the\s+)?(?:\w+\s+){0,3}(that|who|which)\s+(they|he|she|we|I)\b/gi, msg: 'Check: did you mean "their" (belonging to them)?', fix: null, matchGroup: 0 },
     { regex: /\b(then)\s+(I|you|we|they|he|she|it)\b/gi, msg: 'Check: did you mean "than" (comparison)?', fix: null, matchGroup: 0 },
-    { regex: /\b(affect|effect)\b/gi, msg: '"Affect" is usually a verb (to influence), "effect" is usually a noun (a result). Check which you need.', fix: null, matchGroup: 0 },
-    { regex: /\b(practise|practice)\b/gi, msg: 'UK English: "practise" is the verb, "practice" is the noun.', fix: null, matchGroup: 0, modes: ['govuk'] },
+    { regex: /\b(affect|effect)\b/gi, msg: 'Review: "Affect" is usually a verb (to influence), "effect" is usually a noun (a result). Check which you need.', fix: null, matchGroup: 0, group: 'clarity' },
+    { regex: /\b(practise|practice)\b/gi, msg: 'Review: UK English: "practise" is the verb, "practice" is the noun.', fix: null, matchGroup: 0, modes: ['govuk'], group: 'clarity' },
     { regex: /\b(licence|license)\b/gi, msg: 'UK English: "licence" is the noun, "license" is the verb.', fix: null, matchGroup: 0, modes: ['govuk'] },
     { regex: /\b(bare)\s+(in mind)\b/gi, msg: 'Did you mean "bear in mind"?', fix: 'bear', matchGroup: 1 },
     { regex: /\b(could|should|would)\s+of\b/gi, msg: 'Use "have" not "of" — "could have", "should have", "would have".', fix: null, matchGroup: 0 },
@@ -1116,7 +1122,7 @@ const QuickChecks = (function () {
     { regex: /\b(stationary)\b(?=\s+(?:shop|cupboard|supplies|order|items|products))/gi, msg: 'Did you mean "stationery" (paper and pens)? "Stationary" means not moving.', fix: 'stationery', matchGroup: 1 },
     { regex: /\b(stationery)\b(?=\s+(?:car|vehicle|bus|train|object|target|position))/gi, msg: 'Did you mean "stationary" (not moving)? "Stationery" means paper and pens.', fix: 'stationary', matchGroup: 1 },
     { regex: /\b(advise)\b(?=\s+(?:on|about|is|was))/gi, msg: 'Check: "advice" (noun) is what you give. "Advise" (verb) is the action of giving it.', fix: null, matchGroup: 0 },
-    { regex: /\b(discrete)\b/gi, msg: 'Check: "discrete" means separate/distinct. "Discreet" means careful/unobtrusive.', fix: null, matchGroup: 0 },
+    { regex: /\b(discrete)\s+(?:manner|inquiry|about|investigation|way)\b/gi, msg: 'Check: "discrete" means separate/distinct. "Discreet" means careful/unobtrusive.', fix: null, matchGroup: 0 },
     { regex: /\b(lead)\b(?=\s+(?:to\s+(?:a\s+)?(?:increase|decrease|reduction|improvement|change)|the\s+(?:team|project|investigation|inquiry)))/gi, msg: 'Check tense: "led" is past tense. "Lead" is present tense (or a metal).', fix: null, matchGroup: 0 },
     { regex: /\b(who's)\s+((?:car|house|home|bag|phone|idea|fault|job|role|turn|responsibility))\b/gi, msg: 'Did you mean "whose" (belonging to whom)? "Who\'s" means "who is".', fix: "whose", matchGroup: 1 },
     { regex: /\b(whose)\s+((?:going|coming|the|been|there|here|that|this|responsible|available|ready))\b/gi, msg: 'Did you mean "who\'s" (who is)? "Whose" shows possession.', fix: "who's", matchGroup: 1 },
@@ -1126,7 +1132,7 @@ const QuickChecks = (function () {
     { regex: /\b(past)\b(?=\s+(?:the|a|an|it|them|me|him|her|us)\b)/gi, msg: 'Check: "past" is a noun/adjective/preposition. "Passed" is the verb (went past).', fix: null, matchGroup: 0 },
     { regex: /\b(than)\s+(I|he|she|we|they)\s+(went|came|arrived|left|started|began|decided|realised|noticed)\b/gi, msg: 'Did you mean "then" (at that time)? "Than" is for comparisons.', fix: 'then', matchGroup: 1 },
     { regex: /\b(where)\s+((?:I|we|you|they|he|she)\s+(?:can|could|should|would|will|shall|must|need|have|had|want))\b/gi, msg: 'Check: did you mean "were" or "where"? "Where" is about location. "Were" is a past tense verb.', fix: null, matchGroup: 0 },
-    { regex: /\b(to)\s+(many|much|few|little|often|late|early|soon|long|fast|slow|big|small|large|hard|soft|loud|quiet)\b(?!\s+(?:of|for|to|in))/gi, msg: 'Did you mean "too" (excessively)? "To" is a preposition.', fix: 'too', matchGroup: 1 }
+    { regex: /\b(to)\s+(many|much|few|little|often|late|early|soon|long|fast|slow|big|small|large|hard|soft|loud|quiet)\b(?!\s+(?:of|for|to|in|a|the|down|up|track|out))/gi, msg: 'Did you mean "too" (excessively)? "To" is a preposition.', fix: 'too', matchGroup: 1 }
   ];
 
   var rules = [
@@ -2310,7 +2316,7 @@ const QuickChecks = (function () {
    * Check date format issues (GOV.UK style: "1 January 2024").
    */
   var MONTHS_FULL = 'January|February|March|April|May|June|July|August|September|October|November|December';
-  var MONTHS_ABBR = 'Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';
+  var MONTHS_ABBR = 'Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec';
   var MONTHS_ALL = MONTHS_FULL + '|' + MONTHS_ABBR;
 
   function checkDateFormat(text) {
@@ -2544,6 +2550,11 @@ const QuickChecks = (function () {
     patterns.forEach(function (pat) {
       var match;
       while ((match = pat.regex.exec(text)) !== null) {
+        // Skip matches inside quotes
+        var before = text.substring(0, match.index);
+        var openQuotes = (before.match(/['"'\u2018\u201C]/g) || []).length;
+        var closeQuotes = (before.match(/['"'\u2019\u201D]/g) || []).length;
+        if (openQuotes > closeQuotes) continue;
         var replacement = pat.fix;
         // Preserve capitalisation
         if (match[1][0] === match[1][0].toUpperCase()) {
@@ -2638,7 +2649,7 @@ const QuickChecks = (function () {
       if (word === 'one') {
         var before = text.substring(Math.max(0, mStart - 15), mStart).toLowerCase();
         if (/\b(the|this|that|each|every|no|any|which)\s*$/.test(before)) continue;
-        if (/^\s*(of|by|another|way|thing|day|more|less|such|reason)\b/.test(after)) continue;
+        if (/^\s*(of|by|another|way|thing|day|more|less|such|reason|might|should|could|would|can|must)\b/.test(after)) continue;
       }
 
       var digit = WORD_TO_DIGIT[word];
@@ -2714,6 +2725,8 @@ const QuickChecks = (function () {
       if (parseInt(match[1], 10) === 0) continue;
       // Skip single-digit left side — likely a real decimal (e.g. 3.141, 1.500, 2.000)
       if (parseInt(match[1], 10) < 10) continue;
+      // Skip version numbers (preceded by 'v' or '.' e.g. v2.000, 1.2.000)
+      if (/[v.]/.test(text.charAt(match.index - 1))) continue;
       var fixed = combined.toLocaleString('en-GB');
       results.push({
         id: makeId(),
@@ -2737,6 +2750,9 @@ const QuickChecks = (function () {
       var left = parseInt(match[1], 10);
       var right = parseInt(match[2], 10);
       if (right <= left) continue; // Not a range
+      // Skip references, extensions, telephone numbers, etc.
+      var preceding = text.substring(Math.max(0, match.index - 5), match.index);
+      if (/(?:ext|ref|tel|#|x)\s*$/i.test(preceding)) continue;
       // Skip year ranges handled by date check
       if (left >= 1900 && left <= 2099 && right >= 1900 && right <= 2099) continue;
       results.push({
@@ -2794,7 +2810,7 @@ const QuickChecks = (function () {
     }
 
     // Space between number and measurement abbreviation: "3,500 kg" should be "3,500kg"
-    var measureSpace = /(\d)\s+(kg|km|mm|cm|m|lb|oz|mg|g|ml|mph|kph)\b/g;
+    var measureSpace = /(\d[\d,]*)\s+(kg|km|mm|cm|m|lb|oz|mg|g|ml|mph|kph)\b/g;
     while ((match = measureSpace.exec(text)) !== null) {
       // Avoid flagging "5 m" where m could be a word; only flag clear measurement abbreviations
       if (match[2] === 'm' || match[2] === 'g') continue; // Too ambiguous as standalone
@@ -2921,10 +2937,9 @@ const QuickChecks = (function () {
     }
 
     // 24-hour clock: "17:30" or "15:00" → suggest 12-hour format
-    var twentyFour = /\b([1-2][0-9]):([0-5][0-9])\b(?!\s*(am|pm))/gi;
+    var twentyFour = /\b((?:1[3-9]|2[0-3])):([0-5][0-9])\b(?!\s*(am|pm))/gi;
     while ((match = twentyFour.exec(text)) !== null) {
       var hour = parseInt(match[1], 10);
-      if (hour < 13) continue; // Could be 12-hour format
       var hour12 = hour > 12 ? hour - 12 : hour;
       var mins = match[2];
       var suffix = hour >= 12 ? 'pm' : 'am';
@@ -3025,7 +3040,7 @@ const QuickChecks = (function () {
     var blockCaps = /\b([A-Z]{2,}(?:\s+[A-Z]{2,}){2,})\b/g;
     while ((match = blockCaps.exec(text)) !== null) {
       // Skip known all-caps acronyms/abbreviations
-      if (/^[A-Z]{2,4}$/.test(match[1])) continue;
+      var words = match[1].split(/\s+/); if (words.every(function(w) { return w.length <= 4; })) continue;
       results.push({
         id: makeId(),
         ruleId: 'govuk-punctuation',
@@ -3310,7 +3325,7 @@ const QuickChecks = (function () {
 
     var extraRules = [
       // "should" — GOV.UK says use "must" for requirements, "can" for permissions
-      { regex: /\b(should)\b/gi, fix: null, msg: 'GOV.UK style: use "must" for things people have to do, "can" for things they may do — avoid "should"', title: 'Avoid "should"' },
+      { regex: /\b(you\s+should|they\s+should|users?\s+should|people\s+should)\b/gi, fix: null, msg: 'GOV.UK style: use "must" for things people have to do, "can" for things they may do — avoid "should"', title: 'Avoid "should"' },
       // "click" — GOV.UK says "select" for digital content
       { regex: /\b(click(?:ed|s|ing)?)\b/gi, fix: 'select', msg: 'GOV.UK style: use "select" instead of "click" — not everyone uses a mouse', title: 'Use "select"' },
       // "smartphone" — use "phone"
@@ -3327,16 +3342,13 @@ const QuickChecks = (function () {
       { regex: /\bwith\s+a\s+view\s+to\b/gi, fix: 'to', msg: 'GOV.UK style: use "to"', title: 'Use plain English' },
       // "on behalf of" can often just be "for"
       { regex: /\bon\s+behalf\s+of\b/gi, fix: 'for', msg: 'GOV.UK style: consider using "for" instead of "on behalf of"', title: 'Use plain English' },
-      // "in excess of" — use "more than"
-      { regex: /\bin\s+excess\s+of\b/gi, fix: 'more than', msg: 'GOV.UK style: use "more than"', title: 'Use plain English' },
-      // "in conjunction with" — use "with"
-      { regex: /\bin\s+conjunction\s+with\b/gi, fix: 'with', msg: 'GOV.UK style: use "with"', title: 'Use plain English' },
+      // "in excess of" — removed: already in checkCommonGrammar
+      // "in conjunction with" — removed: already in checkCommonGrammar
       // "it should be noted that" — just state the thing
       { regex: /\bit\s+should\s+be\s+noted\s+that\b/gi, fix: null, msg: 'GOV.UK style: remove "it should be noted that" — just state the point', title: 'Remove filler' },
       // "please note that" — just state it
       { regex: /\bplease\s+note\s+that\b/gi, fix: null, msg: 'GOV.UK style: remove "please note that" — just state the point', title: 'Remove filler' },
-      // "as a consequence of" — use "because"
-      { regex: /\bas\s+a\s+(?:consequence|result)\s+of\b/gi, fix: 'because of', msg: 'GOV.UK style: use "because of"', title: 'Use plain English' },
+      // "as a consequence of" / "as a result of" — removed: already in checkCommonGrammar
       // "at the end of the day"
       { regex: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi, fix: null, msg: 'GOV.UK style: avoid clichés — say what you actually mean', title: 'Avoid clichés' },
       // "touch base"
@@ -3502,7 +3514,7 @@ const QuickChecks = (function () {
 
       // Check 3: Lead-in line missing colon
       if (group.leadIn) {
-        var leadText = group.leadIn.text.trimRight();
+        var leadText = group.leadIn.text.trimEnd();
         if (leadText.length > 0 && !/:$/.test(leadText)) {
           var leadEnd = group.leadIn.offset + group.leadIn.text.length;
           var trailingPunc = /[.;,!?]$/.test(leadText);
@@ -3789,7 +3801,7 @@ const QuickChecks = (function () {
     getMode: getMode,
     setCustomDictionary: setCustomDictionary,
     isInCustomDictionary: isInCustomDictionary,
-    isDictionaryLoaded: function () { return dictLoaded || wordSet !== null; },
+    isDictionaryLoaded: function () { return dictLoaded && wordSet !== null; },
     setCustomRules: setCustomRules,
     getCustomRules: getCustomRules
   };
