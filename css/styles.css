@@ -129,7 +129,8 @@ body {
   transition: all 0.15s;
 }
 
-.header-btn:hover {
+.header-btn:hover,
+.header-btn:focus-visible {
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -303,7 +304,8 @@ body {
   white-space: nowrap;
 }
 
-.toolbar-btn:hover {
+.toolbar-btn:hover,
+.toolbar-btn:focus-visible {
   background: var(--color-bg);
   color: var(--color-text);
 }
@@ -374,39 +376,6 @@ body {
   color: var(--color-sensitive);
 }
 
-/* Check now button (primary action in toolbar) */
-.check-now-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  font-family: var(--font-main);
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
-  background: var(--color-primary);
-  border: none;
-  border-radius: var(--radius-pill);
-  cursor: pointer;
-  transition: all 0.2s;
-  white-space: nowrap;
-}
-
-.check-now-btn:hover {
-  background: var(--color-primary-hover);
-  box-shadow: 0 2px 8px rgba(99,102,241,0.3);
-}
-
-.check-now-btn:disabled {
-  background: var(--color-border);
-  color: var(--color-text-muted);
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-.check-now-btn svg {
-  flex-shrink: 0;
-}
 
 /* "Done, clear" button for scratchpad modes */
 #clearBtn {
@@ -650,7 +619,8 @@ body {
   white-space: nowrap;
 }
 
-.cat-tab:hover {
+.cat-tab:hover,
+.cat-tab:focus-visible {
   color: var(--color-text-secondary);
 }
 
@@ -927,7 +897,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  z-index: 5000;
 }
 
 .modal-overlay[hidden] {

@@ -175,7 +175,7 @@ const QuickChecks = (function () {
       } else {
         console.warn('[QuickChecks] Dictionary loading failed after all retries — spelling will use common misspellings + heuristics only');
         dictLoaded = true;
-        document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
+        document.dispatchEvent(new CustomEvent('typo-dictionary-loaded', { detail: { failed: true } }));
       }
     });
   }

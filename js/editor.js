@@ -285,9 +285,21 @@ const Editor = (function () {
    *  Layer 1 — structural marks rendered as background-tinted <mark> wrappers
    *  Layer 2 — word-level marks rendered as underlined <mark> elements nested inside
    */
+  var lastMarkFingerprint = '';
+
   function renderUnderlines() {
     if (!editorEl) return;
     var text = getText();
+    if (!text || currentUnderlines.length === 0) {
+      lastMarkFingerprint = '';
+    }
+    // Skip re-render if marks haven't changed (avoids flicker on auto-check)
+    var fp = currentUnderlines.map(function (m) {
+      return m.start + ':' + m.end + ':' + m.ruleId;
+    }).join('|');
+    if (fp === lastMarkFingerprint && fp !== '') return;
+    lastMarkFingerprint = fp;
+
     if (!text || currentUnderlines.length === 0) {
       if (editorEl.querySelector('.issue-underline') || editorEl.querySelector('.structural-mark')) {
         editorEl.textContent = text;

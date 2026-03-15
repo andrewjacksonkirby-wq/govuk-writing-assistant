@@ -128,9 +128,21 @@ const Suggestions = (function () {
     render();
   }
 
+  function areSuggestionsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].start !== b[i].start || a[i].end !== b[i].end ||
+          a[i].ruleId !== b[i].ruleId || a[i].message !== b[i].message) return false;
+    }
+    return true;
+  }
+
   function setClarity(suggestions) {
+    var filtered = suggestions.filter(function (s) { return !isDismissed(s); });
+    // Skip re-render if results haven't changed (avoids flicker on auto-check)
+    if (hasRunFullCheck && areSuggestionsEqual(claritySuggestions, filtered)) return;
     hasRunFullCheck = true;
-    claritySuggestions = suggestions.filter(function (s) { return !isDismissed(s); });
+    claritySuggestions = filtered;
     render();
   }
 
@@ -572,6 +584,8 @@ const Suggestions = (function () {
         applyAllBtn.textContent = 'Fix all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
+          if (applyAllBtn.disabled) return;
+          applyAllBtn.disabled = true;
           applyAll(suggestion);
         });
         actions.appendChild(applyAllBtn);

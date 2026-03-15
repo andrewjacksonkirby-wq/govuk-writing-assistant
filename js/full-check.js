@@ -114,17 +114,17 @@ const FullCheck = (function () {
       return;
     }
 
-    // Check if allowance is exhausted
-    if (isAllowanceExhausted()) {
-      callback(null, 'allowance-exhausted');
-      return;
-    }
-
     isRunning = true;
 
     var useAPI = !config.useSimulation && config.apiEndpoint && config.apiKey;
 
     if (useAPI) {
+      // Only check allowance for real API calls (simulation is free)
+      if (isAllowanceExhausted()) {
+        isRunning = false;
+        callback(null, 'allowance-exhausted');
+        return;
+      }
       runAPI(text, callback);
     } else {
       runSimulation(text, callback);
@@ -301,7 +301,7 @@ const FullCheck = (function () {
 
   function checkPassiveVoice(text) {
     var results = [];
-    var beVerbs = '(?:is|are|was|were|be|been|being)';
+    var beVerbs = '(?:\\bis\\b|\\bare\\b|\\bwas\\b|\\bwere\\b|\\bbe\\b|\\bbeen\\b|\\bbeing\\b)';
     var adverb = '(?:\\s+\\w+ly)?';
     var regex = new RegExp('\\b(' + beVerbs + ')' + adverb + '\\s+(\\w+)\\b', 'gi');
     var match;
@@ -560,8 +560,10 @@ const FullCheck = (function () {
    * Local simulation of AI checks for GOV.UK style issues.
    * This provides useful checks without needing an API.
    */
+  var simTimerId = null;
   function runSimulation(text, callback) {
-    setTimeout(function () {
+    simTimerId = setTimeout(function () {
+      simTimerId = null;
       var results = [];
 
       // Checks for: link text, first person (GOV.UK)
@@ -684,7 +686,7 @@ const FullCheck = (function () {
 
       isRunning = false;
       callback(results, null);
-    }, 800); // Simulate slight delay
+    }, 50); // Minimal yield to avoid blocking UI
   }
 
   // ========== Shared API call helper ==========
@@ -825,6 +827,11 @@ const FullCheck = (function () {
         return;
       }
       var results = [];
+      if (!Array.isArray(issues)) {
+        isRunning = false;
+        callback(null, 'AI response was not a valid array');
+        return;
+      }
       issues.forEach(function (issue) {
         if (typeof issue.start !== 'number' || typeof issue.end !== 'number' ||
             issue.start < 0 || issue.end > text.length || issue.start >= issue.end) return;
@@ -1008,6 +1015,10 @@ const FullCheck = (function () {
     getProviders: function () { return PROVIDERS; },
     rewriteTone: rewriteTone,
     generateRule: generateRule,
-    callAPI: callAPI
+    callAPI: callAPI,
+    cancel: function () {
+      if (simTimerId) { clearTimeout(simTimerId); simTimerId = null; }
+      isRunning = false;
+    }
   };
 })();
