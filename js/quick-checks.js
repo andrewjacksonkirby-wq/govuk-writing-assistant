@@ -1409,7 +1409,8 @@ const QuickChecks = (function () {
    * Get spelling suggestions using a hybrid approach:
    * 1. Fast edit-distance-1 candidates checked against wordSet (instant)
    * 2. BK-tree search for distance-2 candidates (fast, O(log n))
-   * Results are ranked by edit distance, then alphabetically.
+   * Results are ranked by edit distance, then length proximity to the
+   * original word, then longer words preferred, then alphabetically.
    */
   function getWordSuggestions(word, limit) {
     if (!wordSet) return [];
@@ -1419,8 +1420,11 @@ const QuickChecks = (function () {
     var seen = new Set();
 
     // Phase 1: edit-distance-1 candidates (very fast — no tree needed)
+    // Collect ALL valid distance-1 matches so the sort can pick the best ones.
+    // Candidates are cheap to check (Set lookup is O(1)) and a typical word
+    // generates only ~200 candidates, so no early cutoff is needed.
     var ed1 = editDistance1Candidates(lower);
-    for (var i = 0; i < ed1.length && results.length < limit * 2; i++) {
+    for (var i = 0; i < ed1.length; i++) {
       if (wordSet.has(ed1[i]) && !seen.has(ed1[i])) {
         seen.add(ed1[i]);
         results.push({ word: ed1[i], dist: 1 });
