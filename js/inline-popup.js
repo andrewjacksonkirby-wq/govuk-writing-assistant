@@ -81,8 +81,33 @@ const InlinePopup = (function () {
       popupEl.appendChild(titleEl);
     }
 
-    // Replacement preview
-    if (suggestion.replacement != null && suggestion.original) {
+    // Replacement preview — alternatives or single
+    var hasAlternatives = suggestion.alternatives && suggestion.alternatives.length > 1;
+    if (hasAlternatives && suggestion.original) {
+      var altContainer = document.createElement('div');
+      altContainer.className = 'ip-alternatives';
+      var origSpan = document.createElement('span');
+      origSpan.className = 'ip-original';
+      origSpan.textContent = suggestion.original;
+      altContainer.appendChild(origSpan);
+      var arrowSpan = document.createElement('span');
+      arrowSpan.className = 'ip-arrow';
+      arrowSpan.textContent = '\u2192';
+      altContainer.appendChild(arrowSpan);
+      suggestion.alternatives.forEach(function (alt, idx) {
+        var altBtn = document.createElement('button');
+        altBtn.type = 'button';
+        altBtn.className = idx === 0 ? 'btn btn-primary btn-sm alt-btn' : 'btn btn-secondary btn-sm alt-btn';
+        altBtn.textContent = alt;
+        altBtn.addEventListener('click', function () {
+          suggestion.replacement = alt;
+          if (onApplyCb) onApplyCb(suggestion);
+          hide();
+        });
+        altContainer.appendChild(altBtn);
+      });
+      popupEl.appendChild(altContainer);
+    } else if (suggestion.replacement != null && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'ip-preview';
       preview.innerHTML =
@@ -96,7 +121,7 @@ const InlinePopup = (function () {
     var actions = document.createElement('div');
     actions.className = 'ip-actions';
 
-    if (suggestion.replacement != null) {
+    if (suggestion.replacement != null && !hasAlternatives) {
       var fixBtn = document.createElement('button');
       fixBtn.type = 'button';
       fixBtn.className = 'btn btn-primary btn-sm';

@@ -855,6 +855,35 @@ body {
   margin: 0 6px;
 }
 
+.suggestion-alternatives {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 9px 12px;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.suggestion-alternatives .original {
+  text-decoration: line-through;
+  color: var(--color-correctness);
+  opacity: 0.8;
+}
+
+.suggestion-alternatives .arrow {
+  color: var(--color-text-muted);
+  margin: 0 2px;
+}
+
+.suggestion-alternatives .alt-btn {
+  padding: 3px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+}
+
 .suggestion-actions {
   display: flex;
   gap: 8px;
@@ -2077,6 +2106,35 @@ mark.highlight.report-highlight {
 .ip-replacement {
   color: var(--color-success);
   font-weight: 600;
+}
+
+.ip-alternatives {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  background: var(--color-bg);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.ip-alternatives .ip-original {
+  text-decoration: line-through;
+  color: var(--color-correctness);
+  opacity: 0.8;
+}
+
+.ip-alternatives .ip-arrow {
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+}
+
+.ip-alternatives .alt-btn {
+  padding: 3px 10px;
+  font-size: 13px;
+  border-radius: 4px;
 }
 
 .ip-actions {

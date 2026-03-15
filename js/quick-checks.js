@@ -1434,7 +1434,13 @@ const QuickChecks = (function () {
           if (!checkWordValid(word)) {
             var suggestions = getWordSuggestions(word, 3);
             var replacement = suggestions.length > 0 ? suggestions[0] : null;
-            // Preserve case
+            // Preserve case for all suggestions
+            var casedSuggestions = suggestions.map(function (s) {
+              if (word[0] === word[0].toUpperCase()) {
+                return s.charAt(0).toUpperCase() + s.slice(1);
+              }
+              return s;
+            });
             if (replacement && word[0] === word[0].toUpperCase()) {
               replacement = replacement.charAt(0).toUpperCase() + replacement.slice(1);
             }
@@ -1454,6 +1460,9 @@ const QuickChecks = (function () {
             };
             if (replacement) {
               entry.replacement = replacement;
+            }
+            if (casedSuggestions.length > 1) {
+              entry.alternatives = casedSuggestions;
             }
             results.push(entry);
           }
@@ -2037,18 +2046,18 @@ const QuickChecks = (function () {
       { regex: /\b(fireman|firemen)\b/gi, fix: 'firefighter', msg: 'Use gender-neutral language: "firefighter" instead of "fireman"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(policeman|policemen)\b/gi, fix: 'police officer', msg: 'Use gender-neutral language: "police officer"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(policewoman|policewomen)\b/gi, fix: 'police officer', msg: 'Use gender-neutral language: "police officer"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(chairman)\b/gi, fix: 'chair', msg: 'Use gender-neutral language: "chair" or "chairperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(chairwoman)\b/gi, fix: 'chair', msg: 'Use gender-neutral language: "chair" or "chairperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(chairman)\b/gi, fix: 'chair', alts: ['chair', 'chairperson'], msg: 'Use gender-neutral language: "chair" or "chairperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(chairwoman)\b/gi, fix: 'chair', alts: ['chair', 'chairperson'], msg: 'Use gender-neutral language: "chair" or "chairperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(spokesman)\b/gi, fix: 'spokesperson', msg: 'Use gender-neutral language: "spokesperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(spokeswoman)\b/gi, fix: 'spokesperson', msg: 'Use gender-neutral language: "spokesperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(manpower)\b/gi, fix: 'workforce', msg: 'Use gender-neutral language: "workforce" or "staff"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(mankind)\b/gi, fix: 'humanity', msg: 'Use gender-neutral language: "humanity" or "people"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(manmade|man-made)\b/gi, fix: 'manufactured', msg: 'Use gender-neutral language: "manufactured", "synthetic", or "artificial"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(layman)\b/gi, fix: 'non-specialist', msg: 'Use gender-neutral language: "non-specialist" or "ordinary person"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(craftsman|craftsmen)\b/gi, fix: 'craftsperson', msg: 'Use gender-neutral language: "craftsperson" or "artisan"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(manpower)\b/gi, fix: 'workforce', alts: ['workforce', 'staff'], msg: 'Use gender-neutral language: "workforce" or "staff"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(mankind)\b/gi, fix: 'humanity', alts: ['humanity', 'people'], msg: 'Use gender-neutral language: "humanity" or "people"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(manmade|man-made)\b/gi, fix: 'manufactured', alts: ['manufactured', 'synthetic', 'artificial'], msg: 'Use gender-neutral language: "manufactured", "synthetic", or "artificial"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(layman)\b/gi, fix: 'non-specialist', alts: ['non-specialist', 'ordinary person'], msg: 'Use gender-neutral language: "non-specialist" or "ordinary person"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(craftsman|craftsmen)\b/gi, fix: 'craftsperson', alts: ['craftsperson', 'artisan'], msg: 'Use gender-neutral language: "craftsperson" or "artisan"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(businessmen)\b/gi, fix: 'business people', msg: 'Use gender-neutral language: "business people"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
       { regex: /\b(businessman)\b/gi, fix: 'businessperson', msg: 'Use gender-neutral language: "businessperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
-      { regex: /\b(foreman)\b/gi, fix: 'supervisor', msg: 'Use gender-neutral language: "supervisor" or "foreperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
+      { regex: /\b(foreman)\b/gi, fix: 'supervisor', alts: ['supervisor', 'foreperson'], msg: 'Use gender-neutral language: "supervisor" or "foreperson"', cat: 'Inclusive language', title: 'Gender-neutral language', group: 'style', modes: ['govuk'] },
 
       // --- Vague time expressions (GOV.UK says be specific) ---
       { regex: /\b(in due course)\b/gi, fix: null, msg: 'Be specific about timing instead of "in due course"', cat: 'Plain English', title: 'Vague timing', group: 'style', modes: ['govuk'] },
@@ -2079,7 +2088,7 @@ const QuickChecks = (function () {
       { regex: /\b(take action)\b/gi, fix: 'act', msg: 'Simplify: use "act" instead of "take action"', cat: 'Plain English', title: 'Use plain English', group: 'style', modes: ['govuk'] },
       { regex: /\b(take steps to)\b/gi, fix: null, msg: 'Be specific about what action to take instead of "take steps to"', cat: 'Plain English', title: 'Use plain English', group: 'style', modes: ['govuk'] },
       { regex: /\b(put in place)\b/gi, fix: null, msg: 'Be specific: "set up", "create", or "introduce" instead of "put in place"', cat: 'Plain English', title: 'Use plain English', group: 'style', modes: ['govuk'] },
-      { regex: /\b(in relation to)\b/gi, fix: 'about', msg: 'Use "about" or "for" instead of "in relation to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in relation to)\b/gi, fix: 'about', alts: ['about', 'for'], msg: 'Use "about" or "for" instead of "in relation to"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(with regard to)\b/gi, fix: 'about', msg: 'Use "about" instead of "with regard to"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(for the purpose of)\b/gi, fix: 'to', msg: 'Use "to" instead of "for the purpose of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in the process of)\b/gi, fix: null, msg: 'Remove \u2014 just say what is being done', cat: 'Plain English', title: 'Remove filler' },
@@ -2090,38 +2099,38 @@ const QuickChecks = (function () {
       { regex: /\b(at this moment in time)\b/gi, fix: 'now', msg: 'Use "now" instead of "at this moment in time"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(due to the fact that)\b/gi, fix: 'because', msg: 'Use "because" instead of "due to the fact that"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(despite the fact that)\b/gi, fix: 'although', msg: 'Use "although" instead of "despite the fact that"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(in view of the fact that)\b/gi, fix: 'because', msg: 'Use "because" or "since" instead of "in view of the fact that"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in view of the fact that)\b/gi, fix: 'because', alts: ['because', 'since'], msg: 'Use "because" or "since" instead of "in view of the fact that"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(on the grounds that)\b/gi, fix: 'because', msg: 'Use "because" instead of "on the grounds that"', cat: 'Plain English', title: 'Use plain English' },
 
       // --- More plain English: common word swaps ---
       { regex: /\b(ensure)\b/gi, fix: 'make sure', msg: 'Use "make sure" instead of "ensure"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(advise)\b(?!\s+(?:against|on\s+(?:the|a|how|what|where|when|which)))/gi, fix: 'tell', msg: 'Use "tell" or "let [someone] know" instead of "advise"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(advise)\b(?!\s+(?:against|on\s+(?:the|a|how|what|where|when|which)))/gi, fix: 'tell', alts: ['tell', 'let know'], msg: 'Use "tell" or "let [someone] know" instead of "advise"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(notify)\b/gi, fix: 'tell', msg: 'Use "tell" instead of "notify"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(inform)\b/gi, fix: 'tell', msg: 'Use "tell" instead of "inform"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(request)\b(?=\s+(?:that|you|the|a|an|this|your))/gi, fix: 'ask for', msg: 'Use "ask for" instead of "request"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(provide)\b/gi, fix: 'give', msg: 'Use "give" instead of "provide"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(receive)\b/gi, fix: 'get', msg: 'Use "get" instead of "receive"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(retain)\b/gi, fix: 'keep', msg: 'Use "keep" instead of "retain"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(permit)\b(?=\s+(?:you|the|a|an|this|them|us|him|her))/gi, fix: 'let', msg: 'Use "let" or "allow" instead of "permit"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(prohibit)\b/gi, fix: 'ban', msg: 'Use "ban", "stop", or "do not allow" instead of "prohibit"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(permit)\b(?=\s+(?:you|the|a|an|this|them|us|him|her))/gi, fix: 'let', alts: ['let', 'allow'], msg: 'Use "let" or "allow" instead of "permit"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(prohibit)\b/gi, fix: 'ban', alts: ['ban', 'stop', 'do not allow'], msg: 'Use "ban", "stop", or "do not allow" instead of "prohibit"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(cease)\b/gi, fix: 'stop', msg: 'Use "stop" instead of "cease"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(acquire)\b/gi, fix: 'get', msg: 'Use "get" or "buy" instead of "acquire"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(acquire)\b/gi, fix: 'get', alts: ['get', 'buy'], msg: 'Use "get" or "buy" instead of "acquire"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(reside)\b/gi, fix: 'live', msg: 'Use "live" instead of "reside"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(residence)\b/gi, fix: 'home', msg: 'Use "home" or "address" instead of "residence"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(dwelling)\b/gi, fix: 'home', msg: 'Use "home" or "property" instead of "dwelling"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(expedite)\b/gi, fix: 'speed up', msg: 'Use "speed up" or "hurry" instead of "expedite"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(residence)\b/gi, fix: 'home', alts: ['home', 'address'], msg: 'Use "home" or "address" instead of "residence"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(dwelling)\b/gi, fix: 'home', alts: ['home', 'property'], msg: 'Use "home" or "property" instead of "dwelling"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(expedite)\b/gi, fix: 'speed up', alts: ['speed up', 'hurry'], msg: 'Use "speed up" or "hurry" instead of "expedite"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(numerous)\b/gi, fix: 'many', msg: 'Use "many" instead of "numerous"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(remainder)\b/gi, fix: 'rest', msg: 'Use "rest" instead of "remainder"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(substantial)\b/gi, fix: 'large', msg: 'Use "large", "big", or "a lot of" instead of "substantial"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(adjacent to)\b/gi, fix: 'next to', msg: 'Use "next to" or "near" instead of "adjacent to"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(substantial)\b/gi, fix: 'large', alts: ['large', 'big', 'a lot of'], msg: 'Use "large", "big", or "a lot of" instead of "substantial"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(adjacent to)\b/gi, fix: 'next to', alts: ['next to', 'near'], msg: 'Use "next to" or "near" instead of "adjacent to"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(forward(?:ed|ing|s)?)\b(?=\s+(?:the|this|a|an|your|their|our))/gi, fix: 'send', msg: 'Use "send" instead of "forward" where possible', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(determine)\b/gi, fix: 'find out', msg: 'Use "find out" or "decide" instead of "determine"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(comply)\b/gi, fix: 'keep to', msg: 'Use "keep to" or "follow" instead of "comply"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(determine)\b/gi, fix: 'find out', alts: ['find out', 'decide'], msg: 'Use "find out" or "decide" instead of "determine"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(comply)\b/gi, fix: 'keep to', alts: ['keep to', 'follow'], msg: 'Use "keep to" or "follow" instead of "comply"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in the amount of)\b/gi, fix: 'for', msg: 'Use "for" instead of "in the amount of"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(on the basis of)\b/gi, fix: 'based on', msg: 'Use "based on" or "because of" instead of "on the basis of"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(with the exception of)\b/gi, fix: 'except', msg: 'Use "except" or "apart from" instead of "with the exception of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(on the basis of)\b/gi, fix: 'based on', alts: ['based on', 'because of'], msg: 'Use "based on" or "because of" instead of "on the basis of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(with the exception of)\b/gi, fix: 'except', alts: ['except', 'apart from'], msg: 'Use "except" or "apart from" instead of "with the exception of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in the absence of)\b/gi, fix: 'without', msg: 'Use "without" instead of "in the absence of"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(in the region of)\b/gi, fix: 'about', msg: 'Use "about" or "around" instead of "in the region of"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in the region of)\b/gi, fix: 'about', alts: ['about', 'around'], msg: 'Use "about" or "around" instead of "in the region of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(as a means of)\b/gi, fix: 'to', msg: 'Use "to" instead of "as a means of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(for the duration of)\b/gi, fix: 'during', msg: 'Use "during" instead of "for the duration of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(at the conclusion of)\b/gi, fix: 'after', msg: 'Use "after" instead of "at the conclusion of"', cat: 'Plain English', title: 'Use plain English' },
@@ -2132,42 +2141,42 @@ const QuickChecks = (function () {
       { regex: /\b(as to whether)\b/gi, fix: 'whether', msg: 'Use "whether" instead of "as to whether"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in a position to)\b/gi, fix: 'can', msg: 'Use "can" instead of "in a position to"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in light of)\b/gi, fix: 'because of', msg: 'Use "because of" instead of "in light of"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(in connection with)\b/gi, fix: 'about', msg: 'Use "about" or "for" instead of "in connection with"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(in connection with)\b/gi, fix: 'about', alts: ['about', 'for'], msg: 'Use "about" or "for" instead of "in connection with"', cat: 'Plain English', title: 'Use plain English' },
 
       // --- Even more plain English: single words ---
       { regex: /\b(complete)\b(?=\s+(?:the|this|a|an|your|their|our)\s+(?:form|application|questionnaire|survey|return))/gi, fix: 'fill in', msg: 'Use "fill in" instead of "complete" for forms', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(establish)\b/gi, fix: 'set up', msg: 'Use "set up", "find out", or "show" instead of "establish"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(constitute)\b/gi, fix: 'make up', msg: 'Use "make up" or "form" instead of "constitute"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(establish)\b/gi, fix: 'set up', alts: ['set up', 'find out', 'show'], msg: 'Use "set up", "find out", or "show" instead of "establish"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(constitute)\b/gi, fix: 'make up', alts: ['make up', 'form'], msg: 'Use "make up" or "form" instead of "constitute"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(anticipate)\b/gi, fix: 'expect', msg: 'Use "expect" instead of "anticipate"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(administer)\b/gi, fix: 'manage', msg: 'Use "manage" or "run" instead of "administer"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(administer)\b/gi, fix: 'manage', alts: ['manage', 'run'], msg: 'Use "manage" or "run" instead of "administer"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(concerning)\b/gi, fix: 'about', msg: 'Use "about" instead of "concerning"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(consider(?:able|ably))\b/gi, fix: null, msg: 'Use "big", "large", "much", or "a lot" instead of "considerable"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(currently)\b/gi, fix: 'now', msg: 'Use "now" instead of "currently"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(disclose)\b/gi, fix: 'tell', msg: 'Use "tell" or "show" instead of "disclose"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(discontinue)\b/gi, fix: 'stop', msg: 'Use "stop" or "end" instead of "discontinue"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(enclose)\b/gi, fix: 'put in', msg: 'Use "put in" or "include" instead of "enclose"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(encounter)\b/gi, fix: 'meet', msg: 'Use "meet" or "find" instead of "encounter"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(expenditure)\b/gi, fix: 'spending', msg: 'Use "spending" or "costs" instead of "expenditure"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(disclose)\b/gi, fix: 'tell', alts: ['tell', 'show'], msg: 'Use "tell" or "show" instead of "disclose"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(discontinue)\b/gi, fix: 'stop', alts: ['stop', 'end'], msg: 'Use "stop" or "end" instead of "discontinue"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(enclose)\b/gi, fix: 'put in', alts: ['put in', 'include'], msg: 'Use "put in" or "include" instead of "enclose"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(encounter)\b/gi, fix: 'meet', alts: ['meet', 'find'], msg: 'Use "meet" or "find" instead of "encounter"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(expenditure)\b/gi, fix: 'spending', alts: ['spending', 'costs'], msg: 'Use "spending" or "costs" instead of "expenditure"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(in excess of)\b/gi, fix: 'more than', msg: 'Use "more than" instead of "in excess of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(incur)\b/gi, fix: null, msg: 'Use "pay", "lose", or "get" instead of "incur"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(mandatory)\b/gi, fix: 'you must', msg: 'Use "you must" or "required" instead of "mandatory"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(mandatory)\b/gi, fix: 'you must', alts: ['you must', 'required'], msg: 'Use "you must" or "required" instead of "mandatory"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(methodology)\b/gi, fix: 'method', msg: 'Use "method" instead of "methodology"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(optimum)\b/gi, fix: 'best', msg: 'Use "best" instead of "optimum"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(particulars)\b/gi, fix: 'details', msg: 'Use "details" instead of "particulars"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(predominant(?:ly)?)\b/gi, fix: 'main', msg: 'Use "main" or "mostly" instead of "predominant"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(predominant(?:ly)?)\b/gi, fix: 'main', alts: ['main', 'mostly'], msg: 'Use "main" or "mostly" instead of "predominant"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(precisely)\b/gi, fix: 'exactly', msg: 'Use "exactly" instead of "precisely"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(procure)\b/gi, fix: 'buy', msg: 'Use "buy" or "get" instead of "procure"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(reimburse)\b/gi, fix: 'pay back', msg: 'Use "pay back" or "repay" instead of "reimburse"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(remuneration)\b/gi, fix: 'pay', msg: 'Use "pay" or "wages" instead of "remuneration"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(supplement(?:ary)?)\b/gi, fix: 'extra', msg: 'Use "extra" or "more" instead of "supplementary"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(undertake)\b/gi, fix: 'do', msg: 'Use "do" or "carry out" instead of "undertake"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(procure)\b/gi, fix: 'buy', alts: ['buy', 'get'], msg: 'Use "buy" or "get" instead of "procure"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(reimburse)\b/gi, fix: 'pay back', alts: ['pay back', 'repay'], msg: 'Use "pay back" or "repay" instead of "reimburse"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(remuneration)\b/gi, fix: 'pay', alts: ['pay', 'wages'], msg: 'Use "pay" or "wages" instead of "remuneration"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(supplement(?:ary)?)\b/gi, fix: 'extra', alts: ['extra', 'more'], msg: 'Use "extra" or "more" instead of "supplementary"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(undertake)\b/gi, fix: 'do', alts: ['do', 'carry out'], msg: 'Use "do" or "carry out" instead of "undertake"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(verify)\b/gi, fix: 'check', msg: 'Use "check" instead of "verify"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(predominantly)\b/gi, fix: 'mostly', msg: 'Use "mostly" or "mainly" instead of "predominantly"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(allocate)\b/gi, fix: 'give', msg: 'Use "give", "share", or "set aside" instead of "allocate"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(necessitate)\b/gi, fix: 'need', msg: 'Use "need" or "must have" instead of "necessitate"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(predominantly)\b/gi, fix: 'mostly', alts: ['mostly', 'mainly'], msg: 'Use "mostly" or "mainly" instead of "predominantly"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(allocate)\b/gi, fix: 'give', alts: ['give', 'share', 'set aside'], msg: 'Use "give", "share", or "set aside" instead of "allocate"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(necessitate)\b/gi, fix: 'need', alts: ['need', 'must have'], msg: 'Use "need" or "must have" instead of "necessitate"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(correspondence)\b/gi, fix: null, msg: 'Use "letter", "email", or "message" instead of "correspondence"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(attain)\b/gi, fix: 'reach', msg: 'Use "reach" or "get" instead of "attain"', cat: 'Plain English', title: 'Use plain English' },
-      { regex: /\b(amalgamate)\b/gi, fix: 'join', msg: 'Use "join", "merge", or "combine" instead of "amalgamate"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(attain)\b/gi, fix: 'reach', alts: ['reach', 'get'], msg: 'Use "reach" or "get" instead of "attain"', cat: 'Plain English', title: 'Use plain English' },
+      { regex: /\b(amalgamate)\b/gi, fix: 'join', alts: ['join', 'merge', 'combine'], msg: 'Use "join", "merge", or "combine" instead of "amalgamate"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(furnish)\b/gi, fix: 'give', msg: 'Use "give" instead of "furnish"', cat: 'Plain English', title: 'Use plain English' },
 
       // --- Even more plain English: multi-word phrases ---
@@ -2235,6 +2244,12 @@ const QuickChecks = (function () {
         };
         if (replacement) {
           suggestion.replacement = replacement;
+        }
+        if (pat.alts && pat.alts.length > 1) {
+          var isUpper = matched[0] === matched[0].toUpperCase();
+          suggestion.alternatives = pat.alts.map(function (a) {
+            return isUpper ? a.charAt(0).toUpperCase() + a.slice(1) : a;
+          });
         }
         results.push(suggestion);
       }
@@ -3453,7 +3468,7 @@ const QuickChecks = (function () {
       // "smartphone" — use "phone"
       { regex: /\b(smartphones?)\b/gi, fix: 'phone', msg: 'GOV.UK style: use "phone" instead of "smartphone"', title: 'Use "phone"' },
       // "shall" — use "will" or "must"
-      { regex: /\b(shall)\b/gi, fix: 'will', msg: 'GOV.UK style: use "will" or "must" instead of "shall"', title: 'Use plain English' },
+      { regex: /\b(shall)\b/gi, fix: 'will', alts: ['will', 'must'], msg: 'GOV.UK style: use "will" or "must" instead of "shall"', title: 'Use plain English' },
       // "aforementioned" — name the specific thing
       { regex: /\b(aforementioned|above-mentioned|abovementioned)\b/gi, fix: null, msg: 'GOV.UK style: do not use "aforementioned" — name the specific thing', title: 'Use plain English' },
       // Legal language
@@ -3474,7 +3489,7 @@ const QuickChecks = (function () {
       // "at the end of the day"
       { regex: /\bat\s+the\s+end\s+of\s+the\s+day\b/gi, fix: null, msg: 'GOV.UK style: avoid clichés — say what you actually mean', title: 'Avoid clichés' },
       // "touch base"
-      { regex: /\btouch\s+base\b/gi, fix: 'contact', msg: 'GOV.UK style: use "contact", "speak to", or "meet"', title: 'Avoid clichés' },
+      { regex: /\btouch\s+base\b/gi, fix: 'contact', alts: ['contact', 'speak to', 'meet'], msg: 'GOV.UK style: use "contact", "speak to", or "meet"', title: 'Avoid clichés' },
       // "best practice" — say what you actually mean
       { regex: /\bbest\s+practice\b/gi, fix: null, msg: 'GOV.UK style: avoid "best practice" — describe what the practice actually is', title: 'Word to avoid' },
       // "stakeholder" — say who you mean
@@ -3494,7 +3509,7 @@ const QuickChecks = (function () {
           mStart = match.index + match[0].indexOf('&');
           mEnd = mStart + 1;
         }
-        results.push({
+        var entry = {
           id: makeId(),
           ruleId: 'govuk-extra-style',
           source: 'regex',
@@ -3506,7 +3521,14 @@ const QuickChecks = (function () {
           title: rule.title,
           replacement: rule.fix || undefined,
           original: match[0].trim()
-        });
+        };
+        if (rule.alts && rule.alts.length > 1) {
+          var isUpper = match[0][0] === match[0][0].toUpperCase();
+          entry.alternatives = rule.alts.map(function (a) {
+            return isUpper ? a.charAt(0).toUpperCase() + a.slice(1) : a;
+          });
+        }
+        results.push(entry);
       }
     });
 
