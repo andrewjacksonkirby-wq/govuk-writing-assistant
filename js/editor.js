@@ -534,6 +534,7 @@ const Editor = (function () {
 
   function clearUnderlines() {
     currentUnderlines = [];
+    lastMarkFingerprint = '';
     if (!editorEl) return;
     if (editorEl.querySelector('.issue-underline') || editorEl.querySelector('.structural-mark')) {
       var text = editorEl.innerText || '';

@@ -27,6 +27,32 @@ const QuickChecks = (function () {
    */
   var bkTree = null;
 
+  // High-frequency English words used as a tiebreaker when ranking suggestions.
+  // Sourced from top ~200 common words (3+ chars) to boost everyday vocabulary.
+  var commonWords = new Set([
+    'the', 'and', 'that', 'have', 'for', 'not', 'with', 'you', 'this', 'but',
+    'his', 'from', 'they', 'been', 'have', 'said', 'each', 'she', 'which',
+    'their', 'will', 'other', 'about', 'out', 'many', 'then', 'them', 'these',
+    'some', 'her', 'would', 'make', 'like', 'him', 'into', 'time', 'has',
+    'look', 'two', 'more', 'write', 'way', 'could', 'people', 'than', 'first',
+    'water', 'call', 'who', 'its', 'now', 'find', 'long', 'down', 'day', 'did',
+    'get', 'come', 'made', 'may', 'part', 'over', 'new', 'after', 'also',
+    'back', 'use', 'our', 'just', 'know', 'take', 'last', 'good', 'great',
+    'old', 'year', 'give', 'most', 'very', 'when', 'need', 'much', 'right',
+    'still', 'well', 'here', 'must', 'home', 'life', 'since', 'world', 'keep',
+    'where', 'work', 'own', 'say', 'through', 'does', 'man', 'same', 'end',
+    'think', 'such', 'help', 'only', 'hand', 'high', 'place', 'went', 'can',
+    'should', 'thing', 'see', 'every', 'both', 'between', 'being', 'under',
+    'never', 'while', 'house', 'might', 'before', 'even', 'head', 'what',
+    'show', 'any', 'again', 'want', 'name', 'put', 'play', 'run', 'change',
+    'off', 'turn', 'real', 'left', 'set', 'how', 'point', 'too', 'those',
+    'line', 'small', 'big', 'seem', 'start', 'open', 'going', 'state', 'city',
+    'close', 'few', 'why', 'let', 'light', 'side', 'try', 'ask', 'door',
+    'large', 'move', 'tell', 'came', 'best', 'night', 'hard', 'kind', 'begin',
+    'far', 'away', 'story', 'read', 'little', 'number', 'group', 'always',
+    'got', 'young', 'able', 'face', 'form', 'system', 'look', 'area', 'order'
+  ]);
+
   function levenshtein(a, b) {
     if (a === b) return 0;
     if (!a.length) return b.length;
@@ -104,7 +130,7 @@ const QuickChecks = (function () {
     }
     console.log('[QuickChecks] Word list loaded: ' + wordSet.size + ' words');
 
-    // Build BK-tree from a sample of words (3-12 chars) for suggestions
+    // Build BK-tree from all words (3-12 chars) for suggestions
     var sampleWords = [];
     var iter = wordSet.values();
     var entry;
@@ -113,21 +139,6 @@ const QuickChecks = (function () {
       if (w.length >= 3 && w.length <= 12) {
         sampleWords.push(w);
       }
-    }
-    // Shuffle and take up to 30k for the BK-tree
-    if (sampleWords.length > 30000) {
-      // Reservoir sampling: pick 30000 random items without bias
-      var sample = [];
-      var k = 0;
-      sampleWords.forEach(function(w, idx) {
-        if (idx < 30000) {
-          sample.push(w);
-        } else {
-          var j = Math.floor(Math.random() * (idx + 1));
-          if (j < 30000) sample[j] = w;
-        }
-      });
-      sampleWords = sample;
     }
     bkTree = buildBKTree(sampleWords);
     console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
@@ -1448,6 +1459,10 @@ const QuickChecks = (function () {
     var origLen = lower.length;
     results.sort(function (a, b) {
       if (a.dist !== b.dist) return a.dist - b.dist;
+      // Prefer common/high-frequency words over rare ones at equal distance
+      var aCommon = commonWords.has(a.word) ? 0 : 1;
+      var bCommon = commonWords.has(b.word) ? 0 : 1;
+      if (aCommon !== bCommon) return aCommon - bCommon;
       var aLenDiff = Math.abs(a.word.length - origLen);
       var bLenDiff = Math.abs(b.word.length - origLen);
       if (aLenDiff !== bLenDiff) return aLenDiff - bLenDiff;
