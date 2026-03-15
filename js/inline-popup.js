@@ -3,11 +3,14 @@
  * Floating suggestion card that appears next to a clicked inline underline.
  */
 const InlinePopup = (function () {
+  'use strict';
+
   var popupEl = null;
   var onApplyCb = null;
   var onDismissCb = null;
   var onDismissOnceCb = null;
 
+  // Shared category helpers — reuse from Suggestions to avoid divergence
   var STYLE_RULES = ['contractions', 'numbers', 'date-format', 'govuk-style',
     'number-formatting', 'time-formatting', 'govuk-punctuation', 'govuk-capitalisation'];
   var CLARITY_RULES = ['sentence-length', 'passive-voice', 'overused-word', 'tone',
@@ -135,7 +138,7 @@ const InlinePopup = (function () {
   function position(anchorEl) {
     var rect = anchorEl.getBoundingClientRect();
     var margin = 8;
-    var width = 268;
+    var width = popupEl.offsetWidth || 268;
 
     var left = rect.left;
     if (left + width > window.innerWidth - margin) {

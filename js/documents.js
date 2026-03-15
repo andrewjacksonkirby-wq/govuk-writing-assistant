@@ -59,7 +59,7 @@ const Documents = (function () {
    * Create a new document, return its id.
    */
   function createNewDoc(initialText) {
-    var id = 'doc-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6);
+    var id = 'doc-' + Date.now() + '-' + Math.random().toString(36).substring(2, 8);
     var docs = getAllDocs();
     docs[id] = {
       id: id,

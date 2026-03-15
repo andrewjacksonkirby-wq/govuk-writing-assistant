@@ -13,7 +13,6 @@
   var saveStatusEl = document.getElementById('saveStatus');
   var sensitivityToggle = document.getElementById('sensitivityToggle');
   var sensitivityText = document.getElementById('sensitivityText');
-  var checkNowBtn = document.getElementById('checkNowBtn');
   var draftsBtn = document.getElementById('draftsBtn');
   var newDraftBtn = document.getElementById('newDraftBtn');
   var historyBtn = document.getElementById('historyBtn');
@@ -34,9 +33,10 @@
 
   var lastCheckVersion = -1;
   var pendingRestore = null;
-  var lastFullCheckWordCount = 0;
-  var fullCheckDebounceTimer = null;
-  var AUTO_TRIGGER_WORD_THRESHOLD = 20;
+  var autoCheckTimer = null;
+  var AUTO_CHECK_DEBOUNCE_MS = 2000;
+  var autoCheckDirty = false;
+  var ttsUtterance = null;
   var ttsBtn = document.getElementById('ttsBtn');
   var ttsIcon = document.getElementById('ttsIcon');
   var dictBtn = document.getElementById('dictBtn');
@@ -57,7 +57,6 @@
   var ruleMessage = document.getElementById('ruleMessage');
   var ruleAddBtn = document.getElementById('ruleAddBtn');
   var rulesList = document.getElementById('rulesList');
-  var ttsUtterance = null;
   var aiAllowanceBar = document.getElementById('aiAllowanceBar');
   var aiAllowanceValue = document.getElementById('aiAllowanceValue');
   var aiAllowanceFill = document.getElementById('aiAllowanceFill');
@@ -120,8 +119,11 @@
     dictLoadingEl.style.fontSize = '11px';
     dictLoadingEl.style.fontStyle = 'italic';
     if (statsBar) statsBar.querySelector('.stats-left').appendChild(dictLoadingEl);
-    document.addEventListener('typo-dictionary-loaded', function () {
+    document.addEventListener('typo-dictionary-loaded', function (e) {
       if (dictLoadingEl.parentNode) dictLoadingEl.parentNode.removeChild(dictLoadingEl);
+      if (e.detail && e.detail.failed) {
+        showToast('Dictionary failed to load \u2014 spell check may be limited.', 'warning');
+      }
     });
 
     // Init reports
@@ -228,8 +230,8 @@
           processQuickCheckResults(results);
         }
       });
-      // Auto-trigger full check after significant edits (debounced 5s)
-      if (AI_ENABLED) scheduleAutoFullCheck(text);
+      // Auto-trigger full check after typing pauses (debounced 2s)
+      if (AI_ENABLED) scheduleAutoCheck();
     });
 
     // Sensitivity toggle (always listen, visibility controlled by updateAIEnabledUI)
@@ -249,7 +251,7 @@
       var newMode = modeSelect.value;
 
       // If switching away from scratchpad mode with text, prompt to save
-      if ((oldMode === 'email' || oldMode === 'chat') && newMode === 'govuk') {
+      if ((oldMode === 'email' || oldMode === 'chat') && newMode !== oldMode) {
         promptSaveIfNeeded();
       }
 
@@ -264,9 +266,6 @@
         }
       });
     });
-
-    // Check now button (always register, visibility controlled by updateAIEnabledUI)
-    checkNowBtn.addEventListener('click', handleCheckNow);
 
     // Upload handler
     uploadFile.addEventListener('change', handleUpload);
@@ -313,11 +312,6 @@
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
         e.preventDefault();
         Documents.saveText(Editor.getText());
-      }
-      // Ctrl+Shift+C / Cmd+Shift+C = check now (AI only)
-      if (AI_ENABLED && (e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'C') {
-        e.preventDefault();
-        handleCheckNow();
       }
     });
 
@@ -572,14 +566,7 @@
         createNewDraftAndEdit();
         return;
       }
-      var save = confirm(
-        'Save this ' + (mode === 'email' ? 'email' : 'message') + ' before clearing?\n\n' +
-        'OK = Save and clear\n' +
-        'Cancel = Just clear'
-      );
-      if (save) {
-        Documents.saveText(text);
-      }
+      if (!confirm('Clear all text? This cannot be undone.')) return;
     }
     Editor.setText('');
     Suggestions.clearAll();
@@ -590,56 +577,36 @@
 
   // ========== Handlers ==========
 
-  function handleCheckNow() {
+  /**
+   * Run an automatic AI check. Called by scheduleAutoCheck() after debounce.
+   * If a check is already running, sets a dirty flag to re-check when it finishes.
+   */
+  function runAutoCheck() {
     var sensitivity = Documents.getSensitivity();
-
-    if (!FullCheck.isAllowed(sensitivity)) {
-      showToast('AI check is not available. This draft is marked as sensitive.', 'warning');
+    if (!FullCheck.isAllowed(sensitivity)) return;
+    if (FullCheck.getIsRunning()) {
+      autoCheckDirty = true;
       return;
     }
-
-    if (FullCheck.getIsRunning()) return;
-
+    autoCheckDirty = false;
     var text = Editor.getText();
-    if (!text || text.trim().length === 0) return;
-
-    // Save a version snapshot before running full check
-    Documents.saveVersion(text);
-
-    // Show loading state
-    checkNowBtn.disabled = true;
-    document.getElementById('checkNowText').textContent = 'Checking...';
+    if (!text || !text.trim()) return;
+    if (FullCheck.isAllowanceExhausted()) {
+      updateAllowanceMeter();
+      return;
+    }
     Suggestions.markFullCheckRun();
-
     var checkDocId = Documents.getCurrentId();
     FullCheck.run(text, sensitivity, function (results, error) {
-      checkNowBtn.disabled = false;
-      document.getElementById('checkNowText').textContent = 'Check now';
-
-      // Discard results if user switched documents during the check
       if (Documents.getCurrentId() !== checkDocId) return;
-
-      if (error === 'blocked') {
-        showToast('AI check blocked: this draft is marked as sensitive.', 'warning');
-        return;
-      }
-
-      if (error === 'allowance-exhausted') {
+      if (!error) {
         updateAllowanceMeter();
-        return;
+        Suggestions.setClarity(results || []);
       }
-
-      if (error) {
-        showToast('AI check failed: ' + error, 'error');
-        return;
+      if (autoCheckDirty) {
+        autoCheckDirty = false;
+        scheduleAutoCheck();
       }
-
-      // Refresh allowance meter after successful check
-      updateAllowanceMeter();
-
-      Suggestions.setClarity(results || []);
-      // Update word count for auto-trigger tracking
-      lastFullCheckWordCount = (text.match(/\b\w+\b/g) || []).length;
     });
   }
 
@@ -648,14 +615,12 @@
    * the sidebar AND show as inline underlines in the editor.
    */
   function processQuickCheckResults(results) {
-    console.log('[WritingAssistant] Quick check returned ' + results.length + ' results');
     Suggestions.setCorrectness(results);
 
     // Filter out dismissed items from underlines too (must match sidebar)
     var visibleResults = results.filter(function (s) {
       return !Suggestions.isDismissed(s);
     });
-    console.log('[WritingAssistant] Showing ' + visibleResults.length + ' underlines (' + (results.length - visibleResults.length) + ' dismissed)');
 
     // Show visible issues as inline underlines in the editor
     Editor.showUnderlines(visibleResults, function (mark, markEl) {
@@ -698,7 +663,7 @@
   }
 
   function handleSelect(suggestion) {
-    var markEl = document.querySelector('[data-issue-id="' + suggestion.id + '"]');
+    var markEl = document.querySelector('[data-issue-id="' + CSS.escape(suggestion.id) + '"]');
     if (markEl) markEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
@@ -761,31 +726,16 @@
   }
 
   /**
-   * Schedule an auto-triggered full check after significant edits.
-   * Debounced to 5 seconds — only fires if 20+ new words since last full check.
+   * Schedule an auto-triggered full check after typing pauses.
+   * Debounced to 2 seconds for responsive feedback.
    */
-  function scheduleAutoFullCheck(text) {
+  function scheduleAutoCheck() {
     if (Documents.getSensitivity() !== 'safe') return;
-    if (FullCheck.getIsRunning()) return;
-
-    var wordCount = (text.match(/\b\w+\b/g) || []).length;
-    var delta = Math.abs(wordCount - lastFullCheckWordCount);
-
-    if (delta < AUTO_TRIGGER_WORD_THRESHOLD) return;
-
-    if (fullCheckDebounceTimer) clearTimeout(fullCheckDebounceTimer);
-    fullCheckDebounceTimer = setTimeout(function () {
-      fullCheckDebounceTimer = null;
-      // Re-check conditions after debounce
-      if (Documents.getSensitivity() !== 'safe') return;
-      if (FullCheck.getIsRunning()) return;
-      var currentText = Editor.getText();
-      var currentWords = (currentText.match(/\b\w+\b/g) || []).length;
-      if (Math.abs(currentWords - lastFullCheckWordCount) >= AUTO_TRIGGER_WORD_THRESHOLD) {
-        lastFullCheckWordCount = currentWords;
-        handleCheckNow();
-      }
-    }, 5000);
+    if (autoCheckTimer) clearTimeout(autoCheckTimer);
+    autoCheckTimer = setTimeout(function () {
+      autoCheckTimer = null;
+      runAutoCheck();
+    }, AUTO_CHECK_DEBOUNCE_MS);
   }
 
   /**
@@ -802,6 +752,9 @@
       reader.onload = function (ev) {
         loadUploadedText(ev.target.result);
       };
+      reader.onerror = function () {
+        showToast('Could not read file.', 'error');
+      };
       reader.readAsText(file);
     } else if (name.endsWith('.docx') || name.endsWith('.doc')) {
       if (typeof mammoth === 'undefined') {
@@ -817,6 +770,9 @@
           .catch(function (err) {
             showToast('Could not read document: ' + err.message, 'error');
           });
+      };
+      reader2.onerror = function () {
+        showToast('Could not read file.', 'error');
       };
       reader2.readAsArrayBuffer(file);
     } else {
@@ -857,7 +813,7 @@
     // Use the document title for the filename
     var docs = Documents.loadCurrent();
     var title = (docs && docs.title) || 'draft';
-    a.download = title.replace(/[^a-zA-Z0-9 _-]/g, '').substring(0, 50) + '.txt';
+    a.download = title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '').substring(0, 50) + '.txt';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -974,13 +930,14 @@
     if (isSafe) {
       sensitivityText.textContent = 'AI on';
       sensitivityText.className = 'sensitivity-text';
-      checkNowBtn.disabled = false;
-      checkNowBtn.title = '';
+      // Trigger auto-check when AI is turned on
+      scheduleAutoCheck();
     } else {
       sensitivityText.textContent = 'AI off';
       sensitivityText.className = 'sensitivity-text sensitive';
-      checkNowBtn.disabled = true;
-      checkNowBtn.title = 'AI check unavailable — draft marked as sensitive';
+      // Cancel any pending or running checks
+      if (autoCheckTimer) { clearTimeout(autoCheckTimer); autoCheckTimer = null; }
+      FullCheck.cancel();
     }
 
     // Keep allowance meter in sync
@@ -1063,6 +1020,10 @@
    */
   function openDocument(docId) {
     Documents.saveText(Editor.getText());
+    // Cancel any pending/running auto-check from previous document
+    if (autoCheckTimer) { clearTimeout(autoCheckTimer); autoCheckTimer = null; }
+    FullCheck.cancel();
+    autoCheckDirty = false;
     var switched = Documents.switchDoc(docId);
     if (switched) {
       Editor.setText(switched.text || '');
@@ -1070,6 +1031,7 @@
       Editor.clearUnderlines();
       Stats.update(switched.text || '');
       Reports.update(switched.text || '');
+      lastCheckVersion = -1;
       if (AI_ENABLED) updateSensitivityUI(switched.sensitivity || 'safe');
       updateModeUI(switched.mode || 'govuk');
       QuickChecks.scheduleCheck(switched.text || '', Editor.getVersion(), function (results, v) {
@@ -1078,6 +1040,10 @@
           processQuickCheckResults(results);
         }
       });
+      // Auto-run AI check for the new document
+      if (AI_ENABLED && (switched.sensitivity || 'safe') === 'safe') {
+        runAutoCheck();
+      }
     }
     showEditorView();
   }
@@ -1110,7 +1076,10 @@
     documentsList.innerHTML = '';
 
     if (drafts.length === 0) {
-      documentsList.innerHTML = '<p class="empty-state">No documents yet. Click "New draft" to get started.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'No documents yet. Click "New draft" to get started.';
+      documentsList.appendChild(emptyP);
       return;
     }
 
@@ -1185,7 +1154,10 @@
     historyList.innerHTML = '';
 
     if (versions.length === 0) {
-      historyList.innerHTML = '<p class="empty-state">No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'empty-state';
+      emptyP.textContent = 'No versions saved yet. Versions are created automatically when you run AI checks or switch between drafts.';
+      historyList.appendChild(emptyP);
       historyModal.hidden = false;
       trapFocus(historyModal);
       return;
@@ -1228,12 +1200,12 @@
 
   // ========== Focus trapping ==========
 
-  var activeTrap = null;
+  var trapStack = [];
 
   function trapFocus(modalEl) {
-    activeTrap = function (e) {
+    var handler = function (e) {
       if (e.key !== 'Tab') return;
-      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
+      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), select:not([hidden]):not([disabled]), textarea:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
       if (focusable.length === 0) return;
       var first = focusable[0];
       var last = focusable[focusable.length - 1];
@@ -1243,16 +1215,17 @@
         if (document.activeElement === last) { e.preventDefault(); first.focus(); }
       }
     };
-    document.addEventListener('keydown', activeTrap);
+    trapStack.push(handler);
+    document.addEventListener('keydown', handler);
     // Focus the first focusable element
     var firstFocusable = modalEl.querySelector('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled])');
     if (firstFocusable) firstFocusable.focus();
   }
 
   function releaseFocus() {
-    if (activeTrap) {
-      document.removeEventListener('keydown', activeTrap);
-      activeTrap = null;
+    var handler = trapStack.pop();
+    if (handler) {
+      document.removeEventListener('keydown', handler);
     }
   }
 
@@ -1285,6 +1258,7 @@
     if (!isoString) return '';
     try {
       var d = new Date(isoString);
+      if (isNaN(d.getTime())) return isoString;
       var now = new Date();
       var diffMs = now - d;
       var diffMins = Math.floor(diffMs / 60000);
@@ -1329,7 +1303,7 @@
     var text = Editor.getText();
     if (!text || text.trim().length === 0) return;
 
-    ttsUtterance = new SpeechSynthesisUtterance(text);
+    ttsUtterance = new window.SpeechSynthesisUtterance(text);
     ttsUtterance.lang = 'en-GB';
     ttsUtterance.rate = 0.95;
 
@@ -1485,7 +1459,10 @@
     var rules = getStoredRules();
     rulesList.innerHTML = '';
     if (rules.length === 0) {
-      rulesList.innerHTML = '<p class="rules-empty">No custom rules yet.</p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'rules-empty';
+      emptyP.textContent = 'No custom rules yet.';
+      rulesList.appendChild(emptyP);
       return;
     }
     rules.forEach(function (rule) {
@@ -1536,10 +1513,6 @@
   function updateAIEnabledUI() {
     if (!AI_ENABLED) {
       sensitivityToggle.parentElement.style.display = 'none';
-      checkNowBtn.style.display = 'none';
-      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
-        checkNowBtn.previousElementSibling.style.display = 'none';
-      }
       if (aiAllowanceBar) {
         aiAllowanceBar.style.display = 'none';
         var aiHeading = aiAllowanceBar.previousElementSibling;
@@ -1551,10 +1524,6 @@
       if (aiRuleSection) aiRuleSection.hidden = true;
     } else {
       sensitivityToggle.parentElement.style.display = '';
-      checkNowBtn.style.display = '';
-      if (checkNowBtn.previousElementSibling && checkNowBtn.previousElementSibling.classList.contains('toolbar-divider')) {
-        checkNowBtn.previousElementSibling.style.display = '';
-      }
       if (aiAllowanceBar) {
         aiAllowanceBar.style.display = '';
         var aiHeading2 = aiAllowanceBar.previousElementSibling;

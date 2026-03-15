@@ -164,7 +164,14 @@ const Reports = (function () {
     containerEl.innerHTML = '';
 
     if (lastSentences.length === 0) {
-      containerEl.innerHTML = '<p class="report-empty">Start writing to see sentence-by-sentence analysis.<br><small>This report shows sentence lengths and highlights sentences over ' + TARGET_MAX + ' words.</small></p>';
+      var emptyP = document.createElement('p');
+      emptyP.className = 'report-empty';
+      emptyP.textContent = 'Start writing to see sentence-by-sentence analysis.';
+      var small = document.createElement('small');
+      small.textContent = 'This report shows sentence lengths and highlights sentences over ' + TARGET_MAX + ' words.';
+      emptyP.appendChild(document.createElement('br'));
+      emptyP.appendChild(small);
+      containerEl.appendChild(emptyP);
       return;
     }
 
@@ -200,7 +207,11 @@ const Reports = (function () {
     // Target line label
     var targetLabel = document.createElement('div');
     targetLabel.className = 'report-target-label';
-    targetLabel.innerHTML = '<span class="report-target-line-key" aria-hidden="true"></span> ' + TARGET_MAX + ' word target (GOV.UK)';
+    var targetKey = document.createElement('span');
+    targetKey.className = 'report-target-line-key';
+    targetKey.setAttribute('aria-hidden', 'true');
+    targetLabel.appendChild(targetKey);
+    targetLabel.appendChild(document.createTextNode(' ' + TARGET_MAX + ' word target (GOV.UK)'));
     containerEl.appendChild(targetLabel);
 
     // Bar chart

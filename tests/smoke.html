@@ -118,18 +118,26 @@
     function renderResults() {
       var passed = results.filter(function (r) { return r.pass; }).length;
       var failed = results.length - passed;
-      resultsEl.innerHTML = results.map(function (r) {
-        var cls = r.pass ? 'pass' : 'fail';
-        var icon = r.pass ? '\u2713' : '\u2717';
-        var extra = r.reason ? ' \u2014 ' + r.reason : '';
-        return '<div class="test-row"><span class="' + cls + '">' + icon + '</span> ' + r.name + extra + '</div>';
-      }).join('');
+      resultsEl.innerHTML = '';
+      results.forEach(function (r) {
+        var row = document.createElement('div');
+        row.className = 'test-row';
+        var icon = document.createElement('span');
+        icon.className = r.pass ? 'pass' : 'fail';
+        icon.textContent = r.pass ? '\u2713' : '\u2717';
+        row.appendChild(icon);
+        row.appendChild(document.createTextNode(' ' + r.name));
+        if (r.reason) {
+          row.appendChild(document.createTextNode(' \u2014 ' + r.reason));
+        }
+        resultsEl.appendChild(row);
+      });
       summaryEl.className = failed > 0 ? 'fail' : 'pass';
       summaryEl.textContent = passed + '/' + results.length + ' passed' + (failed > 0 ? ', ' + failed + ' failed' : '');
     }
 
-    // Run tests after a short delay to let modules initialise
-    setTimeout(function () {
+    // Run tests after modules initialise
+    function runTests() {
       test('Editor module exists', function () {
         return typeof Editor === 'object' && typeof Editor.getText === 'function';
       });
@@ -178,7 +186,13 @@
       });
 
       renderResults();
-    }, 500);
+    }
+    // Wait for all scripts to load before running tests
+    if (document.readyState === 'complete') {
+      setTimeout(runTests, 100);
+    } else {
+      window.addEventListener('load', function () { setTimeout(runTests, 100); });
+    }
   </script>
 </body>
 </html>

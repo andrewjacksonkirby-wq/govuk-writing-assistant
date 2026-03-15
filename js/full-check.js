@@ -5,6 +5,7 @@
  * Results go under "Clarity and style".
  */
 const FullCheck = (function () {
+  'use strict';
   var isRunning = false;
   var idCounter = 0;
   var currentMode = 'govuk'; // 'govuk', 'email', 'chat'
@@ -113,17 +114,17 @@ const FullCheck = (function () {
       return;
     }
 
-    // Check if allowance is exhausted
-    if (isAllowanceExhausted()) {
-      callback(null, 'allowance-exhausted');
-      return;
-    }
-
     isRunning = true;
 
     var useAPI = !config.useSimulation && config.apiEndpoint && config.apiKey;
 
     if (useAPI) {
+      // Only check allowance for real API calls (simulation is free)
+      if (isAllowanceExhausted()) {
+        isRunning = false;
+        callback(null, 'allowance-exhausted');
+        return;
+      }
       runAPI(text, callback);
     } else {
       runSimulation(text, callback);
@@ -272,163 +273,35 @@ const FullCheck = (function () {
   ]);
 
   var ACTIVE_FORMS = {
-    'accepted': 'accepted', 'achieved': 'achieved', 'added': 'added',
-    'addressed': 'addressed', 'adjusted': 'adjusted', 'adopted': 'adopted',
-    'advised': 'advised', 'affected': 'affects', 'agreed': 'agreed',
-    'allowed': 'allows', 'amended': 'amended', 'announced': 'announced',
-    'applied': 'applied', 'appointed': 'appointed', 'approved': 'approved',
-    'arranged': 'arranged', 'asked': 'asked', 'assessed': 'assessed',
-    'assigned': 'assigned', 'assumed': 'assumed', 'attempted': 'attempted',
-    'attended': 'attended', 'authorised': 'authorised', 'awarded': 'awarded',
-    'begun': 'began', 'believed': 'believes', 'blocked': 'blocked',
-    'broken': 'broke', 'brought': 'brought', 'built': 'built',
-    'bought': 'bought', 'calculated': 'calculated', 'called': 'called',
-    'cancelled': 'cancelled', 'captured': 'captured', 'carried': 'carried',
-    'caused': 'caused', 'challenged': 'challenged', 'changed': 'changed',
-    'charged': 'charged', 'checked': 'checked', 'chosen': 'chose',
-    'claimed': 'claimed', 'classified': 'classified', 'cleared': 'cleared',
-    'closed': 'closed', 'collected': 'collected', 'combined': 'combined',
-    'committed': 'committed', 'communicated': 'communicated',
-    'compared': 'compared', 'compensated': 'compensated',
-    'completed': 'completed', 'conducted': 'conducted',
-    'confirmed': 'confirmed', 'connected': 'connected',
-    'considered': 'considered', 'constructed': 'constructed',
-    'consulted': 'consulted', 'contacted': 'contacted',
-    'contained': 'contains', 'controlled': 'controlled',
-    'converted': 'converted', 'corrected': 'corrected',
-    'covered': 'covered', 'created': 'created', 'cut': 'cut',
-    'damaged': 'damaged', 'decided': 'decided', 'declared': 'declared',
-    'delayed': 'delayed', 'delegated': 'delegated', 'delivered': 'delivered',
-    'demonstrated': 'demonstrated', 'denied': 'denied', 'deployed': 'deployed',
-    'described': 'described', 'designed': 'designed', 'destroyed': 'destroyed',
-    'detected': 'detected', 'determined': 'determined', 'developed': 'developed',
-    'directed': 'directed', 'discovered': 'discovered', 'discussed': 'discussed',
-    'dismissed': 'dismissed', 'displayed': 'displayed',
-    'distributed': 'distributed', 'divided': 'divided',
-    'documented': 'documented', 'done': 'did', 'drafted': 'drafted',
-    'drawn': 'drew', 'driven': 'drove', 'dropped': 'dropped',
-    'earned': 'earned', 'edited': 'edited', 'employed': 'employed',
-    'enabled': 'enables', 'encouraged': 'encouraged', 'ended': 'ended',
-    'enforced': 'enforced', 'engaged': 'engaged', 'entered': 'entered',
-    'established': 'established', 'estimated': 'estimated',
-    'evaluated': 'evaluated', 'examined': 'examined', 'exceeded': 'exceeded',
-    'excluded': 'excluded', 'executed': 'executed', 'exempted': 'exempted',
-    'expanded': 'expanded', 'expected': 'expects', 'explained': 'explained',
-    'explored': 'explored', 'exported': 'exported', 'exposed': 'exposed',
-    'expressed': 'expressed', 'extended': 'extended', 'extracted': 'extracted',
-    'facilitated': 'facilitated', 'fed': 'fed', 'filed': 'filed',
-    'filled': 'filled', 'finalised': 'finalised', 'financed': 'financed',
-    'fixed': 'fixed', 'focused': 'focused', 'followed': 'followed',
-    'forbidden': 'forbids', 'forced': 'forced', 'formed': 'formed',
-    'found': 'found', 'frozen': 'froze', 'fulfilled': 'fulfilled',
-    'funded': 'funded', 'gathered': 'gathered', 'generated': 'generated',
-    'given': 'gave', 'governed': 'governs', 'granted': 'granted',
-    'grouped': 'grouped', 'grown': 'grew', 'guaranteed': 'guarantees',
-    'guided': 'guided', 'handled': 'handled', 'heard': 'heard',
-    'held': 'held', 'helped': 'helped', 'hidden': 'hid', 'hired': 'hired',
-    'hit': 'hit', 'hosted': 'hosted', 'identified': 'identified',
-    'ignored': 'ignored', 'illustrated': 'illustrated',
-    'implemented': 'implemented', 'imposed': 'imposed',
-    'improved': 'improved', 'included': 'included',
-    'incorporated': 'incorporated', 'increased': 'increased',
-    'indicated': 'indicates', 'influenced': 'influenced',
-    'informed': 'informed', 'initiated': 'initiated',
-    'inspected': 'inspected', 'installed': 'installed',
-    'instructed': 'instructed', 'intended': 'intends',
-    'introduced': 'introduced', 'investigated': 'investigated',
-    'invited': 'invited', 'involved': 'involves', 'isolated': 'isolated',
-    'issued': 'issued', 'joined': 'joined', 'judged': 'judged',
-    'justified': 'justified', 'kept': 'kept', 'killed': 'killed',
-    'known': 'knows', 'labelled': 'labelled', 'launched': 'launched',
-    'led': 'led', 'left': 'left', 'limited': 'limits', 'linked': 'linked',
-    'listed': 'listed', 'located': 'located', 'locked': 'locked',
-    'lost': 'lost', 'made': 'made', 'maintained': 'maintains',
-    'managed': 'managed', 'manufactured': 'manufactured',
-    'mapped': 'mapped', 'marked': 'marked', 'matched': 'matched',
-    'measured': 'measured', 'mentioned': 'mentioned', 'met': 'met',
-    'mitigated': 'mitigated', 'modified': 'modified',
-    'monitored': 'monitors', 'motivated': 'motivated', 'moved': 'moved',
-    'named': 'named', 'needed': 'needs', 'neglected': 'neglected',
-    'negotiated': 'negotiated', 'nominated': 'nominated', 'noted': 'noted',
-    'notified': 'notified', 'obtained': 'obtained', 'occupied': 'occupied',
-    'offered': 'offered', 'opened': 'opened', 'operated': 'operated',
-    'opposed': 'opposed', 'ordered': 'ordered', 'organised': 'organised',
-    'outsourced': 'outsourced', 'overcome': 'overcame',
-    'overlooked': 'overlooked', 'overseen': 'oversaw', 'owned': 'owns',
-    'paid': 'paid', 'passed': 'passed', 'penalised': 'penalised',
-    'perceived': 'perceives', 'performed': 'performed',
-    'permitted': 'permits', 'placed': 'placed', 'planned': 'planned',
-    'played': 'played', 'pointed': 'pointed', 'positioned': 'positioned',
-    'posted': 'posted', 'postponed': 'postponed', 'practised': 'practised',
-    'predicted': 'predicted', 'prepared': 'prepared',
-    'prescribed': 'prescribed', 'presented': 'presented',
-    'preserved': 'preserved', 'prevented': 'prevents',
-    'prioritised': 'prioritised', 'processed': 'processed',
-    'procured': 'procured', 'produced': 'produced',
-    'programmed': 'programmed', 'prohibited': 'prohibits',
-    'promoted': 'promoted', 'proposed': 'proposed',
-    'prosecuted': 'prosecuted', 'protected': 'protects',
-    'proved': 'proved', 'proven': 'proves', 'provided': 'provided',
-    'published': 'published', 'punished': 'punished',
-    'purchased': 'purchased', 'pursued': 'pursued', 'put': 'put',
-    'questioned': 'questioned', 'quoted': 'quoted', 'raised': 'raised',
-    'reached': 'reached', 'read': 'read', 'realised': 'realised',
-    'received': 'received', 'recognised': 'recognised',
-    'recommended': 'recommends', 'recorded': 'recorded',
-    'recovered': 'recovered', 'recruited': 'recruited',
-    'reduced': 'reduced', 'referred': 'referred', 'refused': 'refused',
-    'registered': 'registered', 'regulated': 'regulates',
-    'rejected': 'rejected', 'related': 'relates', 'released': 'released',
-    'relocated': 'relocated', 'removed': 'removed', 'renewed': 'renewed',
-    'repaired': 'repaired', 'replaced': 'replaced', 'reported': 'reported',
-    'represented': 'represents', 'requested': 'requested',
-    'required': 'requires', 'rescued': 'rescued', 'researched': 'researched',
-    'resolved': 'resolved', 'respected': 'respects',
-    'restricted': 'restricts', 'restructured': 'restructured',
-    'retained': 'retained', 'retrieved': 'retrieved',
-    'returned': 'returned', 'revealed': 'revealed', 'reversed': 'reversed',
-    'reviewed': 'reviewed', 'revised': 'revised', 'revoked': 'revoked',
-    'rewarded': 'rewarded', 'run': 'runs', 'said': 'said', 'saved': 'saved',
-    'scheduled': 'scheduled', 'screened': 'screened', 'secured': 'secured',
-    'seen': 'saw', 'seized': 'seized', 'selected': 'selected',
-    'sent': 'sent', 'separated': 'separated', 'served': 'served',
-    'set': 'set', 'settled': 'settled', 'shaped': 'shaped',
-    'shared': 'shared', 'shifted': 'shifted', 'shown': 'shows',
-    'shut': 'shut', 'signed': 'signed', 'simplified': 'simplified',
-    'sold': 'sold', 'solved': 'solved', 'sought': 'sought',
-    'specified': 'specifies', 'spent': 'spent', 'split': 'split',
-    'spoken': 'spoke', 'sponsored': 'sponsored', 'staffed': 'staffed',
-    'standardised': 'standardised', 'started': 'started', 'stated': 'stated',
-    'stolen': 'stole', 'stopped': 'stopped', 'stored': 'stored',
-    'strengthened': 'strengthened', 'structured': 'structured',
-    'submitted': 'submitted', 'succeeded': 'succeeded',
-    'suggested': 'suggests', 'summarised': 'summarised',
-    'supervised': 'supervised', 'supplied': 'supplied',
-    'supported': 'supports', 'supposed': 'supposes',
-    'suspended': 'suspended', 'sustained': 'sustained', 'sworn': 'swore',
-    'taken': 'took', 'targeted': 'targeted', 'taught': 'taught',
-    'terminated': 'terminated', 'tested': 'tested', 'thought': 'thought',
-    'threatened': 'threatened', 'thrown': 'threw', 'told': 'told',
-    'torn': 'tore', 'tracked': 'tracked', 'trained': 'trained',
-    'transferred': 'transferred', 'transformed': 'transformed',
-    'translated': 'translated', 'transported': 'transported',
-    'treated': 'treated', 'triggered': 'triggered', 'trusted': 'trusts',
-    'turned': 'turned', 'uncovered': 'uncovered', 'undermined': 'undermined',
+    'affected': 'affects', 'allowed': 'allows', 'begun': 'began',
+    'believed': 'believes', 'broken': 'broke', 'chosen': 'chose',
+    'contained': 'contains', 'done': 'did', 'drawn': 'drew',
+    'driven': 'drove', 'enabled': 'enables', 'expected': 'expects',
+    'forbidden': 'forbids', 'frozen': 'froze', 'given': 'gave',
+    'governed': 'governs', 'grown': 'grew', 'guaranteed': 'guarantees',
+    'hidden': 'hid', 'indicated': 'indicates', 'intended': 'intends',
+    'involved': 'involves', 'known': 'knows', 'limited': 'limits',
+    'maintained': 'maintains', 'monitored': 'monitors', 'needed': 'needs',
+    'overcome': 'overcame', 'overseen': 'oversaw', 'owned': 'owns',
+    'perceived': 'perceives', 'permitted': 'permits', 'prevented': 'prevents',
+    'prohibited': 'prohibits', 'protected': 'protects', 'proven': 'proves',
+    'recommended': 'recommends', 'regulated': 'regulates',
+    'related': 'relates', 'represented': 'represents',
+    'required': 'requires', 'respected': 'respects',
+    'restricted': 'restricts', 'run': 'runs', 'seen': 'saw',
+    'shown': 'shows', 'specified': 'specifies', 'spoken': 'spoke',
+    'stolen': 'stole', 'suggested': 'suggests', 'supported': 'supports',
+    'supposed': 'supposes', 'sworn': 'swore', 'taken': 'took',
+    'thrown': 'threw', 'torn': 'tore', 'trusted': 'trusts',
     'understood': 'understands', 'undertaken': 'undertook',
-    'undone': 'undid', 'unified': 'unified', 'updated': 'updated',
-    'upgraded': 'upgraded', 'upheld': 'upheld', 'used': 'uses',
-    'utilised': 'utilised', 'validated': 'validated', 'valued': 'values',
-    'verified': 'verified', 'violated': 'violated', 'visited': 'visited',
-    'wanted': 'wants', 'warned': 'warned', 'wasted': 'wasted',
-    'weakened': 'weakened', 'weighed': 'weighed', 'welcomed': 'welcomed',
-    'widened': 'widened', 'withdrawn': 'withdrew', 'withheld': 'withheld',
-    'witnessed': 'witnessed', 'won': 'won', 'worked': 'worked',
-    'worn': 'wore', 'worsened': 'worsened', 'written': 'wrote'
+    'undone': 'undid', 'used': 'uses', 'valued': 'values',
+    'wanted': 'wants', 'withdrawn': 'withdrew', 'worn': 'wore',
+    'written': 'wrote'
   };
 
   function checkPassiveVoice(text) {
     var results = [];
-    var beVerbs = '(?:is|are|was|were|be|been|being)';
+    var beVerbs = '(?:\\bis\\b|\\bare\\b|\\bwas\\b|\\bwere\\b|\\bbe\\b|\\bbeen\\b|\\bbeing\\b)';
     var adverb = '(?:\\s+\\w+ly)?';
     var regex = new RegExp('\\b(' + beVerbs + ')' + adverb + '\\s+(\\w+)\\b', 'gi');
     var match;
@@ -643,13 +516,17 @@ const FullCheck = (function () {
   function checkParagraphLength(text) {
     var results = [];
     var paragraphs = text.split(/\n\s*\n/);
-    var offset = 0;
+    var searchFrom = 0;
 
     paragraphs.forEach(function (para) {
       var trimmed = para.trim();
       if (!trimmed) {
-        offset += para.length + 1;
         return;
+      }
+
+      var paraPos = text.indexOf(para, searchFrom);
+      if (paraPos >= 0) {
+        searchFrom = paraPos + para.length;
       }
 
       // Count sentences (rough: split on . ! ?)
@@ -658,7 +535,7 @@ const FullCheck = (function () {
       });
 
       if (sentences.length > 5) {
-        var paraStart = text.indexOf(trimmed, offset);
+        var paraStart = text.indexOf(trimmed, paraPos >= 0 ? paraPos : 0);
         if (paraStart >= 0) {
           results.push({
             id: makeId(),
@@ -674,8 +551,6 @@ const FullCheck = (function () {
           });
         }
       }
-
-      offset += para.length + 1;
     });
 
     return results;
@@ -685,8 +560,10 @@ const FullCheck = (function () {
    * Local simulation of AI checks for GOV.UK style issues.
    * This provides useful checks without needing an API.
    */
+  var simTimerId = null;
   function runSimulation(text, callback) {
-    setTimeout(function () {
+    simTimerId = setTimeout(function () {
+      simTimerId = null;
       var results = [];
 
       // Checks for: link text, first person (GOV.UK)
@@ -809,7 +686,7 @@ const FullCheck = (function () {
 
       isRunning = false;
       callback(results, null);
-    }, 800); // Simulate slight delay
+    }, 50); // Minimal yield to avoid blocking UI
   }
 
   // ========== Shared API call helper ==========
@@ -839,7 +716,7 @@ const FullCheck = (function () {
 
     if (config.provider === 'gemini') {
       // Google AI Studio / Gemini API
-      url = config.apiEndpoint + '/models/' + config.model + ':generateContent?key=' + config.apiKey;
+      url = config.apiEndpoint + '/models/' + config.model + ':generateContent?key=' + encodeURIComponent(config.apiKey);
       headers = { 'Content-Type': 'application/json' };
       body = JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
@@ -949,21 +826,31 @@ const FullCheck = (function () {
         callback(null, 'Failed to parse AI response');
         return;
       }
-      var results = issues.map(function (issue) {
-        return {
+      var results = [];
+      if (!Array.isArray(issues)) {
+        isRunning = false;
+        callback(null, 'AI response was not a valid array');
+        return;
+      }
+      issues.forEach(function (issue) {
+        if (typeof issue.start !== 'number' || typeof issue.end !== 'number' ||
+            issue.start < 0 || issue.end > text.length || issue.start >= issue.end) return;
+        var actualText = text.substring(issue.start, issue.end);
+        if (issue.original && actualText !== issue.original) return;
+        results.push({
           id: makeId(),
           ruleId: 'ai-' + (issue.category || 'general').toLowerCase().replace(/\s+/g, '-'),
           source: 'ai',
           group: 'clarity',
           category: issue.category || 'Style',
-          start: issue.start || 0,
-          end: issue.end || 0,
+          start: issue.start,
+          end: issue.end,
           message: issue.message || '',
           title: issue.title || 'Style issue',
           original: issue.original || '',
           replacement: issue.replacement,
           aiEnhanced: true
-        };
+        });
       });
 
       results.sort(function (a, b) { return a.start - b.start; });
@@ -1040,7 +927,9 @@ const FullCheck = (function () {
    * Configure the API endpoint.
    */
   function configure(options) {
-    Object.assign(config, options);
+    ['provider', 'apiEndpoint', 'apiKey', 'model', 'useSimulation'].forEach(function(k) {
+      if (k in options) config[k] = options[k];
+    });
   }
 
   function getIsRunning() {
@@ -1126,6 +1015,10 @@ const FullCheck = (function () {
     getProviders: function () { return PROVIDERS; },
     rewriteTone: rewriteTone,
     generateRule: generateRule,
-    callAPI: callAPI
+    callAPI: callAPI,
+    cancel: function () {
+      if (simTimerId) { clearTimeout(simTimerId); simTimerId = null; }
+      isRunning = false;
+    }
   };
 })();

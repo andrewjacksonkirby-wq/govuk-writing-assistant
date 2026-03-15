@@ -3,9 +3,14 @@
  * Manages the contentEditable editor, text model, and document versioning.
  */
 const Editor = (function () {
+  'use strict';
+
   let editorEl = null;
   let documentVersion = 0;
   let onChangeCallbacks = [];
+
+  // IME composition handling — prevent text corruption during CJK/accent input
+  var isComposing = false;
 
   function init(elementId) {
     editorEl = document.getElementById(elementId);
@@ -29,9 +34,6 @@ const Editor = (function () {
     documentVersion++;
     notifyChange();
   }
-
-  // IME composition handling — prevent text corruption during CJK/accent input
-  var isComposing = false;
 
   let onPasteCallbacks = [];
 
@@ -83,6 +85,7 @@ const Editor = (function () {
     if (!editorEl) return;
     editorEl.innerText = text;
     documentVersion++;
+    notifyChange();
   }
 
   function getVersion() {
@@ -150,6 +153,8 @@ const Editor = (function () {
       sel.removeAllRanges();
       sel.addRange(range);
       insertTextAtSelection(replacement);
+      documentVersion++;
+      notifyChange();
       // Flash the replaced text green so the user sees what changed
       showFixFlash(startOffset, replacement.length);
       return true;
@@ -167,10 +172,26 @@ const Editor = (function () {
    * Find the text node and local offset for a given global character offset.
    */
   function getNodeOffset(root, globalOffset) {
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
+      acceptNode: function (node) {
+        if (node.nodeType === Node.TEXT_NODE) return NodeFilter.FILTER_ACCEPT;
+        if (node.nodeName === 'BR') return NodeFilter.FILTER_ACCEPT;
+        return NodeFilter.FILTER_SKIP;
+      }
+    });
     let remaining = globalOffset;
     let node;
     while ((node = walker.nextNode())) {
+      if (node.nodeName === 'BR') {
+        // A <br> represents a newline character
+        if (remaining <= 1) {
+          // Position just after the BR — find the next text node
+          var nextNode = walker.nextNode();
+          return nextNode ? { node: nextNode, offset: 0 } : null;
+        }
+        remaining -= 1;
+        continue;
+      }
       if (remaining <= node.textContent.length) {
         return { node: node, offset: remaining };
       }
@@ -211,7 +232,7 @@ const Editor = (function () {
 
     if (after) frag.appendChild(document.createTextNode(after));
 
-    editorEl.innerHTML = '';
+    editorEl.textContent = '';
     editorEl.appendChild(frag);
 
     // Scroll to the highlight
@@ -264,9 +285,21 @@ const Editor = (function () {
    *  Layer 1 — structural marks rendered as background-tinted <mark> wrappers
    *  Layer 2 — word-level marks rendered as underlined <mark> elements nested inside
    */
+  var lastMarkFingerprint = '';
+
   function renderUnderlines() {
     if (!editorEl) return;
     var text = getText();
+    if (!text || currentUnderlines.length === 0) {
+      lastMarkFingerprint = '';
+    }
+    // Skip re-render if marks haven't changed (avoids flicker on auto-check)
+    var fp = currentUnderlines.map(function (m) {
+      return m.start + ':' + m.end + ':' + m.ruleId;
+    }).join('|');
+    if (fp === lastMarkFingerprint && fp !== '') return;
+    lastMarkFingerprint = fp;
+
     if (!text || currentUnderlines.length === 0) {
       if (editorEl.querySelector('.issue-underline') || editorEl.querySelector('.structural-mark')) {
         editorEl.textContent = text;
@@ -407,7 +440,7 @@ const Editor = (function () {
 
     // Save cursor, replace content, restore cursor
     var savedOffset = saveCaretOffset();
-    editorEl.innerHTML = '';
+    editorEl.textContent = '';
     editorEl.appendChild(frag);
     if (savedOffset !== null) {
       restoreCaretOffset(savedOffset);

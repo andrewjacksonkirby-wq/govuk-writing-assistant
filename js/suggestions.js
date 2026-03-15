@@ -10,6 +10,8 @@
  *   - Duplicate issues merged into one card
  */
 const Suggestions = (function () {
+  'use strict';
+
   var correctnessSuggestions = [];
   var claritySuggestions = [];
   var dismissedIds = new Set();
@@ -126,9 +128,21 @@ const Suggestions = (function () {
     render();
   }
 
+  function areSuggestionsEqual(a, b) {
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i].start !== b[i].start || a[i].end !== b[i].end ||
+          a[i].ruleId !== b[i].ruleId || a[i].message !== b[i].message) return false;
+    }
+    return true;
+  }
+
   function setClarity(suggestions) {
+    var filtered = suggestions.filter(function (s) { return !isDismissed(s); });
+    // Skip re-render if results haven't changed (avoids flicker on auto-check)
+    if (hasRunFullCheck && areSuggestionsEqual(claritySuggestions, filtered)) return;
     hasRunFullCheck = true;
-    claritySuggestions = suggestions.filter(function (s) { return !isDismissed(s); });
+    claritySuggestions = filtered;
     render();
   }
 
@@ -177,14 +191,10 @@ const Suggestions = (function () {
     if (onDismiss) onDismiss();
   }
 
-  function getSiblingKey(suggestion) {
-    return suggestion.ruleId + ':' + (suggestion.original || '').toLowerCase();
-  }
-
   function getSiblings(suggestion) {
-    var key = getSiblingKey(suggestion);
+    var key = makeDismissKey(suggestion);
     var all = correctnessSuggestions.concat(claritySuggestions);
-    return all.filter(function (s) { return getSiblingKey(s) === key; });
+    return all.filter(function (s) { return makeDismissKey(s) === key; });
   }
 
   function applyAll(suggestion) {
@@ -298,7 +308,7 @@ const Suggestions = (function () {
     var groups = {};
     var order = [];
     suggestions.forEach(function (s) {
-      var key = getSiblingKey(s);
+      var key = makeDismissKey(s);
       if (!groups[key]) {
         groups[key] = [];
         order.push(key);
@@ -312,7 +322,20 @@ const Suggestions = (function () {
 
   // ===== Rendering =====
 
+  var renderTimer = null;
+  function scheduleRender() {
+    if (renderTimer) return;
+    renderTimer = requestAnimationFrame(function () {
+      renderTimer = null;
+      renderNow();
+    });
+  }
+
   function render() {
+    scheduleRender();
+  }
+
+  function renderNow() {
     var all = correctnessSuggestions.concat(claritySuggestions);
 
     // Sort by document position (reading order)
@@ -561,6 +584,8 @@ const Suggestions = (function () {
         applyAllBtn.textContent = 'Fix all (' + siblings.length + ')';
         applyAllBtn.addEventListener('click', function (e) {
           e.stopPropagation();
+          if (applyAllBtn.disabled) return;
+          applyAllBtn.disabled = true;
           applyAll(suggestion);
         });
         actions.appendChild(applyAllBtn);
@@ -665,7 +690,7 @@ const Suggestions = (function () {
     // Find the representative (first in group) which is what the card is keyed on
     var representative = null;
     for (var j = 0; j < all.length; j++) {
-      if (getSiblingKey(all[j]) === groupKey) { representative = all[j]; break; }
+      if (makeDismissKey(all[j]) === groupKey) { representative = all[j]; break; }
     }
     if (!representative) return;
 
@@ -674,7 +699,7 @@ const Suggestions = (function () {
     render();
 
     // Scroll the card into view
-    var cardEl = listEl.querySelector('[data-id="' + representative.id + '"]');
+    var cardEl = listEl.querySelector('[data-id="' + CSS.escape(representative.id) + '"]');
     if (cardEl) {
       cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
@@ -712,6 +737,7 @@ const Suggestions = (function () {
     var utterance = new SpeechSynthesisUtterance(sentence);
     utterance.lang = 'en-GB';
     utterance.rate = 0.9;
+    utterance.onerror = function () { /* TTS is best-effort — ignore failures */ };
     window.speechSynthesis.speak(utterance);
   }
 
