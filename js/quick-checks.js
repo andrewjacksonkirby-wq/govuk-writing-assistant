@@ -50,8 +50,99 @@ const QuickChecks = (function () {
     'close', 'few', 'why', 'let', 'light', 'side', 'try', 'ask', 'door',
     'large', 'move', 'tell', 'came', 'best', 'night', 'hard', 'kind', 'begin',
     'far', 'away', 'story', 'read', 'little', 'number', 'group', 'always',
-    'got', 'young', 'able', 'face', 'form', 'system', 'look', 'area', 'order'
+    'got', 'young', 'able', 'face', 'form', 'system', 'look', 'area', 'order',
+    // Colors, numbers, directions
+    'red', 'blue', 'green', 'white', 'black', 'brown', 'yellow', 'orange',
+    'pink', 'grey', 'gray', 'purple', 'clear', 'three', 'four', 'five', 'six',
+    'seven', 'eight', 'nine', 'ten', 'hundred', 'thousand', 'million',
+    'north', 'south', 'east', 'west',
+    // Body, people, family
+    'eye', 'girl', 'boy', 'man', 'woman', 'child', 'baby', 'mother', 'father',
+    'family', 'friend', 'person', 'brother', 'sister', 'heart', 'body',
+    // Nature, places, things
+    'food', 'tree', 'book', 'word', 'water', 'fire', 'earth', 'air', 'sun',
+    'moon', 'star', 'rain', 'snow', 'wind', 'rock', 'plant', 'flower',
+    'river', 'land', 'field', 'road', 'street', 'town', 'city', 'country',
+    'house', 'room', 'door', 'wall', 'floor', 'table', 'car', 'boat',
+    // Common verbs / adjectives / adverbs
+    'love', 'free', 'true', 'sure', 'done', 'gone', 'seen', 'feel', 'live',
+    'mean', 'full', 'plan', 'grow', 'game', 'build', 'half', 'hold', 'whole',
+    'stop', 'fast', 'near', 'late', 'early', 'along', 'pay', 'walk', 'deal',
+    'lead', 'stand', 'dark', 'note', 'past', 'buy', 'bit', 'war', 'job',
+    'wait', 'watch', 'bring', 'meet', 'learn', 'hear', 'leave', 'fall',
+    'send', 'speak', 'join', 'pick', 'pull', 'push', 'reach', 'rest',
+    'rise', 'save', 'serve', 'sit', 'step', 'win', 'wish', 'wrong',
+    'break', 'spend', 'fill', 'kill', 'die', 'cut', 'drop', 'drive',
+    'catch', 'draw', 'eat', 'fly', 'hit', 'lay', 'lose', 'miss', 'pass',
+    'raise', 'sell', 'share', 'sign', 'sing', 'sleep', 'smile', 'study',
+    'talk', 'teach', 'throw', 'touch', 'train', 'travel', 'visit', 'wear',
+    'wonder', 'worry', 'act', 'add', 'answer', 'appear', 'apply', 'bear',
+    'carry', 'check', 'choose', 'continue', 'cover', 'create', 'cross',
+    'decide', 'describe', 'develop', 'die', 'effect', 'enjoy', 'enter',
+    'expect', 'explain', 'express', 'fail', 'fight', 'finish', 'fit',
+    'follow', 'force', 'forget', 'happen', 'hate', 'hope', 'imagine',
+    'include', 'increase', 'interest', 'involve', 'kill', 'lie', 'listen',
+    'manage', 'matter', 'measure', 'mention', 'mind', 'notice', 'offer',
+    'produce', 'promise', 'protect', 'prove', 'provide', 'publish', 'record',
+    'reduce', 'refuse', 'remain', 'remember', 'remove', 'repeat', 'report',
+    'require', 'return', 'ring', 'rock', 'roll', 'rule', 'shall', 'shoot',
+    'sound', 'spread', 'stick', 'strike', 'suggest', 'support', 'suppose',
+    'surprise', 'test', 'thank', 'treat', 'turn', 'unless', 'until',
+    // Common adjectives / adverbs
+    'able', 'bad', 'beautiful', 'best', 'better', 'certain', 'cold',
+    'common', 'complete', 'correct', 'deep', 'different', 'difficult',
+    'dry', 'easy', 'empty', 'enough', 'entire', 'exact', 'extra', 'fair',
+    'far', 'final', 'fine', 'flat', 'front', 'general', 'glad', 'gold',
+    'happy', 'hard', 'heavy', 'hot', 'huge', 'important', 'inside',
+    'kind', 'known', 'likely', 'main', 'major', 'modern', 'natural',
+    'necessary', 'nice', 'normal', 'obvious', 'original', 'own', 'particular',
+    'perfect', 'physical', 'plain', 'pleasant', 'poor', 'popular', 'possible',
+    'present', 'pretty', 'private', 'proper', 'public', 'quick', 'quiet',
+    'ready', 'real', 'recent', 'rich', 'rough', 'round', 'safe', 'secret',
+    'serious', 'sharp', 'short', 'sick', 'silent', 'silly', 'simple',
+    'single', 'slight', 'slow', 'smooth', 'soft', 'solid', 'sorry',
+    'special', 'strange', 'strong', 'sudden', 'sweet', 'tall', 'thick',
+    'thin', 'tight', 'tiny', 'top', 'total', 'tough', 'usual', 'useful',
+    'warm', 'weak', 'wide', 'wild', 'wise', 'worth', 'wrong', 'young',
+    // Common nouns
+    'age', 'art', 'bank', 'ball', 'band', 'base', 'bed', 'bill', 'blood',
+    'board', 'born', 'box', 'brain', 'bread', 'bus', 'case', 'cat', 'cause',
+    'center', 'chance', 'church', 'class', 'club', 'cold', 'college',
+    'colour', 'color', 'company', 'cost', 'course', 'court', 'cup', 'dance',
+    'date', 'death', 'desk', 'dinner', 'doctor', 'dog', 'dream', 'dress',
+    'drink', 'dust', 'edge', 'energy', 'engine', 'evening', 'event', 'fact',
+    'fear', 'figure', 'film', 'fish', 'foot', 'garden', 'glass', 'god',
+    'gold', 'gun', 'hair', 'hat', 'health', 'hill', 'history', 'horse',
+    'hotel', 'hour', 'ice', 'idea', 'image', 'island', 'issue', 'key',
+    'king', 'kitchen', 'knowledge', 'lake', 'law', 'letter', 'level',
+    'library', 'life', 'list', 'lot', 'lunch', 'machine', 'map', 'market',
+    'mark', 'mass', 'match', 'matter', 'meat', 'meeting', 'member', 'metal',
+    'method', 'middle', 'minute', 'model', 'moment', 'money', 'month',
+    'morning', 'mouth', 'music', 'news', 'nose', 'object', 'office', 'oil',
+    'opinion', 'outside', 'page', 'pain', 'pair', 'paper', 'park', 'party',
+    'peace', 'phone', 'picture', 'piece', 'place', 'plate', 'play', 'point',
+    'police', 'pool', 'position', 'pound', 'power', 'price', 'problem',
+    'program', 'project', 'queen', 'question', 'race', 'reason', 'result',
+    'ring', 'risk', 'school', 'sea', 'season', 'seat', 'sense', 'shape',
+    'ship', 'shirt', 'shoe', 'shop', 'sight', 'size', 'skill', 'skin',
+    'smile', 'smoke', 'snow', 'sort', 'soul', 'space', 'speed', 'sport',
+    'spring', 'square', 'stage', 'stone', 'store', 'street', 'student',
+    'stuff', 'subject', 'summer', 'team', 'test', 'thought', 'title',
+    'today', 'tomorrow', 'tonight', 'tool', 'town', 'trade', 'trouble',
+    'trust', 'truth', 'type', 'unit', 'value', 'view', 'voice', 'wall',
+    'watch', 'week', 'weight', 'wife', 'window', 'winter', 'wood',
+    'writing', 'wrong', 'yard', 'yesterday'
   ]);
+
+  // Returns true if all characters of s appear in t in order (s is a subsequence of t).
+  // Used to detect missing-letter typos: e.g. "geen" is a subsequence of "green".
+  function isSubsequence(s, t) {
+    var si = 0;
+    for (var ti = 0; ti < t.length && si < s.length; ti++) {
+      if (s[si] === t[ti]) si++;
+    }
+    return si === s.length;
+  }
 
   function levenshtein(a, b) {
     if (a === b) return 0;
@@ -1459,6 +1550,11 @@ const QuickChecks = (function () {
     var origLen = lower.length;
     results.sort(function (a, b) {
       if (a.dist !== b.dist) return a.dist - b.dist;
+      // Prefer candidates where the input is a subsequence (missing-letter typo)
+      // e.g. "geen" → "green" (missing 'r') over "geen" → "been" (wrong key)
+      var aSub = isSubsequence(lower, a.word) ? 0 : 1;
+      var bSub = isSubsequence(lower, b.word) ? 0 : 1;
+      if (aSub !== bSub) return aSub - bSub;
       // Prefer common/high-frequency words over rare ones at equal distance
       var aCommon = commonWords.has(a.word) ? 0 : 1;
       var bCommon = commonWords.has(b.word) ? 0 : 1;
