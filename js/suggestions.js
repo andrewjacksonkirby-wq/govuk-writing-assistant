@@ -268,7 +268,7 @@ const Suggestions = (function () {
     scoreRingFill.style.strokeDashoffset = offset;
 
     // Color
-    scoreRingFill.className = 'score-ring-fill';
+    scoreRingFill.setAttribute('class', 'score-ring-fill');
     var scoreLabel;
     if (score >= 80) { scoreRingFill.classList.add('score-good'); scoreLabel = 'Good'; }
     else if (score >= 60) { scoreRingFill.classList.add('score-ok'); scoreLabel = 'OK'; }
@@ -685,7 +685,7 @@ const Suggestions = (function () {
     if (!found) return;
 
     // Find the deduplication group key for this suggestion
-    var groupKey = getSiblingKey(found);
+    var groupKey = makeDismissKey(found);
 
     // Find the representative (first in group) which is what the card is keyed on
     var representative = null;
