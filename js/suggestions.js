@@ -549,8 +549,39 @@ const Suggestions = (function () {
     msgEl.textContent = suggestion.message;
     body.appendChild(msgEl);
 
-    // Replacement preview
-    if (suggestion.replacement != null && suggestion.original) {
+    // Replacement preview — alternatives or single
+    var hasAlternatives = suggestion.alternatives && suggestion.alternatives.length > 1;
+    if (hasAlternatives && suggestion.original) {
+      var altContainer = document.createElement('div');
+      altContainer.className = 'suggestion-alternatives';
+      var origSpan = document.createElement('span');
+      origSpan.className = 'original';
+      origSpan.textContent = suggestion.original;
+      altContainer.appendChild(origSpan);
+      var arrowSpan = document.createElement('span');
+      arrowSpan.className = 'arrow';
+      arrowSpan.textContent = ' \u2192 ';
+      altContainer.appendChild(arrowSpan);
+      suggestion.alternatives.forEach(function (alt, idx) {
+        var altBtn = document.createElement('button');
+        altBtn.type = 'button';
+        altBtn.className = idx === 0 ? 'btn btn-primary btn-sm alt-btn' : 'btn btn-secondary btn-sm alt-btn';
+        altBtn.textContent = alt;
+        altBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          suggestion.replacement = alt;
+          if (onApply) onApply(suggestion);
+          correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
+          if (expandedCardId === suggestion.id) expandedCardId = null;
+          render();
+          if (onDismiss) onDismiss();
+        });
+        altContainer.appendChild(altBtn);
+      });
+      body.appendChild(altContainer);
+    } else if (suggestion.replacement != null && suggestion.original) {
       var preview = document.createElement('div');
       preview.className = 'suggestion-preview';
       preview.innerHTML =
@@ -576,7 +607,7 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
-    if (suggestion.replacement != null) {
+    if (suggestion.replacement != null && !hasAlternatives) {
       if (hasSiblings) {
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
