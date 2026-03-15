@@ -3523,7 +3523,10 @@ const QuickChecks = (function () {
           original: match[0].trim()
         };
         if (rule.alts && rule.alts.length > 1) {
-          entry.alternatives = rule.alts;
+          var isUpper = match[0][0] === match[0][0].toUpperCase();
+          entry.alternatives = rule.alts.map(function (a) {
+            return isUpper ? a.charAt(0).toUpperCase() + a.slice(1) : a;
+          });
         }
         results.push(entry);
       }
