@@ -1439,9 +1439,16 @@ const QuickChecks = (function () {
       }
     }
 
-    // Sort by distance, then alphabetically
+    // Sort by distance, then prefer words closer in length to the original,
+    // then prefer longer words (insertions are more common typos than deletions)
+    var origLen = lower.length;
     results.sort(function (a, b) {
       if (a.dist !== b.dist) return a.dist - b.dist;
+      var aLenDiff = Math.abs(a.word.length - origLen);
+      var bLenDiff = Math.abs(b.word.length - origLen);
+      if (aLenDiff !== bLenDiff) return aLenDiff - bLenDiff;
+      // Prefer longer words when length diff is the same (e.g. both +1/-1)
+      if (a.word.length !== b.word.length) return b.word.length - a.word.length;
       return a.word < b.word ? -1 : 1;
     });
 
