@@ -36,6 +36,35 @@ const Suggestions = (function () {
   var DISMISSED_KEY = 'govuk-wa-dismissed';
 
   /**
+   * Category-based explanation lookup.
+   * Compact map — one explanation per category instead of duplicating across ~348 rules.
+   */
+  var CATEGORY_EXPLANATIONS = {
+    'Spelling':           'Check spelling using the Oxford Dictionary for Writers and Editors.',
+    'Grammar':            'Use correct grammar so your meaning is clear first time.',
+    'Punctuation':        'GOV.UK uses minimal punctuation — no Oxford commas, semicolons only when necessary.',
+    'Capitalisation':     'GOV.UK avoids unnecessary capitals. Only capitalise proper nouns and specific titles.',
+    'Style':              'Follow the GOV.UK style guide for consistent, user-friendly language.',
+    'GOV.UK style':       'Follow the GOV.UK style guide for words and formatting that users expect on government services.',
+    'Plain English':      'Use plain English. Replace jargon and formal language with simpler alternatives.',
+    'Contractions':       'GOV.UK uses contractions like "you\u2019re" and "can\u2019t" to keep the tone conversational.',
+    'Numbers':            'Spell out one to nine. Use digits for 10 and above, following GOV.UK number style.',
+    'Number formatting':  'Format numbers consistently — use commas for thousands and write units in full.',
+    'Date format':        'Write dates as "1 January 2024" — no st/nd/rd/th, no leading zeros.',
+    'Time formatting':    'Use "am" and "pm" (no full stops), for example "9:30am" or "5pm".',
+    'Abbreviations':      'Spell out abbreviations the first time you use them, unless they are well known.',
+    'Lists':              'Use bullet points for lists. Start each item with a lowercase letter; no full stops unless they are sentences.',
+    'Custom rule':        'This rule was added by your organisation\u2019s custom style settings.',
+    'Passive voice':      'Use active sentences — they are clearer and more direct than passive ones.',
+    'Sentence length':    'Keep sentences short. Aim for an average of 15 to 20 words per sentence.',
+    'Tone':               'Write in a tone that is direct, informative and suited to your audience.',
+    'Word choice':        'Choose simpler, more familiar words so all users can understand your content.',
+    'Readability':        'Write at a reading level that your whole audience can follow — aim for age 9 reading level.',
+    'Links':              'Make link text descriptive. Avoid "click here" — say where the link goes.',
+    'Length':             'Keep your content concise. Remove anything that does not help the user.'
+  };
+
+  /**
    * Map ruleIds/groups to display categories.
    */
   function getCardCategory(suggestion) {
@@ -548,6 +577,15 @@ const Suggestions = (function () {
     msgEl.className = 'suggestion-message';
     msgEl.textContent = suggestion.message;
     body.appendChild(msgEl);
+
+    // Category explanation (GOV.UK style block-quote)
+    var explanationText = CATEGORY_EXPLANATIONS[suggestion.category];
+    if (explanationText) {
+      var explEl = document.createElement('blockquote');
+      explEl.className = 'suggestion-explanation';
+      explEl.textContent = explanationText;
+      body.appendChild(explEl);
+    }
 
     // Replacement preview — alternatives or single
     var hasAlternatives = suggestion.alternatives && suggestion.alternatives.length > 1;
