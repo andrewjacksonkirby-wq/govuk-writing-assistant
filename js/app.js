@@ -294,7 +294,7 @@
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
         if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
         if (toneModal && !toneModal.hidden) { toneModal.hidden = true; releaseFocus(); return; }
-        if (!customRulesModal.hidden) { customRulesModal.hidden = true; releaseFocus(); return; }
+        if (!customRulesModal.hidden) { customRulesModal.hidden = true; releaseFocus(); cancelEditRule(); return; }
         if (shortcutsModal && !shortcutsModal.hidden) { shortcutsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
         return;
@@ -489,9 +489,9 @@
       renderCustomRules();
       trapFocus(customRulesModal);
     });
-    closeRulesModal.addEventListener('click', function () { customRulesModal.hidden = true; releaseFocus(); });
+    closeRulesModal.addEventListener('click', function () { customRulesModal.hidden = true; releaseFocus(); cancelEditRule(); });
     customRulesModal.addEventListener('click', function (e) {
-      if (e.target === customRulesModal) { customRulesModal.hidden = true; releaseFocus(); }
+      if (e.target === customRulesModal) { customRulesModal.hidden = true; releaseFocus(); cancelEditRule(); }
     });
     ruleAddBtn.addEventListener('click', addCustomRule);
     rulePhrase.addEventListener('keydown', function (e) {
@@ -1398,6 +1398,7 @@
 
   // ========== Custom style rules ==========
   var RULES_STORAGE_KEY = 'wa-custom-rules';
+  var editingRuleId = null;
 
   function getStoredRules() {
     try {
@@ -1423,8 +1424,25 @@
     if (!phrase) return;
     var rules = getStoredRules();
     var lower = phrase.toLowerCase();
-    var exists = rules.some(function (r) { return r.phrase.toLowerCase() === lower; });
+    var exists = rules.some(function (r) { return r.phrase.toLowerCase() === lower && r.id !== editingRuleId; });
     if (exists) return;
+
+    if (editingRuleId) {
+      rules.forEach(function (r) {
+        if (r.id === editingRuleId) {
+          r.phrase = phrase;
+          r.replacement = (ruleReplacement.value || '').trim() || null;
+          r.message = (ruleMessage.value || '').trim() || 'Custom rule: consider replacing "' + phrase + '"';
+        }
+      });
+      saveStoredRules(rules);
+      loadCustomRules();
+      recheckNow();
+      cancelEditRule();
+      renderCustomRules();
+      return;
+    }
+
     rules.push({
       id: 'cr_' + Date.now(),
       phrase: phrase,
@@ -1457,6 +1475,40 @@
     loadCustomRules();
     recheckNow();
     renderCustomRules();
+  }
+
+  function editCustomRule(id) {
+    var rules = getStoredRules();
+    var rule = null;
+    for (var i = 0; i < rules.length; i++) {
+      if (rules[i].id === id) { rule = rules[i]; break; }
+    }
+    if (!rule) return;
+    editingRuleId = id;
+    rulePhrase.value = rule.phrase;
+    ruleReplacement.value = rule.replacement || '';
+    ruleMessage.value = rule.message || '';
+    ruleAddBtn.textContent = 'Save changes';
+    if (!document.getElementById('ruleCancelBtn')) {
+      var cancelBtn = document.createElement('button');
+      cancelBtn.type = 'button';
+      cancelBtn.className = 'btn btn-secondary btn-sm';
+      cancelBtn.id = 'ruleCancelBtn';
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.addEventListener('click', cancelEditRule);
+      ruleAddBtn.parentNode.insertBefore(cancelBtn, ruleAddBtn.nextSibling);
+    }
+    rulePhrase.focus();
+  }
+
+  function cancelEditRule() {
+    editingRuleId = null;
+    rulePhrase.value = '';
+    ruleReplacement.value = '';
+    ruleMessage.value = '';
+    ruleAddBtn.textContent = 'Add rule';
+    var cancelBtn = document.getElementById('ruleCancelBtn');
+    if (cancelBtn) cancelBtn.remove();
   }
 
   function renderCustomRules() {
@@ -1493,6 +1545,15 @@
 
       var actions = document.createElement('div');
       actions.className = 'rules-item-actions';
+      var editBtn = document.createElement('button');
+      editBtn.type = 'button';
+      editBtn.className = 'btn btn-sm';
+      editBtn.textContent = 'Edit';
+      editBtn.setAttribute('aria-label', 'Edit rule for "' + rule.phrase + '"');
+      editBtn.addEventListener('click', (function (ruleId) {
+        return function () { editCustomRule(ruleId); };
+      })(rule.id));
+      actions.appendChild(editBtn);
       var toggleBtn = document.createElement('button');
       toggleBtn.type = 'button';
       toggleBtn.className = 'btn btn-sm';
