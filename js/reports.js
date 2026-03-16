@@ -161,6 +161,7 @@ const Reports = (function () {
 
   function render() {
     if (!containerEl) return;
+    var savedScroll = containerEl.scrollTop;
     containerEl.innerHTML = '';
 
     if (lastSentences.length === 0) {
@@ -343,6 +344,7 @@ const Reports = (function () {
 
       containerEl.appendChild(section);
     }
+    containerEl.scrollTop = savedScroll;
   }
 
   function makeStat(value, label, status) {
