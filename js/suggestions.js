@@ -396,6 +396,7 @@ const Suggestions = (function () {
     }
 
     // Render cards
+    var savedScroll = listEl.scrollTop;
     listEl.innerHTML = '';
 
     if (filtered.length === 0) {
@@ -430,6 +431,7 @@ const Suggestions = (function () {
     deduped.forEach(function (d) {
       listEl.appendChild(createCard(d.suggestion, d.siblings));
     });
+    listEl.scrollTop = savedScroll;
   }
 
   // ===== Context snippets =====
