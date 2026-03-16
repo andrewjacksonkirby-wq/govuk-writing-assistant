@@ -1822,9 +1822,52 @@ const QuickChecks = (function () {
    * Check for common grammar issues, plain English, and GOV.UK style.
    * Each pattern has its own category and title for distinct card display.
    */
-  function checkCommonGrammar(text) {
-    var results = [];
-    var patterns = [
+  /**
+   * Generate a stable key for a built-in rule pattern.
+   * Uses the regex source + fix value to create a short deterministic ID.
+   */
+  function patternKey(pat) {
+    var src = pat.regex.source.replace(/[^a-zA-Z0-9]/g, '').slice(0, 40);
+    var fix = (pat.fix || 'none').replace(/[^a-zA-Z0-9]/g, '');
+    return 'bi_' + src + '_' + fix;
+  }
+
+  /**
+   * Returns the built-in grammar/style rules as an array of plain objects
+   * for display in the UI. Each item has: key, phrase, fix, msg, cat, title, modes.
+   */
+  function getBuiltinRules() {
+    return grammarPatterns.map(function (pat) {
+      // Extract a human-readable phrase from the regex
+      var phrase = pat.regex.source
+        .replace(/\\b/g, '')
+        .replace(/\(\?![^)]*\)/g, '')
+        .replace(/\(\?=[^)]*\)/g, '')
+        .replace(/\((?:\?:)?/g, '')
+        .replace(/\)/g, '')
+        .replace(/\[^\\s\]\+/g, '…')
+        .replace(/\\s\+/g, ' ')
+        .replace(/\\s/g, ' ')
+        .replace(/\|/g, ' / ')
+        .replace(/\?\+/g, '')
+        .replace(/[?*+{}[\]^$]/g, '')
+        .replace(/\\/g, '')
+        .trim();
+      return {
+        key: patternKey(pat),
+        phrase: phrase,
+        fix: pat.fix || null,
+        msg: pat.msg,
+        cat: pat.cat,
+        title: pat.title,
+        modes: pat.modes || null,
+        group: pat.group || 'correctness',
+        enabled: !isBuiltinRuleDisabled(patternKey(pat))
+      };
+    });
+  }
+
+  var grammarPatterns = [
       // --- Grammar errors ---
       { regex: /\b(must of)\b/gi, fix: 'must have', msg: 'Use "must have" instead of "must of"', cat: 'Grammar', title: 'Grammar error' },
       { regex: /\b(alright)\b/gi, fix: 'all right', msg: 'GOV.UK style uses "all right" not "alright"', cat: 'GOV.UK style', title: 'GOV.UK style', group: 'style', modes: ['govuk'] },
@@ -2216,11 +2259,17 @@ const QuickChecks = (function () {
       { regex: /\b(deemed to be)\b/gi, fix: 'treated as', msg: 'Use "treated as" or "counted as" instead of "deemed to be"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(irrespective of)\b/gi, fix: 'no matter', msg: 'Use "no matter" or "regardless of" instead of "irrespective of"', cat: 'Plain English', title: 'Use plain English' },
       { regex: /\b(with respect to)\b/gi, fix: 'about', msg: 'Use "about" instead of "with respect to"', cat: 'Plain English', title: 'Use plain English' }
-    ];
+  ];
 
-    patterns.forEach(function (pat) {
+  function checkCommonGrammar(text) {
+    var results = [];
+
+    grammarPatterns.forEach(function (pat) {
       // Skip mode-restricted patterns
       if (pat.modes && pat.modes.indexOf(currentMode) === -1) return;
+      // Skip disabled built-in rules
+      var key = patternKey(pat);
+      if (isBuiltinRuleDisabled(key)) return;
 
       var match;
       while ((match = pat.regex.exec(text)) !== null) {
@@ -3889,6 +3938,21 @@ const QuickChecks = (function () {
     return customDictSet.has(word.toLowerCase());
   }
 
+  // ========== Disabled built-in rules ==========
+  var disabledBuiltinRules = new Set();
+
+  function setDisabledBuiltinRules(idsArray) {
+    disabledBuiltinRules = new Set(Array.isArray(idsArray) ? idsArray : []);
+  }
+
+  function getDisabledBuiltinRules() {
+    return Array.from(disabledBuiltinRules);
+  }
+
+  function isBuiltinRuleDisabled(ruleKey) {
+    return disabledBuiltinRules.has(ruleKey);
+  }
+
   // ========== Custom style rules ==========
   var customRules = [];
 
@@ -3947,6 +4011,9 @@ const QuickChecks = (function () {
     isInCustomDictionary: isInCustomDictionary,
     isDictionaryLoaded: function () { return dictLoaded && wordSet !== null; },
     setCustomRules: setCustomRules,
-    getCustomRules: getCustomRules
+    getCustomRules: getCustomRules,
+    getBuiltinRules: getBuiltinRules,
+    setDisabledBuiltinRules: setDisabledBuiltinRules,
+    getDisabledBuiltinRules: getDisabledBuiltinRules
   };
 })();

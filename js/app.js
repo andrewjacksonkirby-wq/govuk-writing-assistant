@@ -487,6 +487,7 @@
     customRulesBtn.addEventListener('click', function () {
       customRulesModal.hidden = false;
       renderCustomRules();
+      renderBuiltinRules();
       trapFocus(customRulesModal);
     });
     closeRulesModal.addEventListener('click', function () { customRulesModal.hidden = true; releaseFocus(); cancelEditRule(); });
@@ -500,6 +501,17 @@
 
     // Load custom rules into QuickChecks
     loadCustomRules();
+
+    // ========== Built-in rules viewer ==========
+    loadDisabledBuiltinRules();
+    var builtinRulesSearch = document.getElementById('builtinRulesSearch');
+    var builtinRulesCatFilter = document.getElementById('builtinRulesCatFilter');
+    if (builtinRulesSearch) {
+      builtinRulesSearch.addEventListener('input', renderBuiltinRules);
+    }
+    if (builtinRulesCatFilter) {
+      builtinRulesCatFilter.addEventListener('change', renderBuiltinRules);
+    }
 
     // Init AI allowance meter (AI only)
     if (AI_ENABLED) {
@@ -1573,6 +1585,134 @@
       rulesList.appendChild(row);
     });
     rulesList.scrollTop = savedScroll;
+  }
+
+  // ========== Built-in rules viewer ==========
+  var DISABLED_BUILTIN_KEY = 'wa-disabled-builtin-rules';
+
+  function loadDisabledBuiltinRules() {
+    try {
+      var stored = localStorage.getItem(DISABLED_BUILTIN_KEY);
+      if (stored) {
+        var ids = JSON.parse(stored);
+        if (typeof QuickChecks.setDisabledBuiltinRules === 'function') {
+          QuickChecks.setDisabledBuiltinRules(ids);
+        }
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function saveDisabledBuiltinRules() {
+    if (typeof QuickChecks.getDisabledBuiltinRules === 'function') {
+      var ids = QuickChecks.getDisabledBuiltinRules();
+      localStorage.setItem(DISABLED_BUILTIN_KEY, JSON.stringify(ids));
+    }
+  }
+
+  function toggleBuiltinRule(key) {
+    if (typeof QuickChecks.getDisabledBuiltinRules !== 'function') return;
+    var disabled = QuickChecks.getDisabledBuiltinRules();
+    var idx = disabled.indexOf(key);
+    if (idx === -1) {
+      disabled.push(key);
+    } else {
+      disabled.splice(idx, 1);
+    }
+    QuickChecks.setDisabledBuiltinRules(disabled);
+    saveDisabledBuiltinRules();
+    recheckNow();
+    renderBuiltinRules();
+  }
+
+  function renderBuiltinRules() {
+    var listEl = document.getElementById('builtinRulesList');
+    var footerEl = document.getElementById('builtinRulesFooter');
+    var searchEl = document.getElementById('builtinRulesSearch');
+    var catEl = document.getElementById('builtinRulesCatFilter');
+    if (!listEl || typeof QuickChecks.getBuiltinRules !== 'function') return;
+
+    var rules = QuickChecks.getBuiltinRules();
+    var query = (searchEl ? searchEl.value : '').toLowerCase().trim();
+    var catFilter = catEl ? catEl.value : 'all';
+
+    // Filter
+    var filtered = rules.filter(function (r) {
+      if (catFilter !== 'all' && r.cat !== catFilter) return false;
+      if (query) {
+        var searchable = (r.phrase + ' ' + r.msg + ' ' + (r.fix || '') + ' ' + r.cat).toLowerCase();
+        if (searchable.indexOf(query) === -1) return false;
+      }
+      return true;
+    });
+
+    var savedScroll = listEl.scrollTop;
+    listEl.innerHTML = '';
+
+    if (filtered.length === 0) {
+      var emptyP = document.createElement('p');
+      emptyP.className = 'rules-empty';
+      emptyP.style.padding = '12px';
+      emptyP.textContent = query || catFilter !== 'all' ? 'No rules match your search.' : 'No built-in rules found.';
+      listEl.appendChild(emptyP);
+      if (footerEl) footerEl.textContent = '';
+      return;
+    }
+
+    filtered.forEach(function (rule) {
+      var row = document.createElement('div');
+      row.className = 'builtin-rule-row' + (rule.enabled ? '' : ' builtin-rule-disabled');
+
+      var toggle = document.createElement('input');
+      toggle.type = 'checkbox';
+      toggle.className = 'builtin-rule-toggle';
+      toggle.checked = rule.enabled;
+      toggle.title = rule.enabled ? 'Disable this rule' : 'Enable this rule';
+      toggle.setAttribute('aria-label', (rule.enabled ? 'Disable' : 'Enable') + ' rule: ' + rule.phrase);
+      toggle.addEventListener('change', (function (key) {
+        return function () { toggleBuiltinRule(key); };
+      })(rule.key));
+      row.appendChild(toggle);
+
+      var info = document.createElement('div');
+      info.className = 'builtin-rule-info';
+
+      var phraseEl = document.createElement('div');
+      phraseEl.className = 'builtin-rule-phrase';
+      var phraseText = rule.phrase;
+      if (rule.fix) {
+        phraseText += ' ';
+        var fixSpan = document.createElement('span');
+        fixSpan.className = 'builtin-rule-fix';
+        fixSpan.textContent = '\u2192 ' + rule.fix;
+        var textNode = document.createTextNode(rule.phrase + ' ');
+        phraseEl.appendChild(textNode);
+        phraseEl.appendChild(fixSpan);
+      } else {
+        phraseEl.textContent = phraseText;
+      }
+      info.appendChild(phraseEl);
+
+      var msgEl = document.createElement('div');
+      msgEl.className = 'builtin-rule-msg';
+      msgEl.textContent = rule.msg;
+      info.appendChild(msgEl);
+      row.appendChild(info);
+
+      var catBadge = document.createElement('span');
+      catBadge.className = 'builtin-rule-cat';
+      catBadge.textContent = rule.cat;
+      row.appendChild(catBadge);
+
+      listEl.appendChild(row);
+    });
+
+    listEl.scrollTop = savedScroll;
+
+    if (footerEl) {
+      var disabledCount = rules.filter(function (r) { return !r.enabled; }).length;
+      footerEl.textContent = 'Showing ' + filtered.length + ' of ' + rules.length + ' rules' +
+        (disabledCount > 0 ? ' (' + disabledCount + ' disabled)' : '');
+    }
   }
 
   // ========== AI Settings ==========
