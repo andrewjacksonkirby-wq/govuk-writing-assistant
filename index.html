@@ -392,6 +392,22 @@
           <button type="button" class="btn btn-primary btn-sm" id="ruleAddBtn">Add rule</button>
         </div>
         <div class="rules-list" id="rulesList"></div>
+        <hr class="rules-divider">
+        <h3 class="rules-section-title">Built-in rules</h3>
+        <p class="rules-section-desc">These rules check for GOV.UK style, plain English, grammar, spelling, and inclusive language. Toggle any rule on or off.</p>
+        <div class="builtin-rules-toolbar">
+          <input type="text" class="rules-input builtin-rules-search" id="builtinRulesSearch" placeholder="Search built-in rules..." autocomplete="off">
+          <select id="builtinRulesCatFilter" class="mode-select builtin-rules-cat-filter">
+            <option value="all">All categories</option>
+            <option value="GOV.UK style">GOV.UK style</option>
+            <option value="Plain English">Plain English</option>
+            <option value="Grammar">Grammar</option>
+            <option value="Spelling">Spelling</option>
+            <option value="Inclusive language">Inclusive language</option>
+          </select>
+        </div>
+        <div class="builtin-rules-list" id="builtinRulesList"></div>
+        <div class="builtin-rules-footer" id="builtinRulesFooter"></div>
       </div>
     </div>
   </div>
