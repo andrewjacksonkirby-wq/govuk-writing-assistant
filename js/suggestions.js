@@ -17,6 +17,7 @@ const Suggestions = (function () {
   var dismissedIds = new Set();
   var sessionDismissedIds = new Set(); // "Ignore this time" — cleared on page reload
   var activeFilter = 'all';
+  var previousFilter = 'all';
   var activeSuggestionId = null;
   var expandedCardId = null;
   var hasRunFullCheck = false;
@@ -153,7 +154,9 @@ const Suggestions = (function () {
   }
 
   function setCorrectness(suggestions) {
-    correctnessSuggestions = suggestions.filter(function (s) { return !isDismissed(s); });
+    var filtered = suggestions.filter(function (s) { return !isDismissed(s); });
+    if (areSuggestionsEqual(correctnessSuggestions, filtered)) return;
+    correctnessSuggestions = filtered;
     render();
   }
 
@@ -396,7 +399,9 @@ const Suggestions = (function () {
     }
 
     // Render cards
-    var savedScroll = listEl.scrollTop;
+    var filterChanged = activeFilter !== previousFilter;
+    previousFilter = activeFilter;
+    var savedScroll = filterChanged ? 0 : listEl.scrollTop;
     listEl.innerHTML = '';
 
     if (filtered.length === 0) {
@@ -548,14 +553,20 @@ const Suggestions = (function () {
     // Click header to expand/collapse
     header.addEventListener('click', function (e) {
       if (e.target.closest('.suggestion-actions')) return;
-      if (expandedCardId === suggestion.id) {
+      var wasExpanded = expandedCardId === suggestion.id;
+      // Collapse previously expanded card
+      if (expandedCardId !== null) {
+        var prev = listEl.querySelector('.suggestion-card.expanded');
+        if (prev) prev.classList.remove('expanded');
+      }
+      if (wasExpanded) {
         expandedCardId = null;
       } else {
         expandedCardId = suggestion.id;
         activeSuggestionId = suggestion.id;
+        card.classList.add('expanded');
         if (onSelect) onSelect(suggestion);
       }
-      render();
     });
 
     // --- Body (shown when expanded) ---

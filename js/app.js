@@ -1073,6 +1073,7 @@
    */
   function renderDocumentsList() {
     var drafts = Documents.getRecentDrafts();
+    var savedScroll = documentsList.scrollTop;
     documentsList.innerHTML = '';
 
     if (drafts.length === 0) {
@@ -1147,6 +1148,7 @@
 
       documentsList.appendChild(card);
     });
+    documentsList.scrollTop = savedScroll;
   }
 
   function openHistoryModal() {
@@ -1375,6 +1377,7 @@
 
   function renderDictionary() {
     var words = getCustomDict();
+    var savedScroll = dictWordList.scrollTop;
     dictWordList.innerHTML = '';
     words.sort(function (a, b) { return a.toLowerCase().localeCompare(b.toLowerCase()); });
     words.forEach(function (word) {
@@ -1390,6 +1393,7 @@
       chip.appendChild(removeBtn);
       dictWordList.appendChild(chip);
     });
+    dictWordList.scrollTop = savedScroll;
   }
 
   // ========== Custom style rules ==========
@@ -1457,6 +1461,7 @@
 
   function renderCustomRules() {
     var rules = getStoredRules();
+    var savedScroll = rulesList.scrollTop;
     rulesList.innerHTML = '';
     if (rules.length === 0) {
       var emptyP = document.createElement('p');
@@ -1506,6 +1511,7 @@
 
       rulesList.appendChild(row);
     });
+    rulesList.scrollTop = savedScroll;
   }
 
   // ========== AI Settings ==========
