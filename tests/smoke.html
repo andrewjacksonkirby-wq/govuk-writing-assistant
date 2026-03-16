@@ -70,6 +70,10 @@
   <div id="customRulesModal" hidden>
     <input id="rulePhrase"><input id="ruleReplacement"><input id="ruleMessage">
     <button id="ruleAddBtn"></button><div id="rulesList"></div>
+    <input id="builtinRulesSearch">
+    <select id="builtinRulesCatFilter"><option value="all">All</option></select>
+    <div id="builtinRulesList"></div>
+    <div id="builtinRulesFooter"></div>
   </div>
   <button id="closeRulesModal"></button>
   <div id="aiAllowanceBar" style="display:none"></div>
@@ -182,6 +186,145 @@
         // Verify the IME fix is in place
         var el = Editor.getElement();
         return el !== null;
+      });
+
+      // ========== QuickChecks: Built-in rules API ==========
+
+      test('QuickChecks.getBuiltinRules exists', function () {
+        return typeof QuickChecks.getBuiltinRules === 'function';
+      });
+
+      test('QuickChecks.getBuiltinRules returns rules', function () {
+        var rules = QuickChecks.getBuiltinRules();
+        return (Array.isArray(rules) && rules.length > 300) || 'Expected 300+ rules, got ' + (rules ? rules.length : 0);
+      });
+
+      test('Built-in rules have required fields', function () {
+        var rules = QuickChecks.getBuiltinRules();
+        for (var i = 0; i < rules.length; i++) {
+          var r = rules[i];
+          if (!r.key) return 'Rule ' + i + ' missing key';
+          if (!r.msg) return 'Rule ' + i + ' missing msg';
+          if (!r.cat) return 'Rule ' + i + ' missing cat';
+          if (typeof r.enabled !== 'boolean') return 'Rule ' + i + ' enabled not boolean';
+        }
+        return true;
+      });
+
+      test('Built-in rule keys are unique', function () {
+        var rules = QuickChecks.getBuiltinRules();
+        var seen = {};
+        for (var i = 0; i < rules.length; i++) {
+          if (seen[rules[i].key]) return 'Duplicate key: ' + rules[i].key;
+          seen[rules[i].key] = true;
+        }
+        return true;
+      });
+
+      test('QuickChecks.setDisabledBuiltinRules works', function () {
+        var rules = QuickChecks.getBuiltinRules();
+        QuickChecks.setDisabledBuiltinRules([rules[0].key]);
+        var disabled = QuickChecks.getDisabledBuiltinRules();
+        var ok = disabled.length === 1 && disabled[0] === rules[0].key;
+        QuickChecks.setDisabledBuiltinRules([]);
+        return ok || 'Expected 1 disabled rule';
+      });
+
+      test('Disabled built-in rule is not flagged', function () {
+        var rules = QuickChecks.getBuiltinRules();
+        var mustOfRule = null;
+        for (var i = 0; i < rules.length; i++) {
+          if (rules[i].phrase === 'must of') { mustOfRule = rules[i]; break; }
+        }
+        if (!mustOfRule) return 'Could not find must-of rule';
+        // Should be flagged normally
+        var before = QuickChecks.runAll('I must of gone there.');
+        var flaggedBefore = before.some(function (r) { return r.original === 'must of'; });
+        if (!flaggedBefore) return 'must of not detected before disabling';
+        // Disable and re-check
+        QuickChecks.setDisabledBuiltinRules([mustOfRule.key]);
+        var after = QuickChecks.runAll('I must of gone there.');
+        var flaggedAfter = after.some(function (r) { return r.original === 'must of'; });
+        QuickChecks.setDisabledBuiltinRules([]);
+        return !flaggedAfter || 'must of still detected after disabling';
+      });
+
+      // ========== QuickChecks: GOV.UK style detection ==========
+
+      test('QuickChecks detects GOV.UK jargon (leverage)', function () {
+        var results = QuickChecks.runAll('We should leverage our resources.');
+        return results.some(function (r) { return r.original && r.original.toLowerCase().indexOf('leverage') >= 0; }) || 'leverage not detected';
+      });
+
+      test('QuickChecks detects Latin abbreviation (e.g.)', function () {
+        var results = QuickChecks.runAll('This includes items e.g. hats.');
+        return results.some(function (r) { return r.message && r.message.indexOf('for example') >= 0; }) || 'e.g. not detected';
+      });
+
+      test('QuickChecks detects American spelling (color)', function () {
+        var results = QuickChecks.runAll('The color of the sky.');
+        return results.some(function (r) { return r.original === 'color'; }) || 'color not detected';
+      });
+
+      test('QuickChecks detects gendered language (fireman)', function () {
+        var results = QuickChecks.runAll('The fireman arrived quickly.');
+        return results.some(function (r) { return r.original === 'fireman'; }) || 'fireman not detected';
+      });
+
+      test('QuickChecks detects plain English (utilise)', function () {
+        var results = QuickChecks.runAll('We should utilise the tools.');
+        return results.some(function (r) { return r.original && r.original.indexOf('utilis') >= 0; }) || 'utilise not detected';
+      });
+
+      test('QuickChecks detects redundant phrase (free gift)', function () {
+        var results = QuickChecks.runAll('Get a free gift today.');
+        return results.some(function (r) { return r.original === 'free gift'; }) || 'free gift not detected';
+      });
+
+      test('QuickChecks detects grammar error (could of)', function () {
+        var results = QuickChecks.runAll('I could of done that.');
+        return results.some(function (r) { return r.original === 'could of'; }) || 'could of not detected';
+      });
+
+      // ========== QuickChecks: custom rules ==========
+
+      test('Custom rules work alongside built-in rules', function () {
+        QuickChecks.setCustomRules([{id:'t1',phrase:'synergy',replacement:'teamwork',message:'Avoid synergy',enabled:true}]);
+        var results = QuickChecks.runAll('We need more synergy and must of done that.');
+        var synergy = results.some(function (r) { return r.original === 'synergy'; });
+        var mustOf = results.some(function (r) { return r.original === 'must of'; });
+        QuickChecks.setCustomRules([]);
+        return (synergy && mustOf) || 'synergy=' + synergy + ' mustOf=' + mustOf;
+      });
+
+      // ========== QuickChecks: mode filtering ==========
+
+      test('GOV.UK-only rules do not fire in email mode', function () {
+        QuickChecks.setMode('email');
+        var results = QuickChecks.runAll('Please send the color version via email.');
+        var please = results.some(function (r) { return r.original && r.original.toLowerCase() === 'please'; });
+        var color = results.some(function (r) { return r.original === 'color'; });
+        QuickChecks.setMode('govuk');
+        // "please" and "color" are govuk-only, should not fire in email mode
+        return (!please && !color) || 'please=' + please + ' color=' + color;
+      });
+
+      // ========== FullCheck module ==========
+
+      test('FullCheck module exists', function () {
+        return typeof FullCheck === 'object';
+      });
+
+      // ========== Reports module ==========
+
+      test('Reports module exists', function () {
+        return typeof Reports === 'object' && typeof Reports.update === 'function';
+      });
+
+      // ========== InlinePopup module ==========
+
+      test('InlinePopup module exists', function () {
+        return typeof InlinePopup === 'object' && typeof InlinePopup.show === 'function';
       });
 
       renderResults();
