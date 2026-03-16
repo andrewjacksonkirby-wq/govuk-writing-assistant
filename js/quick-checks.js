@@ -1833,29 +1833,103 @@ const QuickChecks = (function () {
   }
 
   /**
+   * Extract a clean, human-readable phrase label from a rule pattern.
+   * Tries the message first (most contain the flagged word in quotes), then
+   * falls back to a cleaned version of the regex.
+   */
+  function extractPhrase(pat) {
+    var msg = pat.msg || '';
+    var m;
+
+    // Strategy 1: extract the FLAGGED word from the message.
+    // Messages follow patterns like:
+    //   'Use "X" instead of "Y"' → Y is the flagged word
+    //   'Prefer "X" over "Y"'   → Y is the flagged word
+    //   'Avoid "X"'             → X is the flagged word
+    //   '"X" is plural'         → X is the flagged word (first quoted)
+    //   'Use British spelling: "X" not "Y"' → Y is the flagged word
+
+    // Pattern: 'instead of "Y"' or 'over "Y"' or 'not "Y"' → Y is what's flagged
+    m = msg.match(/(?:instead of|over|not|rather than)\s+"([^"]+)"/);
+    if (m) return m[1];
+
+    // Pattern: 'Avoid "X"' → X is what's flagged
+    m = msg.match(/[Aa]void\s+"([^"]+)"/);
+    if (m) return m[1];
+
+    // Pattern: 'with double "l": "travelling"...' → use the regex for these
+    // (skip, let regex strategy handle it)
+
+    // Pattern: 'Write "X" instead of "Y"' → Y
+    m = msg.match(/instead of\s+"([^"]+)"$/);
+    if (m) return m[1];
+
+    // Strategy 2: extract quoted strings with special patterns
+    // 'with "-our"' or 'double "l"' — use the title instead
+    m = msg.match(/with\s+"(-[a-z]+)"/);
+    if (m) return m[1] + ' (e.g. favour)';
+    m = msg.match(/with\s+double\s+"([a-z])"/);
+    if (m) return 'double ' + m[1] + ' spelling';
+
+    // Strategy 3: for simple regex patterns, extract the literal text
+    var src = pat.regex.source;
+
+    // Simple: \b(word phrase)\b
+    m = src.match(/^\\b\(?([a-zA-Z][a-zA-Z\s-]{1,30})\)?\\b$/);
+    if (m) return m[1];
+
+    // Simple: \b(word)\b with possible flags after
+    m = src.match(/^\\b\(([a-zA-Z][a-zA-Z\s-]{1,30})\)\\b/);
+    if (m) return m[1];
+
+    // Alternation of simple words: \b(word1|word2)\b → "word1, word2"
+    m = src.match(/^\\b\(([a-zA-Z|, -]+)\)\\b$/);
+    if (m) {
+      var words = m[1].split('|');
+      if (words.every(function (w) { return /^[a-zA-Z -]+$/.test(w); })) {
+        return words.join(', ');
+      }
+    }
+
+    // Word with inflection suffixes: \b(collaborat(?:e|ing|ion))\b → "collaborate"
+    m = src.match(/^\\b\(([a-zA-Z]+)\(\?:([^)]+)\)\)\\b/);
+    if (m) {
+      var base = m[1];
+      var firstSuffix = m[2].split('|')[0].replace(/[?*+\\[\]{}^$]/g, '');
+      return base + firstSuffix;
+    }
+
+    // Strategy 3: first quoted string in message as last resort
+    m = msg.match(/"([^"]{2,40})"/);
+    if (m) return m[1];
+
+    // Strategy 4: take first capture group content (only if it looks like words)
+    m = src.match(/\((?:\?\:)?([^|)]+)/);
+    if (m) {
+      var raw = m[1]
+        .replace(/\\b/g, '').replace(/\\s\+?/g, ' ').replace(/\\/g, '')
+        .replace(/[?*+{}[\]^$()]/g, '').trim();
+      if (raw.length >= 2 && raw.length <= 40 && /^[a-zA-Z]/.test(raw)) return raw;
+    }
+
+    // Fallback: use the title if it's descriptive, otherwise clean the regex
+    if (pat.title && pat.title.length >= 4) return pat.title;
+    return src
+      .replace(/\\b/g, '').replace(/\\s\+?/g, ' ').replace(/\\/g, '')
+      .replace(/\(\?:[^)]*\)/g, '').replace(/\(\?![^)]*\)/g, '')
+      .replace(/\(\?=[^)]*\)/g, '')
+      .replace(/[()[\]{}^$*+?|]/g, '').trim().slice(0, 40) || '(rule)';
+  }
+
+  /**
    * Returns the built-in grammar/style rules as an array of plain objects
    * for display in the UI. Each item has: key, phrase, fix, msg, cat, title, modes.
    */
   function getBuiltinRules() {
     return grammarPatterns.map(function (pat) {
-      // Extract a human-readable phrase from the regex
-      var phrase = pat.regex.source
-        .replace(/\\b/g, '')
-        .replace(/\(\?![^)]*\)/g, '')
-        .replace(/\(\?=[^)]*\)/g, '')
-        .replace(/\((?:\?:)?/g, '')
-        .replace(/\)/g, '')
-        .replace(/\[^\\s\]\+/g, '…')
-        .replace(/\\s\+/g, ' ')
-        .replace(/\\s/g, ' ')
-        .replace(/\|/g, ' / ')
-        .replace(/\?\+/g, '')
-        .replace(/[?*+{}[\]^$]/g, '')
-        .replace(/\\/g, '')
-        .trim();
       return {
         key: patternKey(pat),
-        phrase: phrase,
+        phrase: extractPhrase(pat),
         fix: pat.fix || null,
         msg: pat.msg,
         cat: pat.cat,
