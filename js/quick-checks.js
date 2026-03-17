@@ -1542,8 +1542,23 @@ const QuickChecks = (function () {
       }
     }
 
-    // Phase 2: BK-tree search for distance-2 if we need more suggestions
-    if (results.length < limit && bkTree) {
+    // Phase 2: distance-2 candidates
+    // For short words (≤4 chars), the BK-tree fills its limit with obscure
+    // short words before reaching common longer words (e.g. "grn" → "green").
+    // So for short words, generate distance-2 candidates directly by applying
+    // edit-distance-1 twice, checking only common words for speed.
+    if (lower.length <= 4) {
+      // Direct distance-2 generation against common words (fast for short inputs)
+      for (var i = 0; i < ed1.length; i++) {
+        var ed2 = editDistance1Candidates(ed1[i]);
+        for (var j = 0; j < ed2.length; j++) {
+          if (ed2[j].length >= 2 && wordSet.has(ed2[j]) && !seen.has(ed2[j])) {
+            seen.add(ed2[j]);
+            results.push({ word: ed2[j], dist: 2 });
+          }
+        }
+      }
+    } else if (bkTree) {
       var bkResults = [];
       searchBK(bkTree, lower, 2, bkResults, limit * 3);
       for (var i = 0; i < bkResults.length; i++) {
@@ -1554,20 +1569,33 @@ const QuickChecks = (function () {
       }
     }
 
-    // Sort by distance, then prefer words closer in length to the original,
-    // then prefer longer words (insertions are more common typos than deletions)
+    // Sort by best-match quality.
+    // A "strong match" is a common/high-frequency word where the input is a
+    // subsequence — this signals an abbreviation-style typo (e.g. "grn" → "green")
+    // and should outrank distance-1 obscure words like "grin".
     var origLen = lower.length;
     results.sort(function (a, b) {
+      var aSub = isSubsequence(lower, a.word);
+      var bSub = isSubsequence(lower, b.word);
+      var aCommon = commonWords.has(a.word);
+      var bCommon = commonWords.has(b.word);
+
+      // Strong match: common word + subsequence (likely abbreviation target)
+      var aStrong = (aSub && aCommon) ? 0 : 1;
+      var bStrong = (bSub && bCommon) ? 0 : 1;
+      if (aStrong !== bStrong) return aStrong - bStrong;
+
+      // Then sort by edit distance
       if (a.dist !== b.dist) return a.dist - b.dist;
-      // Prefer candidates where the input is a subsequence (missing-letter typo)
+      // Prefer subsequence matches (missing-letter typo)
       // e.g. "geen" → "green" (missing 'r') over "geen" → "been" (wrong key)
-      var aSub = isSubsequence(lower, a.word) ? 0 : 1;
-      var bSub = isSubsequence(lower, b.word) ? 0 : 1;
-      if (aSub !== bSub) return aSub - bSub;
+      var aSubVal = aSub ? 0 : 1;
+      var bSubVal = bSub ? 0 : 1;
+      if (aSubVal !== bSubVal) return aSubVal - bSubVal;
       // Prefer common/high-frequency words over rare ones at equal distance
-      var aCommon = commonWords.has(a.word) ? 0 : 1;
-      var bCommon = commonWords.has(b.word) ? 0 : 1;
-      if (aCommon !== bCommon) return aCommon - bCommon;
+      var aCommonVal = aCommon ? 0 : 1;
+      var bCommonVal = bCommon ? 0 : 1;
+      if (aCommonVal !== bCommonVal) return aCommonVal - bCommonVal;
       var aLenDiff = Math.abs(a.word.length - origLen);
       var bLenDiff = Math.abs(b.word.length - origLen);
       if (aLenDiff !== bLenDiff) return aLenDiff - bLenDiff;
