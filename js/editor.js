@@ -327,7 +327,7 @@ const Editor = (function () {
     var filteredWord = [];
     var wEnd = -1;
     wordLevelMarks.forEach(function (m) {
-      if (m.start >= wEnd) {
+      if (m.start > wEnd || (m.start === wEnd && wEnd >= 0)) {
         filteredWord.push(m);
         wEnd = m.end;
       }

@@ -313,11 +313,15 @@ const FullCheck = (function () {
       var fullMatch = match[0];
       var verb = ACTIVE_FORMS[participle] || participle;
 
-      // Find the sentence boundary for context
-      var sentStart = text.lastIndexOf('.', match.index);
-      if (sentStart < 0) sentStart = 0; else sentStart += 1;
-      var sentEnd = text.indexOf('.', match.index + fullMatch.length);
-      if (sentEnd < 0) sentEnd = text.length;
+      // Find the sentence boundary for context (check . ! ?)
+      var sentStart = 0;
+      for (var si = match.index - 1; si >= 0; si--) {
+        if (text[si] === '.' || text[si] === '!' || text[si] === '?') { sentStart = si + 1; break; }
+      }
+      var sentEnd = text.length;
+      for (var ei = match.index + fullMatch.length; ei < text.length; ei++) {
+        if (text[ei] === '.' || text[ei] === '!' || text[ei] === '?') { sentEnd = ei + 1; break; }
+      }
 
       // Check for "by ..." agent
       var after = text.substring(match.index + fullMatch.length, match.index + fullMatch.length + 80);
@@ -379,8 +383,7 @@ const FullCheck = (function () {
   }
 
   function uncapitalise(s) {
-    if (s.length > 1 && s === s.toUpperCase()) return s;
-    if (s.length > 1 && s[0] === s[0].toUpperCase() && s[1] === s[1].toUpperCase()) return s;
+    if (s.length > 1 && s === s.toUpperCase()) return s; // ALL CAPS like "FBI"
     return s.charAt(0).toLowerCase() + s.slice(1);
   }
 

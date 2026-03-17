@@ -1,1 +1,9 @@
 node_modules/
+.env
+.env.local
+.DS_Store
+*.swp
+*.swo
+*~
+*.log
+.cache/
