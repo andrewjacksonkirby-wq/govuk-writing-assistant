@@ -234,6 +234,11 @@ const QuickChecks = (function () {
     bkTree = buildBKTree(sampleWords);
     console.log('[QuickChecks] BK-tree built with ' + sampleWords.length + ' words for suggestions');
 
+    // Build phonetic index for phonetically similar suggestions
+    if (typeof PhoneticMatcher !== 'undefined' && PhoneticMatcher.buildIndex) {
+      PhoneticMatcher.buildIndex(wordSet);
+    }
+
     dictLoaded = true;
     dictLoading = false;
     document.dispatchEvent(new CustomEvent('typo-dictionary-loaded'));
@@ -1228,7 +1233,7 @@ const QuickChecks = (function () {
     { regex: /\b(lead)\b(?=\s+(?:to\s+(?:a\s+)?(?:increase|decrease|reduction|improvement|change)|the\s+(?:team|project|investigation|inquiry)))/gi, msg: 'Check tense: "led" is past tense. "Lead" is present tense (or a metal).', fix: null, matchGroup: 0 },
     { regex: /\b(who's)\s+((?:car|house|home|bag|phone|idea|fault|job|role|turn|responsibility))\b/gi, msg: 'Did you mean "whose" (belonging to whom)? "Who\'s" means "who is".', fix: "whose", matchGroup: 1 },
     { regex: /\b(whose)\s+((?:going|coming|the|been|there|here|that|this|responsible|available|ready))\b/gi, msg: 'Did you mean "who\'s" (who is)? "Whose" shows possession.', fix: "who's", matchGroup: 1 },
-    { regex: /\b(less)\s+(people|items|applicants|applications|employees|users|customers|participants|members|cases|instances|complaints|requests|payments|claims)\b/gi, msg: 'Use "fewer" for countable things. "Less" is for uncountable quantities.', fix: 'fewer', matchGroup: 1 },
+    { regex: /\b(less)\s+(people|applicants|employees|users|customers|participants|members|instances|complaints|requests|payments|claims)\b/gi, msg: 'Use "fewer" for countable things. "Less" is for uncountable quantities.', fix: 'fewer', matchGroup: 1 },
     { regex: /\b(amount)\s+of\s+(people|items|applicants|applications|employees|users|customers|participants|members|cases|instances|complaints|requests|payments|claims)\b/gi, msg: 'Use "number of" for countable things. "Amount of" is for uncountable quantities.', fix: 'number', matchGroup: 1 },
     { regex: /\b(bought)\b(?=\s+(?:to|about|in|up|forward|before|into))/gi, msg: 'Did you mean "brought" (past tense of bring)? "Bought" is past tense of buy.', fix: 'brought', matchGroup: 1 },
     { regex: /\b(past)\b(?=\s+(?:the|a|an|it|them|me|him|her|us)\b)/gi, msg: 'Check: "past" is a noun/adjective/preposition. "Passed" is the verb (went past).', fix: null, matchGroup: 0 },
@@ -1569,11 +1574,24 @@ const QuickChecks = (function () {
       }
     }
 
+    // Phase 3: Phonetic candidates (e.g., "fone" → "phone")
+    if (typeof PhoneticMatcher !== 'undefined' && PhoneticMatcher.isReady()) {
+      var phoneticCandidates = PhoneticMatcher.getSuggestions(lower, 8);
+      for (var i = 0; i < phoneticCandidates.length; i++) {
+        var pc = phoneticCandidates[i];
+        if (!seen.has(pc) && wordSet.has(pc)) {
+          seen.add(pc);
+          results.push({ word: pc, dist: levenshtein(lower, pc) });
+        }
+      }
+    }
+
     // Sort by best-match quality.
     // A "strong match" is a common/high-frequency word where the input is a
     // subsequence — this signals an abbreviation-style typo (e.g. "grn" → "green")
     // and should outrank distance-1 obscure words like "grin".
     var origLen = lower.length;
+    var useKeyboard = typeof KeyboardProximity !== 'undefined';
     results.sort(function (a, b) {
       var aSub = isSubsequence(lower, a.word);
       var bSub = isSubsequence(lower, b.word);
@@ -1599,6 +1617,12 @@ const QuickChecks = (function () {
       var aLenDiff = Math.abs(a.word.length - origLen);
       var bLenDiff = Math.abs(b.word.length - origLen);
       if (aLenDiff !== bLenDiff) return aLenDiff - bLenDiff;
+      // Use keyboard proximity to prefer typos from adjacent keys
+      if (useKeyboard && a.dist === b.dist) {
+        var aKbd = KeyboardProximity.weightedLevenshtein(lower, a.word);
+        var bKbd = KeyboardProximity.weightedLevenshtein(lower, b.word);
+        if (Math.abs(aKbd - bKbd) > 0.1) return aKbd - bKbd;
+      }
       // Prefer longer words when length diff is the same (e.g. both +1/-1)
       if (a.word.length !== b.word.length) return b.word.length - a.word.length;
       return a.word < b.word ? -1 : 1;
@@ -2408,6 +2432,13 @@ const QuickChecks = (function () {
 
     // Slash usage: GOV.UK style says use "and" or "or" instead of "/"
     if (currentMode === 'govuk') {
+      // Common valid slash phrases that should NOT be flagged
+      var VALID_SLASH_PHRASES = new Set([
+        'and/or', 'on/off', 'yes/no', 'true/false', 'male/female',
+        'his/her', 'he/she', 'him/her', 'mr/mrs', 'input/output',
+        'read/write', 'start/stop', 'open/close', 'up/down',
+        'left/right', 'black/white', 'n/a', 'w/e', 'c/o'
+      ]);
       var slashRegex = /\b(\w+)\s*\/\s*(\w+)\b/g;
       var slashMatch;
       while ((slashMatch = slashRegex.exec(text)) !== null) {
@@ -2416,6 +2447,9 @@ const QuickChecks = (function () {
         if (/^https?$/i.test(slashMatch[1])) continue;
         // Skip date patterns like 01/02/2024
         if (/^\d+$/.test(slashMatch[1]) && /^\d+$/.test(slashMatch[2])) continue;
+        // Skip common valid slash phrases
+        var slashPhrase = (slashMatch[1] + '/' + slashMatch[2]).toLowerCase();
+        if (VALID_SLASH_PHRASES.has(slashPhrase)) continue;
         var word1 = slashMatch[1], word2 = slashMatch[2];
         results.push({
           id: makeId(),

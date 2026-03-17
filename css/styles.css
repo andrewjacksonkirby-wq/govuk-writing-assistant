@@ -14,8 +14,10 @@
   --color-border: #e0e2e8;
   --color-border-light: #ecedf1;
   --color-text: #1e2128;
-  --color-text-secondary: #4a4f5c;
-  --color-text-muted: #6b6f7a;
+  --color-text-secondary: #41454f;
+  --color-text-muted: #585d6a;
+
+  --radius-sm: 6px;
 
   --color-primary: #6366f1;
   --color-primary-hover: #4f46e5;
@@ -776,6 +778,11 @@ body {
   transform: rotate(180deg);
 }
 
+.suggestion-card.expanded {
+  border-color: var(--color-primary-subtle);
+  background: var(--color-primary-light);
+}
+
 /* --- Card body --- */
 .card-body {
   display: none;
@@ -891,7 +898,17 @@ body {
 .suggestion-alternatives .alt-btn {
   padding: 3px 10px;
   font-size: 13px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.suggestion-alternatives .alt-btn:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.suggestion-alternatives .alt-btn:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 1px;
 }
 
 .suggestion-actions {
@@ -1892,7 +1909,7 @@ mark.highlight.report-highlight {
 }
 
 .rules-item-disabled {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .rules-item-info {
@@ -2156,7 +2173,7 @@ mark.highlight.report-highlight {
 /* ===== Responsive: Tablet ===== */
 @media (max-width: 1024px) {
   .sidebar {
-    width: 320px;
+    width: 280px;
   }
 
   .header-btn span {
@@ -2165,6 +2182,11 @@ mark.highlight.report-highlight {
 
   .toolbar-btn span {
     display: none;
+  }
+
+  .score-circle {
+    width: 64px;
+    height: 64px;
   }
 }
 
@@ -2183,11 +2205,12 @@ mark.highlight.report-highlight {
   }
 
   .editor-pane {
-    min-height: 40vh;
+    min-height: 35vh;
+    flex: 1;
   }
 
   .editor {
-    min-height: 200px;
+    min-height: 150px;
   }
 
   .app-header {
@@ -2483,7 +2506,7 @@ mark.highlight.report-highlight {
 }
 
 .builtin-rule-row.builtin-rule-disabled {
-  opacity: 0.5;
+  opacity: 0.6;
 }
 
 .builtin-rule-toggle {

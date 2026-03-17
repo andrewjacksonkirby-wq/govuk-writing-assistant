@@ -1,5 +1,11 @@
 {
-  "dependencies": {
+  "name": "govuk-writing-assistant",
+  "version": "1.0.0",
+  "description": "GOV.UK writing assistant with real-time style, grammar, and spell checking",
+  "scripts": {
+    "test": "node tests/run-tests.mjs"
+  },
+  "devDependencies": {
     "playwright": "^1.58.2",
     "playwright-core": "^1.52.0"
   }

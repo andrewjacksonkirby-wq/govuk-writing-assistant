@@ -35,8 +35,17 @@ const Documents = (function () {
           var sorted = keys.sort(function (a, b) {
             return new Date(docs[a].updatedAt) - new Date(docs[b].updatedAt);
           });
+          // Delete oldest non-current docs until save succeeds or only current doc remains
           for (var i = 0; i < sorted.length; i++) {
-            if (sorted[i] !== currentDocId) { delete docs[sorted[i]]; break; }
+            if (sorted[i] !== currentDocId) {
+              delete docs[sorted[i]];
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+                return; // Save succeeded after pruning
+              } catch (e3) {
+                // Still over quota — continue deleting
+              }
+            }
           }
           try { localStorage.setItem(STORAGE_KEY, JSON.stringify(docs)); } catch (e2) { /* best effort */ }
         }
@@ -184,14 +193,14 @@ const Documents = (function () {
     var versions = getVersions();
     if (reversedIndex < 0 || reversedIndex >= versions.length) return null;
 
-    // Capture the version BEFORE saving current state (which shifts the array)
-    var version = versions[reversedIndex];
+    // Capture the version text BEFORE saving current state (which shifts the array)
+    var versionText = versions[reversedIndex].text;
 
     // Save current state as a version first
     saveVersion(currentText);
 
-    saveText(version.text);
-    return version.text;
+    saveText(versionText);
+    return versionText;
   }
 
   /**

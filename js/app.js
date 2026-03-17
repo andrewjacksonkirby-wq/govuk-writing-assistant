@@ -474,6 +474,16 @@
     if (toneCancelBtn) {
       toneCancelBtn.addEventListener('click', function () { toneModal.hidden = true; releaseFocus(); });
     }
+    var toneCancelRewriteBtn = document.getElementById('toneCancelRewriteBtn');
+    if (toneCancelRewriteBtn) {
+      toneCancelRewriteBtn.addEventListener('click', function () {
+        FullCheck.cancel();
+        toneLoading.hidden = true;
+        toneRewriteBtn.hidden = false;
+        toneError.textContent = 'Rewrite cancelled.';
+        toneError.hidden = false;
+      });
+    }
 
     // ========== AI rule generation ==========
     if (ruleGenerateBtn) {
@@ -1219,7 +1229,7 @@
   function trapFocus(modalEl) {
     var handler = function (e) {
       if (e.key !== 'Tab') return;
-      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), select:not([hidden]):not([disabled]), textarea:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"])');
+      var focusable = modalEl.querySelectorAll('button:not([hidden]):not([disabled]), input:not([hidden]):not([disabled]), select:not([hidden]):not([disabled]), textarea:not([hidden]):not([disabled]), a[href]:not([hidden]):not([disabled]), [tabindex]:not([tabindex="-1"]):not([hidden])');
       if (focusable.length === 0) return;
       var first = focusable[0];
       var last = focusable[focusable.length - 1];
@@ -1250,9 +1260,10 @@
   function showToast(message, type, duration) {
     if (!toastContainer) return;
     type = type || 'info';
-    duration = duration || 4000;
+    duration = duration || (type === 'error' || type === 'warning' ? 6000 : 4000);
     var el = document.createElement('div');
     el.className = 'toast' + (type === 'error' ? ' toast-error' : type === 'warning' ? ' toast-warning' : '');
+    el.setAttribute('role', type === 'error' ? 'alert' : 'status');
     el.textContent = message;
     toastContainer.appendChild(el);
     // Trigger reflow then show
@@ -1878,7 +1889,14 @@
       toneLoading.hidden = true;
 
       if (error) {
-        toneError.textContent = 'Rewrite failed: ' + error;
+        var friendlyError = error;
+        if (/401/i.test(error)) friendlyError = 'Invalid API key. Check your key in Settings.';
+        else if (/403/i.test(error)) friendlyError = 'Access denied. Check your API key and permissions.';
+        else if (/429/i.test(error)) friendlyError = 'Rate limited. Please wait a moment and try again.';
+        else if (/timeout/i.test(error)) friendlyError = 'Request timed out. Check your connection and try again.';
+        else if (/network|fetch|failed/i.test(error)) friendlyError = 'Connection failed. Check your internet and try again.';
+        else if (error === 'allowance-exhausted') friendlyError = 'Daily AI allowance used up. Try again tomorrow.';
+        toneError.textContent = 'Rewrite failed: ' + friendlyError;
         toneError.hidden = false;
         toneRewriteBtn.hidden = false;
         return;
