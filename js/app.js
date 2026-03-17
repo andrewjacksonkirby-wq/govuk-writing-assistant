@@ -165,6 +165,9 @@
           if (markEl) InlinePopup.show(mark, markEl);
           Suggestions.selectById(mark.id);
         });
+      },
+      onAddToDictionary: function (word) {
+        addWordToDictionary(word);
       }
     });
 
@@ -178,6 +181,9 @@
       },
       onDismissOnce: function (suggestion) {
         Suggestions.dismissOnce(suggestion);
+      },
+      onAddToDictionary: function (word) {
+        addWordToDictionary(word);
       }
     });
 
@@ -1369,6 +1375,21 @@
     var words = getCustomDict();
     if (typeof QuickChecks.setCustomDictionary === 'function') {
       QuickChecks.setCustomDictionary(words);
+    }
+  }
+
+  function addWordToDictionary(word) {
+    word = (word || '').trim();
+    if (!word) return;
+    var words = getCustomDict();
+    var lower = word.toLowerCase();
+    var exists = words.some(function (w) { return w.toLowerCase() === lower; });
+    if (!exists) {
+      words.push(word);
+      saveCustomDict(words);
+      loadCustomDictionary();
+      recheckNow();
+      renderDictionary();
     }
   }
 
