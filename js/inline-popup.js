@@ -9,6 +9,7 @@ const InlinePopup = (function () {
   var onApplyCb = null;
   var onDismissCb = null;
   var onDismissOnceCb = null;
+  var onAddToDictionaryCb = null;
 
   // Shared category helpers — reuse from Suggestions to avoid divergence
   var STYLE_RULES = ['contractions', 'numbers', 'date-format', 'govuk-style',
@@ -35,6 +36,7 @@ const InlinePopup = (function () {
     onApplyCb = callbacks.onApply;
     onDismissCb = callbacks.onDismiss;
     onDismissOnceCb = callbacks.onDismissOnce;
+    onAddToDictionaryCb = callbacks.onAddToDictionary || null;
     popupEl = document.getElementById('inline-popup');
 
     // Dismiss on click outside (capture phase so it fires before the underline click)
@@ -152,6 +154,33 @@ const InlinePopup = (function () {
       hide();
     });
     actions.appendChild(ignoreBtn);
+
+    // "Add to dictionary" for spelling errors
+    if (onAddToDictionaryCb && suggestion.original && (suggestion.ruleId === 'spelling' || suggestion.ruleId === 'missing-letter')) {
+      var dictBtn = document.createElement('button');
+      dictBtn.type = 'button';
+      dictBtn.className = 'btn btn-secondary btn-sm';
+      dictBtn.textContent = 'Add to dictionary';
+      dictBtn.addEventListener('click', function () {
+        onAddToDictionaryCb(suggestion.original);
+        if (onDismissCb) onDismissCb(suggestion);
+        hide();
+      });
+      actions.appendChild(dictBtn);
+    }
+
+    // "This is correct" for confused words
+    if (suggestion.ruleId === 'confused-words' && suggestion.original) {
+      var correctBtn = document.createElement('button');
+      correctBtn.type = 'button';
+      correctBtn.className = 'btn btn-secondary btn-sm';
+      correctBtn.textContent = 'This is correct';
+      correctBtn.addEventListener('click', function () {
+        if (onDismissCb) onDismissCb(suggestion);
+        hide();
+      });
+      actions.appendChild(correctBtn);
+    }
 
     popupEl.appendChild(actions);
 

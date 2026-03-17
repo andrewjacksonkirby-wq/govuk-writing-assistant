@@ -28,6 +28,7 @@ const Suggestions = (function () {
   var onSelect = null;
   var onSuggestFix = null;
   var onDismiss = null;
+  var onAddToDictionary = null;
 
   // DOM refs
   var listEl;
@@ -94,6 +95,7 @@ const Suggestions = (function () {
     onSelect = callbacks.onSelect;
     onSuggestFix = callbacks.onSuggestFix || null;
     onDismiss = callbacks.onDismiss || null;
+    onAddToDictionary = callbacks.onAddToDictionary || null;
 
     listEl = document.getElementById('suggestionsList');
     scoreNumber = document.getElementById('scoreNumber');
@@ -145,6 +147,11 @@ const Suggestions = (function () {
   }
 
   function makeDismissKey(s) {
+    // For confused words, include the message hash so dismissing "your" in
+    // "your welcome" doesn't also suppress "your" in other contexts.
+    if (s.ruleId === 'confused-words' && s.message) {
+      return s.ruleId + ':' + (s.original || '').toLowerCase() + ':' + s.message.slice(0, 40);
+    }
     return s.ruleId + ':' + (s.original || '').toLowerCase();
   }
 
@@ -741,6 +748,38 @@ const Suggestions = (function () {
       else dismiss(suggestion);
     });
     actions.appendChild(dismissBtn);
+
+    // "Add to dictionary" — for spelling/missing-letter, adds word permanently
+    if (onAddToDictionary && suggestion.original && (suggestion.ruleId === 'spelling' || suggestion.ruleId === 'missing-letter')) {
+      var dictBtn = document.createElement('button');
+      dictBtn.type = 'button';
+      dictBtn.className = 'btn btn-secondary btn-sm';
+      dictBtn.textContent = 'Add to dictionary';
+      dictBtn.title = 'Add "' + suggestion.original + '" to your custom dictionary';
+      dictBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        onAddToDictionary(suggestion.original);
+        // Dismiss all siblings too since the word is now in dictionary
+        if (hasSiblings) dismissAll(suggestion);
+        else dismiss(suggestion);
+      });
+      actions.appendChild(dictBtn);
+    }
+
+    // "This is correct" — for confused-words, permanently ignores the phrase in context
+    if (onAddToDictionary && suggestion.ruleId === 'confused-words' && suggestion.original) {
+      var correctBtn = document.createElement('button');
+      correctBtn.type = 'button';
+      correctBtn.className = 'btn btn-secondary btn-sm';
+      correctBtn.textContent = 'This is correct';
+      correctBtn.title = 'Tell the app "' + suggestion.original + '" is correct here — will not flag it again';
+      correctBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (hasSiblings) dismissAll(suggestion);
+        else dismiss(suggestion);
+      });
+      actions.appendChild(correctBtn);
+    }
 
     body.appendChild(actions);
     card.appendChild(body);
