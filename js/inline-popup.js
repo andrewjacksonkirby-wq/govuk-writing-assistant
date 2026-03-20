@@ -123,7 +123,7 @@ const InlinePopup = (function () {
     var actions = document.createElement('div');
     actions.className = 'ip-actions';
 
-    if (suggestion.replacement != null && !hasAlternatives) {
+    if (suggestion.replacement != null && !hasAlternatives && suggestion.ruleId !== 'confused-words') {
       var fixBtn = document.createElement('button');
       fixBtn.type = 'button';
       fixBtn.className = 'btn btn-primary btn-sm';
@@ -169,8 +169,20 @@ const InlinePopup = (function () {
       actions.appendChild(dictBtn);
     }
 
-    // "This is correct" for confused words
+    // Confused-words: "This is not correct" (apply fix) + "This is correct" (dismiss)
     if (suggestion.ruleId === 'confused-words' && suggestion.original) {
+      if (suggestion.replacement != null) {
+        var notCorrectBtn = document.createElement('button');
+        notCorrectBtn.type = 'button';
+        notCorrectBtn.className = 'btn btn-primary btn-sm';
+        notCorrectBtn.textContent = 'This is not correct';
+        notCorrectBtn.addEventListener('click', function () {
+          if (onApplyCb) onApplyCb(suggestion);
+          hide();
+        });
+        actions.appendChild(notCorrectBtn);
+      }
+
       var correctBtn = document.createElement('button');
       correctBtn.type = 'button';
       correctBtn.className = 'btn btn-secondary btn-sm';
