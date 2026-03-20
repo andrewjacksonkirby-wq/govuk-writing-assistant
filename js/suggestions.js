@@ -665,7 +665,7 @@ const Suggestions = (function () {
     var actions = document.createElement('div');
     actions.className = 'suggestion-actions';
 
-    if (suggestion.replacement != null && !hasAlternatives) {
+    if (suggestion.replacement != null && !hasAlternatives && suggestion.ruleId !== 'confused-words') {
       if (hasSiblings) {
         var applyAllBtn = document.createElement('button');
         applyAllBtn.type = 'button';
@@ -766,8 +766,37 @@ const Suggestions = (function () {
       actions.appendChild(dictBtn);
     }
 
-    // "This is correct" — for confused-words, permanently ignores the phrase in context
-    if (onAddToDictionary && suggestion.ruleId === 'confused-words' && suggestion.original) {
+    // Confused-words: "This is not correct" (apply fix) + "This is correct" (dismiss)
+    if (suggestion.ruleId === 'confused-words' && suggestion.original) {
+      if (suggestion.replacement != null) {
+        var notCorrectBtn = document.createElement('button');
+        notCorrectBtn.type = 'button';
+        notCorrectBtn.className = 'btn btn-primary btn-sm';
+        notCorrectBtn.textContent = 'This is not correct';
+        notCorrectBtn.title = 'Accept the suggestion — replace "' + suggestion.original + '" with "' + suggestion.replacement + '"';
+        notCorrectBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          if (hasSiblings && onApplyAll) {
+            onApplyAll(siblings);
+          } else if (onApply) {
+            onApply(suggestion);
+          }
+          correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== suggestion.id; });
+          if (hasSiblings) {
+            siblings.forEach(function (sib) {
+              correctnessSuggestions = correctnessSuggestions.filter(function (s) { return s.id !== sib.id; });
+              claritySuggestions = claritySuggestions.filter(function (s) { return s.id !== sib.id; });
+            });
+          }
+          if (activeSuggestionId === suggestion.id) activeSuggestionId = null;
+          if (expandedCardId === suggestion.id) expandedCardId = null;
+          render();
+          if (onDismiss) onDismiss();
+        });
+        actions.appendChild(notCorrectBtn);
+      }
+
       var correctBtn = document.createElement('button');
       correctBtn.type = 'button';
       correctBtn.className = 'btn btn-secondary btn-sm';
