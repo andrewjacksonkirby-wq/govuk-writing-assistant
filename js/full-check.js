@@ -299,6 +299,16 @@ const FullCheck = (function () {
     'written': 'wrote'
   };
 
+  var ADJECTIVAL_PARTICIPLES = new Set([
+    'committed', 'concerned', 'pleased', 'involved', 'satisfied', 'prepared',
+    'dedicated', 'determined', 'interested', 'related', 'surprised', 'tired',
+    'worried', 'excited', 'confused', 'bored', 'embarrassed', 'frightened',
+    'disappointed', 'amazed', 'annoyed', 'astonished', 'complicated', 'crowded',
+    'depressed', 'educated', 'exhausted', 'experienced', 'fascinated', 'frustrated',
+    'motivated', 'organised', 'overwhelmed', 'qualified', 'relaxed', 'respected',
+    'retired', 'shocked', 'skilled', 'stressed', 'supposed', 'united', 'used', 'valued'
+  ]);
+
   function checkPassiveVoice(text) {
     var results = [];
     var beVerbs = '(?:\\bis\\b|\\bare\\b|\\bwas\\b|\\bwere\\b|\\bbe\\b|\\bbeen\\b|\\bbeing\\b)';
@@ -308,6 +318,12 @@ const FullCheck = (function () {
     while ((match = regex.exec(text)) !== null) {
       var participle = match[2].toLowerCase();
       if (!PAST_PARTICIPLES.has(participle)) continue;
+
+      // Skip adjectival participles unless followed by "by" (true passive agent)
+      if (ADJECTIVAL_PARTICIPLES.has(participle)) {
+        var afterText = text.substring(match.index + match[0].length, match.index + match[0].length + 40);
+        if (!/^\s+by\s+/i.test(afterText)) continue;
+      }
 
       var beVerb = match[1].toLowerCase();
       var fullMatch = match[0];
@@ -559,6 +575,214 @@ const FullCheck = (function () {
     return results;
   }
 
+  // ========== Parallel structure in lists ==========
+
+  var IMPERATIVE_VERBS = new Set([
+    'add', 'apply', 'ask', 'avoid', 'be', 'bring', 'build', 'buy', 'call',
+    'change', 'check', 'choose', 'click', 'close', 'collect', 'complete',
+    'confirm', 'contact', 'continue', 'copy', 'create', 'cut', 'delete',
+    'do', 'download', 'email', 'end', 'enter', 'fill', 'find', 'follow',
+    'get', 'give', 'go', 'have', 'help', 'hold', 'include', 'keep', 'leave',
+    'let', 'list', 'log', 'look', 'make', 'mark', 'move', 'note', 'open',
+    'pay', 'pick', 'place', 'plan', 'post', 'prepare', 'print', 'provide',
+    'put', 'read', 'record', 'register', 'remove', 'replace', 'report',
+    'request', 'return', 'review', 'run', 'save', 'say', 'search', 'select',
+    'send', 'set', 'share', 'show', 'sign', 'start', 'stop', 'submit',
+    'take', 'tell', 'try', 'turn', 'update', 'upload', 'use', 'visit',
+    'wait', 'work', 'write'
+  ]);
+
+  function classifyListItem(item) {
+    var firstWord = (item.match(/^\s*(?:[-*•\d.)\]]+\s+)?(\w+)/) || [])[1];
+    if (!firstWord) return 'unknown';
+    var lower = firstWord.toLowerCase();
+    if (/ing$/.test(lower)) return 'gerund';
+    if (IMPERATIVE_VERBS.has(lower)) return 'imperative';
+    if (/^(a|an|the|this|that|these|those|my|your|our|their|his|her|its|each|every|some|any|all|no)$/i.test(lower)) return 'noun-phrase';
+    return 'other';
+  }
+
+  function checkParallelStructure(text) {
+    var results = [];
+    var lines = text.split('\n');
+    var bulletRegex = /^\s*(?:[-*•]|\d+[.)]\s)/;
+    var i = 0;
+
+    while (i < lines.length) {
+      // Find consecutive bullet lines
+      if (!bulletRegex.test(lines[i])) { i++; continue; }
+      var group = [];
+      var groupStart = i;
+      while (i < lines.length && bulletRegex.test(lines[i])) {
+        group.push(lines[i]);
+        i++;
+      }
+      if (group.length < 3) continue;
+
+      // Classify each item
+      var types = group.map(classifyListItem);
+      var counts = {};
+      types.forEach(function (t) { if (t !== 'unknown' && t !== 'other') counts[t] = (counts[t] || 0) + 1; });
+
+      var dominant = null;
+      var maxCount = 0;
+      Object.keys(counts).forEach(function (t) {
+        if (counts[t] > maxCount) { maxCount = counts[t]; dominant = t; }
+      });
+
+      if (!dominant || maxCount === group.length) continue; // All same or no clear pattern
+
+      // Flag minority items
+      for (var j = 0; j < group.length; j++) {
+        if (types[j] !== dominant && types[j] !== 'unknown' && types[j] !== 'other') {
+          var lineText = group[j].trim();
+          var start = text.indexOf(lineText);
+          if (start < 0) continue;
+          var typeLabel = dominant === 'gerund' ? 'a gerund (-ing form)' :
+                          dominant === 'imperative' ? 'an imperative verb' : 'a noun phrase';
+          results.push({
+            id: makeId(),
+            ruleId: 'parallel-structure',
+            source: 'ai',
+            group: 'clarity',
+            category: 'Lists',
+            start: start,
+            end: start + Math.min(lineText.length, 60),
+            message: 'This list item starts differently from most others. For parallel structure, start each item with ' + typeLabel + '.',
+            title: 'Parallel structure',
+            original: lineText.substring(0, 40)
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
+  // ========== Pronoun consistency ==========
+
+  function checkPronounConsistency(text) {
+    var results = [];
+    var directForms = text.match(/\b(you|your|you're|yourself)\b/gi) || [];
+    var indirectForms = text.match(/\b(the user|the reader|the applicant|the claimant|the customer|one must|one should)\b/gi) || [];
+
+    if (directForms.length === 0 || indirectForms.length === 0) return results;
+
+    // Flag the minority form
+    var minorityRegex, minorityLabel, majorityLabel;
+    if (directForms.length >= indirectForms.length) {
+      minorityRegex = /\b(the user|the reader|the applicant|the claimant|the customer|one must|one should)\b/gi;
+      minorityLabel = 'third-person';
+      majorityLabel = '"you"';
+    } else {
+      minorityRegex = /\b(you|your|you're|yourself)\b/gi;
+      minorityLabel = '"you"';
+      majorityLabel = 'third-person';
+    }
+
+    var match;
+    while ((match = minorityRegex.exec(text)) !== null) {
+      results.push({
+        id: makeId(),
+        ruleId: 'pronoun-consistency',
+        source: 'ai',
+        group: 'clarity',
+        category: 'Consistency',
+        start: match.index,
+        end: match.index + match[0].length,
+        message: 'This text mostly uses ' + majorityLabel + ' but switches to ' + minorityLabel + ' here. Use a consistent form throughout.',
+        title: 'Pronoun consistency',
+        original: match[0]
+      });
+    }
+
+    return results;
+  }
+
+  // ========== Tense consistency (cross-sentence) ==========
+
+  function checkTenseConsistency(text) {
+    var results = [];
+    var paragraphs = text.split(/\n\s*\n/);
+    var searchFrom = 0;
+
+    var pastMarkers = /\b(was|were|had|did|went|came|got|said|told|took|made|gave|found|knew|thought|saw|became|left|brought|kept|began|showed|heard|played|ran|moved|lived|worked|called|tried|needed|started|turned|asked|used|wanted|looked)\b/gi;
+    var presentMarkers = /\b(is|are|has|does|goes|comes|gets|says|tells|takes|makes|gives|finds|knows|thinks|sees|becomes|leaves|brings|keeps|begins|shows|hears|plays|runs|moves|lives|works|calls|tries|needs|starts|turns|asks|uses|wants|looks)\b/gi;
+
+    paragraphs.forEach(function (para) {
+      var trimmed = para.trim();
+      if (!trimmed) return;
+
+      var paraPos = text.indexOf(trimmed, searchFrom);
+      if (paraPos >= 0) searchFrom = paraPos + trimmed.length;
+
+      var pastCount = (trimmed.match(pastMarkers) || []).length;
+      pastMarkers.lastIndex = 0;
+      var presentCount = (trimmed.match(presentMarkers) || []).length;
+      presentMarkers.lastIndex = 0;
+
+      var totalVerbs = pastCount + presentCount;
+      if (totalVerbs < 6) return;
+
+      var pastPct = pastCount / totalVerbs;
+      var presentPct = presentCount / totalVerbs;
+
+      if (pastPct > 0.3 && presentPct > 0.3) {
+        var start = paraPos >= 0 ? paraPos : 0;
+        results.push({
+          id: makeId(),
+          ruleId: 'tense-consistency',
+          source: 'ai',
+          group: 'clarity',
+          category: 'Consistency',
+          start: start,
+          end: start + Math.min(trimmed.length, 60),
+          message: 'This paragraph mixes past and present tense (' + pastCount + ' past, ' + presentCount + ' present). Consider using a consistent tense.',
+          title: 'Mixed tenses',
+          original: trimmed.substring(0, 40) + '...'
+        });
+      }
+    });
+
+    return results;
+  }
+
+  // ========== Repeated sentence starters ==========
+
+  function checkRepeatedStarters(text) {
+    var results = [];
+    var sentences = text.split(/[.!?]+/).filter(function (s) { return s.trim().length > 5; });
+
+    for (var i = 0; i <= sentences.length - 3; i++) {
+      var word1 = (sentences[i].trim().match(/^(\w+)/) || [])[1];
+      var word2 = (sentences[i + 1].trim().match(/^(\w+)/) || [])[1];
+      var word3 = (sentences[i + 2].trim().match(/^(\w+)/) || [])[1];
+
+      if (word1 && word2 && word3 &&
+          word1.toLowerCase() === word2.toLowerCase() &&
+          word2.toLowerCase() === word3.toLowerCase()) {
+        var sentText = sentences[i].trim();
+        var start = text.indexOf(sentText);
+        if (start < 0) start = 0;
+        results.push({
+          id: makeId(),
+          ruleId: 'repeated-starter',
+          source: 'ai',
+          group: 'clarity',
+          category: 'Readability',
+          start: start,
+          end: start + Math.min(sentText.length, 60),
+          message: '3 consecutive sentences start with "' + word1 + '". Vary your sentence openings for better readability.',
+          title: 'Repeated sentence starter',
+          original: sentText.substring(0, 40) + '...'
+        });
+        i += 2; // Skip past the group we just flagged
+      }
+    }
+
+    return results;
+  }
+
   /**
    * Local simulation of AI checks for GOV.UK style issues.
    * This provides useful checks without needing an API.
@@ -683,6 +907,23 @@ const FullCheck = (function () {
         var paraResults = checkParagraphLength(text);
         results = results.concat(paraResults);
       }
+
+      // Pronoun consistency (govuk mode only)
+      if (currentMode === 'govuk') {
+        var pronounResults = checkPronounConsistency(text);
+        results = results.concat(pronounResults);
+      }
+
+      // Parallel structure in lists
+      var parallelResults = checkParallelStructure(text);
+      results = results.concat(parallelResults);
+
+      // Cross-sentence checks
+      var tenseResults = checkTenseConsistency(text);
+      results = results.concat(tenseResults);
+
+      var starterResults = checkRepeatedStarters(text);
+      results = results.concat(starterResults);
 
       // Sort by document order
       results.sort(function (a, b) { return a.start - b.start; });
@@ -998,6 +1239,20 @@ const FullCheck = (function () {
     var data = loadAllowance();
     return data.used >= data.limit;
   }
+
+  // ========== Load past participles from JSON ==========
+  function loadPastParticiples() {
+    fetch('data/past-participles.json').then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).then(function (data) {
+      PAST_PARTICIPLES.clear();
+      data.forEach(function (w) { PAST_PARTICIPLES.add(w); });
+    }).catch(function (err) {
+      console.warn('[FullCheck] Failed to load past-participles.json, using inline fallback:', err);
+    });
+  }
+  loadPastParticiples();
 
   // Load config from localStorage on init
   loadConfig();

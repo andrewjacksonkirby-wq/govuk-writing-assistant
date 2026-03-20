@@ -290,6 +290,86 @@ const QuickChecks = (function () {
   // Start loading dictionary immediately
   loadDictionary();
 
+  // ========== Rule data loading from JSON ==========
+  var ruleDataLoaded = false;
+
+  function loadRuleData() {
+    var files = [
+      { url: 'data/grammar-patterns.json', target: 'grammarPatterns' },
+      { url: 'data/misspellings.json', target: 'misspellings' },
+      { url: 'data/missing-letters.json', target: 'missingLetters' },
+      { url: 'data/confused-words.json', target: 'confusedWords' },
+      { url: 'data/abbreviations.json', target: 'abbreviations' }
+    ];
+
+    var fetches = files.map(function (f) {
+      return fetch(f.url).then(function (r) {
+        if (!r.ok) throw new Error(f.url + ' HTTP ' + r.status);
+        return r.json();
+      }).then(function (data) {
+        return { target: f.target, data: data };
+      }).catch(function (err) {
+        console.warn('[QuickChecks] Failed to load ' + f.url + ', using inline fallback:', err);
+        return null;
+      });
+    });
+
+    Promise.all(fetches).then(function (results) {
+      results.forEach(function (r) {
+        if (!r) return;
+        try {
+          if (r.target === 'grammarPatterns') {
+            var compiled = r.data.map(function (entry) {
+              var obj = {
+                regex: new RegExp(entry.pattern, entry.flags || 'gi'),
+                fix: entry.fix || null,
+                msg: entry.msg,
+                cat: entry.cat,
+                title: entry.title
+              };
+              if (entry.group) obj.group = entry.group;
+              if (entry.modes) obj.modes = entry.modes;
+              if (entry.alts) obj.alts = entry.alts;
+              return obj;
+            });
+            grammarPatterns.length = 0;
+            Array.prototype.push.apply(grammarPatterns, compiled);
+          } else if (r.target === 'misspellings') {
+            Object.keys(COMMON_MISSPELLINGS).forEach(function (k) { delete COMMON_MISSPELLINGS[k]; });
+            Object.keys(r.data).forEach(function (k) { COMMON_MISSPELLINGS[k] = r.data[k]; });
+          } else if (r.target === 'missingLetters') {
+            Object.keys(MISSING_FIRST_LETTER).forEach(function (k) { delete MISSING_FIRST_LETTER[k]; });
+            Object.keys(r.data).forEach(function (k) { MISSING_FIRST_LETTER[k] = r.data[k]; });
+            MISSING_LETTER_ROOTS = Object.keys(MISSING_FIRST_LETTER).sort(function (a, b) { return b.length - a.length; });
+          } else if (r.target === 'confusedWords') {
+            var compiledCW = r.data.map(function (entry) {
+              var obj = {
+                regex: new RegExp(entry.pattern, entry.flags || 'gi'),
+                msg: entry.msg,
+                fix: entry.fix || null,
+                matchGroup: entry.matchGroup
+              };
+              if (entry.modes) obj.modes = entry.modes;
+              if (entry.group) obj.group = entry.group;
+              return obj;
+            });
+            CONFUSED_WORDS.length = 0;
+            Array.prototype.push.apply(CONFUSED_WORDS, compiledCW);
+          } else if (r.target === 'abbreviations') {
+            ABBREVIATIONS.clear();
+            r.data.forEach(function (a) { ABBREVIATIONS.add(a); });
+          }
+        } catch (err) {
+          console.warn('[QuickChecks] Error applying ' + r.target + ' data, using inline fallback:', err);
+        }
+      });
+      ruleDataLoaded = true;
+    });
+  }
+
+  // Start loading rule data from JSON files
+  loadRuleData();
+
   /**
    * Words to skip during spell checking — short common words,
    * abbreviations, and patterns that aren't real misspellings.
@@ -1517,7 +1597,7 @@ const QuickChecks = (function () {
    * Each entry: regex, the wrong usage context hint, suggestion.
    */
   var CONFUSED_WORDS = [
-    { regex: /\b(your)\s+(welcome|right|wrong|correct|the best|amazing|brilliant)\b/gi, msg: 'Did you mean "you\'re" (you are)?', fix: "you're", matchGroup: 1 },
+    { regex: /\b(your)\s+(welcome|right|wrong|correct|amazing|brilliant|fantastic|wonderful|great|awesome|incredible|lovely|beautiful|terrible|horrible|awful|perfect|gorgeous|hilarious|ridiculous|kind|sweet|nice|funny|smart|clever|brave|lucky|crazy|silly|stupid|not|very|so|really|quite|absolutely|completely|totally|probably|certainly|obviously|clearly|actually|doing|going|being|looking|making|running|coming|trying|getting|having|working|talking|telling|saying|asking|thinking|feeling|living|leaving|taking|moving|sitting|standing|walking|the best|the one|the only|the first|the reason|a great|a good|a bad|a wonderful|a terrible|a fantastic|an amazing|an incredible)\b/gi, msg: 'Did you mean "you\'re" (you are)?', fix: "you're", matchGroup: 1 },
     { regex: /\b(its)\s+(a|the|been|not|going|very|really|quite|also|important)\b/gi, msg: 'Did you mean "it\'s" (it is)?', fix: "it's", matchGroup: 1 },
     { regex: /\b(there)\s+(is|are|was|were|will|has|have|would|could|should|might|may|must)\s+(?:be\s+)?(?:a\s+|an\s+|the\s+)?(?:\w+\s+){0,3}(that|who|which)\s+(they|he|she|we|I)\b/gi, msg: 'Check: did you mean "their" (belonging to them)?', fix: null, matchGroup: 0 },
     { regex: /\b(then)\s+(I|you|we|they|he|she|it)\b/gi, msg: 'Check: did you mean "than" (comparison)?', fix: null, matchGroup: 0 },
@@ -2143,7 +2223,15 @@ const QuickChecks = (function () {
     'no', 'nos', 'vol', 'dept', 'govt', 'approx', 'inc', 'ltd', 'st', 'ave',
     'ref', 'fig', 'gen', 'corp', 'est', 'jan', 'feb', 'mar', 'apr', 'jun',
     'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'mon', 'tue', 'wed', 'thu',
-    'fri', 'sat', 'sun'
+    'fri', 'sat', 'sun',
+    // Academic & legal
+    'al', 'op', 'cit', 'loc', 'et', 'seq', 'para', 'ch', 'sec', 'pt',
+    // Measurements & misc
+    'min', 'max', 'misc', 'qty', 'amt', 'avg',
+    // Organisations
+    'assn', 'bros', 'co', 'intl', 'natl', 'org', 'univ',
+    // Military & titles
+    'sgt', 'cpl', 'pvt', 'capt', 'lt', 'col', 'maj', 'cmdr', 'rev', 'hon', 'rt'
   ]);
 
   function checkCapitalisation(text) {
@@ -2359,8 +2447,18 @@ const QuickChecks = (function () {
       { regex: /\b(the data) (shows?|indicates?|suggests?|demonstrates?|reveals?|confirms?)\b/gi, fix: null, msg: '"Data" is plural \u2014 use "the data show" or "the data indicate"', cat: 'Grammar', title: 'Grammar note' },
       { regex: /\b(criteria) (is|was|has)\b/gi, fix: null, msg: '"Criteria" is plural \u2014 use "criteria are". The singular is "criterion".', cat: 'Grammar', title: 'Grammar error' },
       { regex: /\b(media) (is|was|has)\b/gi, fix: null, msg: '"Media" is plural \u2014 use "media are". The singular is "medium".', cat: 'Grammar', title: 'Grammar note' },
+      // Collective nouns + plural verb (GOV.UK formal: singular)
+      { regex: /\b(the (?:team|government|committee|council|department|ministry|board|panel|group|staff|organisation|company|public|family|jury))\s+(are|were|have|do|need|want|seem|go)\b/gi, fix: null, msg: 'GOV.UK style: treat collective nouns as singular \u2014 use "is", "was", "has" etc.', cat: 'Grammar', title: 'Subject-verb agreement', modes: ['govuk'] },
+      // Each of ... are
+      { regex: /\b(each\s+of\s+(?:the\s+)?\w+)\s+(are|were|have|do)\b/gi, fix: null, msg: '"Each of" takes a singular verb \u2014 use "is", "was", or "has".', cat: 'Grammar', title: 'Subject-verb agreement' },
+      // Neither/Either ... are
+      { regex: /\b(neither|either)\s+(?:of\s+(?:the\s+)?\w+\s+)?(are|were|have)\b/gi, fix: null, msg: '"Neither" and "either" take a singular verb \u2014 use "is", "was", or "has".', cat: 'Grammar', title: 'Subject-verb agreement' },
+      // One of ... are
+      { regex: /\b(one\s+of\s+(?:the\s+)?\w+)\s+(are|were|have)\b/gi, fix: null, msg: '"One of" takes a singular verb \u2014 use "is", "was", or "has".', cat: 'Grammar', title: 'Subject-verb agreement' },
       // Dangling "which" vs "that"
       { regex: /\b(\w+)\s+which\s+(?:is|are|was|were)\s+(?:not|also|very|quite|rather|extremely|particularly)\b/gi, fix: null, msg: 'Consider whether you need "which" (non-defining, adds info) or "that" (defining, essential info). Use a comma before "which".', cat: 'Grammar', title: 'Which vs that' },
+      // Comma splice
+      { regex: /[a-z]\s*,\s+(I|we|you|they|he|she|it|this|that|there)\s+(is|are|was|were|will|would|could|should|can|may|might|must|shall|have|has|had|do|does|did|am|need|want|went|came|got|think|said|know|see|make|take)\b/gi, fix: null, msg: 'Possible comma splice \u2014 two independent clauses joined by just a comma. Use a full stop, semicolon, or add a conjunction like "and" or "but".', cat: 'Grammar', title: 'Comma splice' },
       // Double negatives
       { regex: /\b((?:do|does|did|have|has|had|could|would|should|can|will)\s+not)\s+(?:\w+\s+){0,3}(no|none|nothing|nobody|nowhere|neither|never|not)\b/gi, fix: null, msg: 'Double negative detected \u2014 this may reverse your intended meaning', cat: 'Grammar', title: 'Double negative' },
       // Tautology / redundant phrases

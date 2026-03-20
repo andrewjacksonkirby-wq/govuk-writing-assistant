@@ -1,0 +1,3525 @@
+[
+  {
+    "pattern": "\\b(must of)\\b",
+    "flags": "gi",
+    "fix": "must have",
+    "msg": "Use \"must have\" instead of \"must of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(alright)\\b",
+    "flags": "gi",
+    "fix": "all right",
+    "msg": "GOV.UK style uses \"all right\" not \"alright\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(there is)\\s+(?:many|several|numerous|various|multiple|a\\s+number\\s+of|a\\s+lot\\s+of)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Subject-verb agreement: use \"there are\" with plural nouns",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(the data) (shows?|indicates?|suggests?|demonstrates?|reveals?|confirms?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"Data\" is plural — use \"the data show\" or \"the data indicate\"",
+    "cat": "Grammar",
+    "title": "Grammar note"
+  },
+  {
+    "pattern": "\\b(criteria) (is|was|has)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"Criteria\" is plural — use \"criteria are\". The singular is \"criterion\".",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(media) (is|was|has)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"Media\" is plural — use \"media are\". The singular is \"medium\".",
+    "cat": "Grammar",
+    "title": "Grammar note"
+  },
+  {
+    "pattern": "\\b(the (?:team|government|committee|council|department|ministry|board|panel|group|staff|organisation|company|public|family|jury))\\s+(are|were|have|do|need|want|seem|go)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "GOV.UK style: treat collective nouns as singular — use \"is\", \"was\", \"has\" etc.",
+    "cat": "Grammar",
+    "title": "Subject-verb agreement",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(each\\s+of\\s+(?:the\\s+)?\\w+)\\s+(are|were|have|do)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"Each of\" takes a singular verb — use \"is\", \"was\", or \"has\".",
+    "cat": "Grammar",
+    "title": "Subject-verb agreement"
+  },
+  {
+    "pattern": "\\b(neither|either)\\s+(?:of\\s+(?:the\\s+)?\\w+\\s+)?(are|were|have)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"Neither\" and \"either\" take a singular verb — use \"is\", \"was\", or \"has\".",
+    "cat": "Grammar",
+    "title": "Subject-verb agreement"
+  },
+  {
+    "pattern": "\\b(one\\s+of\\s+(?:the\\s+)?\\w+)\\s+(are|were|have)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "\"One of\" takes a singular verb — use \"is\", \"was\", or \"has\".",
+    "cat": "Grammar",
+    "title": "Subject-verb agreement"
+  },
+  {
+    "pattern": "\\b(\\w+)\\s+which\\s+(?:is|are|was|were)\\s+(?:not|also|very|quite|rather|extremely|particularly)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Consider whether you need \"which\" (non-defining, adds info) or \"that\" (defining, essential info). Use a comma before \"which\".",
+    "cat": "Grammar",
+    "title": "Which vs that"
+  },
+  {
+    "pattern": "[a-z]\\s*,\\s+(I|we|you|they|he|she|it|this|that|there)\\s+(is|are|was|were|will|would|could|should|can|may|might|must|shall|have|has|had|do|does|did|am|need|want|went|came|got|think|said|know|see|make|take)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Possible comma splice — two independent clauses joined by just a comma. Use a full stop, semicolon, or add a conjunction like \"and\" or \"but\".",
+    "cat": "Grammar",
+    "title": "Comma splice"
+  },
+  {
+    "pattern": "\\b((?:do|does|did|have|has|had|could|would|should|can|will)\\s+not)\\s+(?:\\w+\\s+){0,3}(no|none|nothing|nobody|nowhere|neither|never|not)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Double negative detected — this may reverse your intended meaning",
+    "cat": "Grammar",
+    "title": "Double negative"
+  },
+  {
+    "pattern": "\\b(free gift)\\b",
+    "flags": "gi",
+    "fix": "gift",
+    "msg": "Tautology: gifts are free by definition",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(added bonus)\\b",
+    "flags": "gi",
+    "fix": "bonus",
+    "msg": "Tautology: a bonus is already something extra",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(end result)\\b",
+    "flags": "gi",
+    "fix": "result",
+    "msg": "Tautology: a result is already the end",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(past history)\\b",
+    "flags": "gi",
+    "fix": "history",
+    "msg": "Tautology: history is already in the past",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(future plans?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Tautology: plans are for the future by definition",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(completely (?:destroyed|eliminated|eradicated|annihilated))\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Redundant modifier: the verb already implies completeness",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(advance warning)\\b",
+    "flags": "gi",
+    "fix": "warning",
+    "msg": "Tautology: warnings are given in advance by definition",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(new innovation)\\b",
+    "flags": "gi",
+    "fix": "innovation",
+    "msg": "Tautology: innovations are new by definition",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(each and every)\\b",
+    "flags": "gi",
+    "fix": "each",
+    "msg": "\"Each and every\" is redundant — use \"each\" or \"every\"",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(first and foremost)\\b",
+    "flags": "gi",
+    "fix": "first",
+    "msg": "\"First and foremost\" is redundant — use \"first\"",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(basic fundamentals?)\\b",
+    "flags": "gi",
+    "fix": "fundamentals",
+    "msg": "Tautology: fundamentals are basic by definition",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(revert back)\\b",
+    "flags": "gi",
+    "fix": "revert",
+    "msg": "\"Revert\" already means \"go back\" — \"back\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(return back)\\b",
+    "flags": "gi",
+    "fix": "return",
+    "msg": "\"Return\" already means \"go back\" — \"back\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(repeat again)\\b",
+    "flags": "gi",
+    "fix": "repeat",
+    "msg": "\"Repeat\" already means \"do again\" — \"again\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(combine together)\\b",
+    "flags": "gi",
+    "fix": "combine",
+    "msg": "\"Combine\" already means \"bring together\" — \"together\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(merge together)\\b",
+    "flags": "gi",
+    "fix": "merge",
+    "msg": "\"Merge\" already means \"join together\" — \"together\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(plan ahead)\\b",
+    "flags": "gi",
+    "fix": "plan",
+    "msg": "\"Plan\" already implies looking ahead — \"ahead\" is redundant",
+    "cat": "Grammar",
+    "title": "Redundant phrase"
+  },
+  {
+    "pattern": "\\b(could of)\\b",
+    "flags": "gi",
+    "fix": "could have",
+    "msg": "Use \"could have\" instead of \"could of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(would of)\\b",
+    "flags": "gi",
+    "fix": "would have",
+    "msg": "Use \"would have\" instead of \"would of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(should of)\\b",
+    "flags": "gi",
+    "fix": "should have",
+    "msg": "Use \"should have\" instead of \"should of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(might of)\\b",
+    "flags": "gi",
+    "fix": "might have",
+    "msg": "Use \"might have\" instead of \"might of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(would of been)\\b",
+    "flags": "gi",
+    "fix": "would have been",
+    "msg": "Use \"would have been\" instead of \"would of been\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(try and)\\b(?=\\s+\\w)",
+    "flags": "gi",
+    "fix": "try to",
+    "msg": "Use \"try to\" instead of \"try and\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(suppose to)\\b",
+    "flags": "gi",
+    "fix": "supposed to",
+    "msg": "Use \"supposed to\" instead of \"suppose to\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(use to)\\b(?=\\s+\\w)",
+    "flags": "gi",
+    "fix": "used to",
+    "msg": "Use \"used to\" instead of \"use to\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(different than)\\b",
+    "flags": "gi",
+    "fix": "different from",
+    "msg": "In British English, use \"different from\" not \"different than\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(bored of)\\b",
+    "flags": "gi",
+    "fix": "bored with",
+    "msg": "Use \"bored with\" or \"bored by\", not \"bored of\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(off of)\\b",
+    "flags": "gi",
+    "fix": "off",
+    "msg": "\"Off\" is sufficient — \"of\" is unnecessary",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(literally)\\b(?=\\s+(?:died|killed|exploded|destroyed|the\\s+(?:best|worst)|on\\s+fire|flying))",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Check: \"literally\" means it actually happened. Did you mean \"figuratively\"?",
+    "cat": "Grammar",
+    "title": "Word misuse"
+  },
+  {
+    "pattern": "\\b(irregardless)\\b",
+    "flags": "gi",
+    "fix": "regardless",
+    "msg": "\"Irregardless\" is not standard — use \"regardless\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(could care less)\\b",
+    "flags": "gi",
+    "fix": "could not care less",
+    "msg": "The expression is \"could not care less\" (meaning you care the minimum amount)",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(for all intensive purposes)\\b",
+    "flags": "gi",
+    "fix": "for all intents and purposes",
+    "msg": "The expression is \"for all intents and purposes\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(one in the same)\\b",
+    "flags": "gi",
+    "fix": "one and the same",
+    "msg": "The expression is \"one and the same\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(case and point)\\b",
+    "flags": "gi",
+    "fix": "case in point",
+    "msg": "The expression is \"case in point\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(by in large)\\b",
+    "flags": "gi",
+    "fix": "by and large",
+    "msg": "The expression is \"by and large\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(peaked? my interest)\\b",
+    "flags": "gi",
+    "fix": "piqued my interest",
+    "msg": "The expression is \"piqued my interest\" (piqued = stimulated)",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(baited breath)\\b",
+    "flags": "gi",
+    "fix": "bated breath",
+    "msg": "The expression is \"bated breath\" (bated = restrained)",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(beckon call)\\b",
+    "flags": "gi",
+    "fix": "beck and call",
+    "msg": "The expression is \"beck and call\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(sneak peak)\\b",
+    "flags": "gi",
+    "fix": "sneak peek",
+    "msg": "\"Peek\" means a quick look. \"Peak\" is the top of a mountain.",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(deep-seeded)\\b",
+    "flags": "gi",
+    "fix": "deep-seated",
+    "msg": "The expression is \"deep-seated\" not \"deep-seeded\"",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(wet your appetite)\\b",
+    "flags": "gi",
+    "fix": "whet your appetite",
+    "msg": "\"Whet\" means to sharpen/stimulate. \"Wet\" means to make damp.",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(hone in on)\\b",
+    "flags": "gi",
+    "fix": "home in on",
+    "msg": "The expression is \"home in on\" (like homing in). \"Hone\" means to sharpen.",
+    "cat": "Grammar",
+    "title": "Grammar error"
+  },
+  {
+    "pattern": "\\b(utili[sz](?:e[ds]?|ing|ation))\\b",
+    "flags": "gi",
+    "fix": "use",
+    "msg": "Use \"use\" instead of \"utilise\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(commenc(?:e[ds]?|ing))\\b",
+    "flags": "gi",
+    "fix": "start",
+    "msg": "Use \"start\" instead of \"commence\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(purchas(?:e[ds]?|ing))\\b",
+    "flags": "gi",
+    "fix": "buy",
+    "msg": "Use \"buy\" instead of \"purchase\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(regarding)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"regarding\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(facilitat(?:e[ds]?|ing|ion))\\b",
+    "flags": "gi",
+    "fix": "help",
+    "msg": "Use \"help\" instead of \"facilitate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(endeavou?r(?:ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": "try",
+    "msg": "Use \"try\" instead of \"endeavour\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(terminat(?:e[ds]?|ing|ion))\\b",
+    "flags": "gi",
+    "fix": "end",
+    "msg": "Use \"end\" instead of \"terminate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(additional(?:ly)?)\\b",
+    "flags": "gi",
+    "fix": "extra",
+    "msg": "Use \"extra\" or \"more\" instead of \"additional\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(accordingly)\\b",
+    "flags": "gi",
+    "fix": "so",
+    "msg": "Use \"so\" instead of \"accordingly\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(subsequently)\\b",
+    "flags": "gi",
+    "fix": "then",
+    "msg": "Use \"then\" instead of \"subsequently\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(approximately)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"approximately\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(furthermore)\\b",
+    "flags": "gi",
+    "fix": "also",
+    "msg": "Use \"also\" instead of \"furthermore\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(nevertheless)\\b",
+    "flags": "gi",
+    "fix": "but",
+    "msg": "Use \"but\" or \"however\" instead of \"nevertheless\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(notwithstanding)\\b",
+    "flags": "gi",
+    "fix": "despite",
+    "msg": "Use \"despite\" instead of \"notwithstanding\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(ascertain(?:ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": "find out",
+    "msg": "Use \"find out\" instead of \"ascertain\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(demonstrat(?:e[ds]?|ing|ion))\\b",
+    "flags": "gi",
+    "fix": "show",
+    "msg": "Use \"show\" instead of \"demonstrate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(consequently)\\b",
+    "flags": "gi",
+    "fix": "so",
+    "msg": "Use \"so\" instead of \"consequently\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(assist(?:ance|ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": "help",
+    "msg": "Use \"help\" instead of \"assist\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(sufficient(?:ly)?)\\b",
+    "flags": "gi",
+    "fix": "enough",
+    "msg": "Use \"enough\" instead of \"sufficient\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(obtain(?:ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": "get",
+    "msg": "Use \"get\" instead of \"obtain\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(requir(?:e[ds]?|ing|ement))\\b",
+    "flags": "gi",
+    "fix": "need",
+    "msg": "Use \"need\" instead of \"require\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(modif(?:y|ied|ies|ying|ication))\\b",
+    "flags": "gi",
+    "fix": "change",
+    "msg": "Use \"change\" instead of \"modify\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(submit(?:ted|ting|s)?)\\b",
+    "flags": "gi",
+    "fix": "send",
+    "msg": "Use \"send\" instead of \"submit\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(upon)\\b",
+    "flags": "gi",
+    "fix": "on",
+    "msg": "Use \"on\" instead of \"upon\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(whilst)\\b",
+    "flags": "gi",
+    "fix": "while",
+    "msg": "Use \"while\" instead of \"whilst\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(amongst)\\b",
+    "flags": "gi",
+    "fix": "among",
+    "msg": "Use \"among\" instead of \"amongst\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(attempt(?:ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": "try",
+    "msg": "Use \"try\" instead of \"attempt\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(initiat(?:e[ds]?|ing|ive))\\b",
+    "flags": "gi",
+    "fix": "start",
+    "msg": "Use \"start\" instead of \"initiate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(implement(?:ed|s|ing|ation)?)\\b",
+    "flags": "gi",
+    "fix": "carry out",
+    "msg": "Use \"carry out\" or \"set up\" instead of \"implement\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(indicat(?:e[ds]?|ing|ion))\\b",
+    "flags": "gi",
+    "fix": "show",
+    "msg": "Use \"show\" or \"suggest\" instead of \"indicate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(therefore)\\b",
+    "flags": "gi",
+    "fix": "so",
+    "msg": "GOV.UK style: prefer \"so\" over \"therefore\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(however)\\b",
+    "flags": "gi",
+    "fix": "but",
+    "msg": "GOV.UK style: consider \"but\" instead of \"however\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(in order to)\\b",
+    "flags": "gi",
+    "fix": "to",
+    "msg": "Prefer \"to\" over \"in order to\" for brevity",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(prior to)\\b",
+    "flags": "gi",
+    "fix": "before",
+    "msg": "Prefer \"before\" over \"prior to\" for plain English",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in accordance with)\\b",
+    "flags": "gi",
+    "fix": "in line with",
+    "msg": "Prefer \"in line with\" or \"following\" over \"in accordance with\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(with reference to)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Prefer \"about\" over \"with reference to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the event of)\\b",
+    "flags": "gi",
+    "fix": "if",
+    "msg": "Prefer \"if\" over \"in the event of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(at the present time)\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "Prefer \"now\" over \"at the present time\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on a regular basis)\\b",
+    "flags": "gi",
+    "fix": "regularly",
+    "msg": "Prefer \"regularly\" or \"often\" over \"on a regular basis\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the near future)\\b",
+    "flags": "gi",
+    "fix": "soon",
+    "msg": "Prefer \"soon\" over \"in the near future\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(a large number of)\\b",
+    "flags": "gi",
+    "fix": "many",
+    "msg": "Prefer \"many\" over \"a large number of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(the majority of)\\b",
+    "flags": "gi",
+    "fix": "most",
+    "msg": "Prefer \"most\" over \"the majority of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\bplease\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "GOV.UK style: avoid \"please\" — be direct",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bkindly\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "GOV.UK style: avoid \"kindly\" — be direct",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bat this point in time\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "Prefer \"now\" over \"at this point in time\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bin the event that\\b",
+    "flags": "gi",
+    "fix": "if",
+    "msg": "Prefer \"if\" over \"in the event that\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bwith regards to\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Prefer \"about\" over \"with regards to\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\ba number of\\b",
+    "flags": "gi",
+    "fix": "some",
+    "msg": "Be specific — say how many instead of \"a number of\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bin respect of\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Prefer \"about\" or \"for\" over \"in respect of\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\be\\.?g\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": "for example",
+    "msg": "Write \"for example\" instead of \"e.g.\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bi\\.?e\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": "that is",
+    "msg": "Write \"that is\" or rephrase instead of \"i.e.\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\be[tc]{2}\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": null,
+    "msg": "GOV.UK style: avoid \"etc\" — list the items or say \"for example\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bn\\.?b\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": "note",
+    "msg": "Write \"note\" or \"please note\" instead of \"N.B.\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bviz\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": "namely",
+    "msg": "Write \"namely\" or \"specifically\" instead of \"viz.\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bibid\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"ibid.\" — give the full reference",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bet\\.?\\s*al\\.?(?=[\\s,;:\\)]|$)",
+    "flags": "gi",
+    "fix": "and others",
+    "msg": "Write \"and others\" instead of \"et al.\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bper\\s+se\\b",
+    "flags": "gi",
+    "fix": "in itself",
+    "msg": "Write \"in itself\", \"as such\", or \"by itself\" instead of \"per se\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bre(?=\\s*:)",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Write \"about\" instead of \"re:\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bvia\\b",
+    "flags": "gi",
+    "fix": "through",
+    "msg": "GOV.UK style: use \"through\" or \"by\" instead of \"via\"",
+    "cat": "GOV.UK style",
+    "title": "Latin abbreviation",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(agenda)(?!\\s+item|\\s+for\\s+the\\s+meeting)\\b",
+    "flags": "gi",
+    "fix": "plan",
+    "msg": "Avoid \"agenda\" (unless for a meeting) — say what you mean: plan, approach",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(collaborat(?:e|ing|ion))\\b",
+    "flags": "gi",
+    "fix": "work together",
+    "msg": "Avoid \"collaborate\" — try \"work with\" or \"work together\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(combat(?:ing|ted)?)\\b(?!\\s+(?:troops|forces|zone|aircraft|training))",
+    "flags": "gi",
+    "fix": "reduce",
+    "msg": "Avoid \"combat\" (unless military) — try \"reduce\", \"stop\", \"prevent\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(deliver(?:ing|ed|s|y)?)\\b(?!\\s+(?:mail|post|parcel|package|letter|goods|baby))",
+    "flags": "gi",
+    "fix": "provide",
+    "msg": "Avoid \"deliver\" (unless physical delivery) — try \"provide\", \"create\", \"run\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(deploy(?:ing|ed|ment|s)?)\\b(?!\\s+(?:troops|forces|soldiers|software|code|server|application))",
+    "flags": "gi",
+    "fix": "use",
+    "msg": "Avoid \"deploy\" (unless military or software) — try \"use\", \"introduce\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(dialogue)\\b",
+    "flags": "gi",
+    "fix": "discussion",
+    "msg": "Avoid \"dialogue\" — try \"conversation\", \"discussion\", \"spoke to\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(disincentivise)\\b",
+    "flags": "gi",
+    "fix": "discourage",
+    "msg": "Avoid \"disincentivise\" — use \"discourage\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(empower(?:ing|ed|ment|s)?)\\b",
+    "flags": "gi",
+    "fix": "allow",
+    "msg": "Avoid \"empower\" — try \"allow\", \"enable\", \"let\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(foster(?:ing|ed|s)?)\\b(?!\\s+(?:care|child|parent|home|family|carer))",
+    "flags": "gi",
+    "fix": "encourage",
+    "msg": "Avoid \"foster\" (unless about children) — try \"encourage\", \"support\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b((?:going|moving)\\s+forward)\\b",
+    "flags": "gi",
+    "fix": "from now on",
+    "msg": "Avoid \"going forward\" — say \"from now on\" or be specific about timing",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(incentivise)\\b",
+    "flags": "gi",
+    "fix": "encourage",
+    "msg": "Avoid \"incentivise\" — use \"encourage\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(impact(?:ing|ed|s)?)\\b(?=\\s+(?:on|upon|the|our|their|your))",
+    "flags": "gi",
+    "fix": "affect",
+    "msg": "Avoid \"impact\" as a verb — try \"affect\", \"influence\", \"change\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(key)\\b(?=\\s+(?:is|are|was|were|will|priorities|objectives|themes|aims|goals|issues|challenges|deliverables|stakeholders|findings|messages))",
+    "flags": "gi",
+    "fix": "important",
+    "msg": "Avoid \"key\" (overused) — try \"important\", \"main\", \"significant\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(land)\\b(?=\\s+(?:a|the|this|our|your|their)\\s+(?:deal|contract|agreement|role|job|funding|investment))",
+    "flags": "gi",
+    "fix": "secure",
+    "msg": "Avoid \"land\" as a verb (unless about aircraft) — try \"get\", \"secure\", \"achieve\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(leverage)\\b(?!\\s+(?:ratio|buyout))",
+    "flags": "gi",
+    "fix": "use",
+    "msg": "Avoid \"leverage\" (unless financial) — try \"use\", \"take advantage of\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(liaise)\\b",
+    "flags": "gi",
+    "fix": "work with",
+    "msg": "Avoid \"liaise\" — try \"work with\", \"contact\", \"talk to\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bone[- ]stop[- ]shop\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"one-stop shop\" — describe what the service actually does",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(overarching)\\b",
+    "flags": "gi",
+    "fix": "overall",
+    "msg": "Avoid \"overarching\" — try \"overall\" or just remove it",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(portal)\\b",
+    "flags": "gi",
+    "fix": "website",
+    "msg": "Avoid \"portal\" — use \"website\" or \"service\" or the service name",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(ring[- ]?fenc(?:e|ed|ing))\\b",
+    "flags": "gi",
+    "fix": "protect",
+    "msg": "Avoid \"ring-fencing\" — try \"separate\", \"protect\", \"keep aside\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(robust)\\b",
+    "flags": "gi",
+    "fix": "strong",
+    "msg": "Avoid \"robust\" — try \"strong\", \"effective\", \"thorough\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(signpost(?:ing|ed|s)?)\\b",
+    "flags": "gi",
+    "fix": "directing",
+    "msg": "Avoid \"signposting\" — try \"directing\", \"linking\", \"tell users about\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bslimming\\s+down\\b",
+    "flags": "gi",
+    "fix": "reducing",
+    "msg": "Avoid \"slimming down\" — try \"reducing\" or \"removing\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(streamlin(?:e|ing|ed))\\b",
+    "flags": "gi",
+    "fix": "simplify",
+    "msg": "Avoid \"streamline\" — try \"simplify\" or \"improve\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(tackl(?:e|ing|ed|es))\\b(?!\\s+(?:football|rugby|player|opponent))",
+    "flags": "gi",
+    "fix": "deal with",
+    "msg": "Avoid \"tackle\" (unless sports) — try \"solve\", \"reduce\", \"deal with\"",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(transform(?:ing|ed|ation|s)?)\\b",
+    "flags": "gi",
+    "fix": "change",
+    "msg": "Avoid \"transform\" — be specific: what is actually changing?",
+    "cat": "GOV.UK style",
+    "title": "Word to avoid",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(proforma)\\b",
+    "flags": "gi",
+    "fix": "form",
+    "msg": "Use \"form\" or \"template\" instead of \"proforma\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(henceforth)\\b",
+    "flags": "gi",
+    "fix": "from now on",
+    "msg": "Use \"from now on\" instead of \"henceforth\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(herewith)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"herewith\" — just say what you are including",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(aforementioned)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"aforementioned\" — name the thing directly",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(forthwith)\\b",
+    "flags": "gi",
+    "fix": "immediately",
+    "msg": "Use \"immediately\" or \"now\" instead of \"forthwith\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(whatsoever)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"whatsoever\" — it rarely adds meaning",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(in lieu of)\\b",
+    "flags": "gi",
+    "fix": "instead of",
+    "msg": "Use \"instead of\" instead of \"in lieu of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(pertaining to)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"pertaining to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(pursuant to)\\b",
+    "flags": "gi",
+    "fix": "under",
+    "msg": "Use \"under\" or \"in line with\" instead of \"pursuant to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(he or she)\\b",
+    "flags": "gi",
+    "fix": "they",
+    "msg": "Use \"they\" instead of \"he or she\" for gender-neutral language",
+    "cat": "GOV.UK style",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(his or her)\\b",
+    "flags": "gi",
+    "fix": "their",
+    "msg": "Use \"their\" instead of \"his or her\" for gender-neutral language",
+    "cat": "GOV.UK style",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(him or her)\\b",
+    "flags": "gi",
+    "fix": "them",
+    "msg": "Use \"them\" instead of \"him or her\" for gender-neutral language",
+    "cat": "GOV.UK style",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(he\\",
+    "flags": "she",
+    "fix": "they",
+    "msg": "Use \"they\" instead of \"he/she\" for gender-neutral language",
+    "cat": "GOV.UK style",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(his\\",
+    "flags": "her",
+    "fix": "their",
+    "msg": "Use \"their\" instead of \"his/her\" for gender-neutral language",
+    "cat": "GOV.UK style",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(simply)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Avoid \"simply\" — it can make users feel bad if they find it difficult",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(e-mail)\\b",
+    "flags": "gi",
+    "fix": "email",
+    "msg": "GOV.UK style: use \"email\" not \"e-mail\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bfill\\s+out\\b",
+    "flags": "gi",
+    "fix": "fill in",
+    "msg": "GOV.UK style: use \"fill in\" not \"fill out\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bFAQs?\\b",
+    "flags": "g",
+    "fix": null,
+    "msg": "GOV.UK style: do not use FAQs — present information in a user-centred way",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(percent)\\b",
+    "flags": "gi",
+    "fix": "per cent",
+    "msg": "GOV.UK style: use \"per cent\" not \"percent\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\bfinancial\\s+penalt(?:y|ies)\\b",
+    "flags": "gi",
+    "fix": "fine",
+    "msg": "GOV.UK style: use \"fine\" instead of \"financial penalty\"",
+    "cat": "GOV.UK style",
+    "title": "GOV.UK style",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(color)\\b",
+    "flags": "gi",
+    "fix": "colour",
+    "msg": "Use British spelling: \"colour\" not \"color\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(favor(?:ite|able|ably)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling with \"-our\": \"favour\", \"favourite\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(honor(?:able|ary|ed|ing|s)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"honour\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(humor)\\b",
+    "flags": "gi",
+    "fix": "humour",
+    "msg": "Use British spelling: \"humour\" not \"humor\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(labor)\\b",
+    "flags": "gi",
+    "fix": "labour",
+    "msg": "Use British spelling: \"labour\" not \"labor\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(neighbor(?:hood|ing|s)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"neighbour\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(behavior(?:al|s)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"behaviour\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(center(?:ed|s|ing)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"centre\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(theater|theater)\\b",
+    "flags": "gi",
+    "fix": "theatre",
+    "msg": "Use British spelling: \"theatre\" not \"theater\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(meter)\\b(?!\\s+(?:reading|long|tall|wide|high|deep))",
+    "flags": "gi",
+    "fix": "metre",
+    "msg": "Use British spelling: \"metre\" (unit of length). \"Meter\" is a measuring device.",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(liter)\\b",
+    "flags": "gi",
+    "fix": "litre",
+    "msg": "Use British spelling: \"litre\" not \"liter\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(traveling|traveled|traveler)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling with double \"l\": \"travelling\", \"travelled\", \"traveller\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(modeling|modeled)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling with double \"l\": \"modelling\", \"modelled\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(counseling|counselor)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling with double \"l\": \"counselling\", \"counsellor\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(canceled)\\b",
+    "flags": "gi",
+    "fix": "cancelled",
+    "msg": "Use British spelling: \"cancelled\" not \"canceled\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(labeled)\\b",
+    "flags": "gi",
+    "fix": "labelled",
+    "msg": "Use British spelling: \"labelled\" not \"labeled\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(fulfill(?:ed|ing|ment|s)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"fulfil\" not \"fulfill\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(enroll(?:ed|ing|ment|s)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use British spelling: \"enrol\" not \"enroll\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(analyze)\\b",
+    "flags": "gi",
+    "fix": "analyse",
+    "msg": "Use British spelling: \"analyse\" not \"analyze\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(organize)\\b",
+    "flags": "gi",
+    "fix": "organise",
+    "msg": "Use British spelling: \"organise\" not \"organize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(recognize)\\b",
+    "flags": "gi",
+    "fix": "recognise",
+    "msg": "Use British spelling: \"recognise\" not \"recognize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(apologize)\\b",
+    "flags": "gi",
+    "fix": "apologise",
+    "msg": "Use British spelling: \"apologise\" not \"apologize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(prioritize)\\b",
+    "flags": "gi",
+    "fix": "prioritise",
+    "msg": "Use British spelling: \"prioritise\" not \"prioritize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(summarize)\\b",
+    "flags": "gi",
+    "fix": "summarise",
+    "msg": "Use British spelling: \"summarise\" not \"summarize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(categorize)\\b",
+    "flags": "gi",
+    "fix": "categorise",
+    "msg": "Use British spelling: \"categorise\" not \"categorize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(maximize)\\b",
+    "flags": "gi",
+    "fix": "maximise",
+    "msg": "Use British spelling: \"maximise\" not \"maximize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(minimize)\\b",
+    "flags": "gi",
+    "fix": "minimise",
+    "msg": "Use British spelling: \"minimise\" not \"minimize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(customize)\\b",
+    "flags": "gi",
+    "fix": "customise",
+    "msg": "Use British spelling: \"customise\" not \"customize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(standardize)\\b",
+    "flags": "gi",
+    "fix": "standardise",
+    "msg": "Use British spelling: \"standardise\" not \"standardize\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(defense)\\b",
+    "flags": "gi",
+    "fix": "defence",
+    "msg": "Use British spelling: \"defence\" not \"defense\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(offense)\\b",
+    "flags": "gi",
+    "fix": "offence",
+    "msg": "Use British spelling: \"offence\" not \"offense\"",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(program)\\b(?!\\s*(?:me|ming|mer|mable))",
+    "flags": "gi",
+    "fix": "programme",
+    "msg": "Use British spelling: \"programme\" (unless referring to a computer program)",
+    "cat": "Spelling",
+    "title": "British spelling",
+    "group": "correctness",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(fireman|firemen)\\b",
+    "flags": "gi",
+    "fix": "firefighter",
+    "msg": "Use gender-neutral language: \"firefighter\" instead of \"fireman\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(policeman|policemen)\\b",
+    "flags": "gi",
+    "fix": "police officer",
+    "msg": "Use gender-neutral language: \"police officer\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(policewoman|policewomen)\\b",
+    "flags": "gi",
+    "fix": "police officer",
+    "msg": "Use gender-neutral language: \"police officer\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(chairman)\\b",
+    "flags": "gi",
+    "fix": "chair",
+    "msg": "Use gender-neutral language: \"chair\" or \"chairperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "chair",
+      "chairperson"
+    ]
+  },
+  {
+    "pattern": "\\b(chairwoman)\\b",
+    "flags": "gi",
+    "fix": "chair",
+    "msg": "Use gender-neutral language: \"chair\" or \"chairperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "chair",
+      "chairperson"
+    ]
+  },
+  {
+    "pattern": "\\b(spokesman)\\b",
+    "flags": "gi",
+    "fix": "spokesperson",
+    "msg": "Use gender-neutral language: \"spokesperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(spokeswoman)\\b",
+    "flags": "gi",
+    "fix": "spokesperson",
+    "msg": "Use gender-neutral language: \"spokesperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(manpower)\\b",
+    "flags": "gi",
+    "fix": "workforce",
+    "msg": "Use gender-neutral language: \"workforce\" or \"staff\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "workforce",
+      "staff"
+    ]
+  },
+  {
+    "pattern": "\\b(mankind)\\b",
+    "flags": "gi",
+    "fix": "humanity",
+    "msg": "Use gender-neutral language: \"humanity\" or \"people\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "humanity",
+      "people"
+    ]
+  },
+  {
+    "pattern": "\\b(manmade|man-made)\\b",
+    "flags": "gi",
+    "fix": "manufactured",
+    "msg": "Use gender-neutral language: \"manufactured\", \"synthetic\", or \"artificial\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "manufactured",
+      "synthetic",
+      "artificial"
+    ]
+  },
+  {
+    "pattern": "\\b(layman)\\b",
+    "flags": "gi",
+    "fix": "non-specialist",
+    "msg": "Use gender-neutral language: \"non-specialist\" or \"ordinary person\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "non-specialist",
+      "ordinary person"
+    ]
+  },
+  {
+    "pattern": "\\b(craftsman|craftsmen)\\b",
+    "flags": "gi",
+    "fix": "craftsperson",
+    "msg": "Use gender-neutral language: \"craftsperson\" or \"artisan\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "craftsperson",
+      "artisan"
+    ]
+  },
+  {
+    "pattern": "\\b(businessmen)\\b",
+    "flags": "gi",
+    "fix": "business people",
+    "msg": "Use gender-neutral language: \"business people\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(businessman)\\b",
+    "flags": "gi",
+    "fix": "businessperson",
+    "msg": "Use gender-neutral language: \"businessperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(foreman)\\b",
+    "flags": "gi",
+    "fix": "supervisor",
+    "msg": "Use gender-neutral language: \"supervisor\" or \"foreperson\"",
+    "cat": "Inclusive language",
+    "title": "Gender-neutral language",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ],
+    "alts": [
+      "supervisor",
+      "foreperson"
+    ]
+  },
+  {
+    "pattern": "\\b(in due course)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific about timing instead of \"in due course\"",
+    "cat": "Plain English",
+    "title": "Vague timing",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(in the coming weeks)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific — give a date or say \"by [date]\"",
+    "cat": "Plain English",
+    "title": "Vague timing",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(in the coming months)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific — give a date or say \"by [date]\"",
+    "cat": "Plain English",
+    "title": "Vague timing",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(at some point)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific about when, or remove if not needed",
+    "cat": "Plain English",
+    "title": "Vague timing",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(shortly)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific about timing instead of \"shortly\"",
+    "cat": "Plain English",
+    "title": "Vague timing",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(presently)\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "\"Presently\" is ambiguous — use \"now\" (current) or \"soon\" (future)",
+    "cat": "Plain English",
+    "title": "Ambiguous word",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is important to note that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove filler — just state the point directly",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is worth noting that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove filler — just state the point directly",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is important that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Consider removing — just state what matters",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is necessary to)\\b",
+    "flags": "gi",
+    "fix": "you must",
+    "msg": "Be direct: \"you must\" or \"you need to\"",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is recommended that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be direct: say who recommends it and what they should do",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(it is essential that)\\b",
+    "flags": "gi",
+    "fix": "you must",
+    "msg": "Be direct: \"you must\" — say who needs to act",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(there is a need to)\\b",
+    "flags": "gi",
+    "fix": "you need to",
+    "msg": "Be direct: \"you need to\" or \"we need to\"",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(there is a requirement to)\\b",
+    "flags": "gi",
+    "fix": "you must",
+    "msg": "Be direct: \"you must\" or name who needs to act",
+    "cat": "Plain English",
+    "title": "Remove filler",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(make a (?:payment|decision|choice|request|claim|complaint|contribution))\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Simplify: \"make a payment\" → \"pay\", \"make a decision\" → \"decide\", etc.",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(carry out)\\b(?=\\s+(?:a|an|the|this|that|your))",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Consider a simpler verb: \"carry out an inspection\" → \"inspect\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(give consideration to)\\b",
+    "flags": "gi",
+    "fix": "consider",
+    "msg": "Simplify: use \"consider\" instead of \"give consideration to\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(take into consideration)\\b",
+    "flags": "gi",
+    "fix": "consider",
+    "msg": "Simplify: use \"consider\" instead of \"take into consideration\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(make an application)\\b",
+    "flags": "gi",
+    "fix": "apply",
+    "msg": "Simplify: use \"apply\" instead of \"make an application\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(make provision for)\\b",
+    "flags": "gi",
+    "fix": "provide for",
+    "msg": "Simplify: use \"provide for\" instead of \"make provision for\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(reach a decision)\\b",
+    "flags": "gi",
+    "fix": "decide",
+    "msg": "Simplify: use \"decide\" instead of \"reach a decision\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(take action)\\b",
+    "flags": "gi",
+    "fix": "act",
+    "msg": "Simplify: use \"act\" instead of \"take action\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(take steps to)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific about what action to take instead of \"take steps to\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(put in place)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific: \"set up\", \"create\", or \"introduce\" instead of \"put in place\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "group": "style",
+    "modes": [
+      "govuk"
+    ]
+  },
+  {
+    "pattern": "\\b(in relation to)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" or \"for\" instead of \"in relation to\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "about",
+      "for"
+    ]
+  },
+  {
+    "pattern": "\\b(with regard to)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"with regard to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(for the purpose of)\\b",
+    "flags": "gi",
+    "fix": "to",
+    "msg": "Use \"to\" instead of \"for the purpose of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the process of)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just say what is being done",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(is able to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"is able to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(are able to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"are able to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(be able to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"be able to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(whether or not)\\b",
+    "flags": "gi",
+    "fix": "whether",
+    "msg": "\"Or not\" is usually unnecessary — \"whether\" is enough",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(at this moment in time)\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "Use \"now\" instead of \"at this moment in time\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(due to the fact that)\\b",
+    "flags": "gi",
+    "fix": "because",
+    "msg": "Use \"because\" instead of \"due to the fact that\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(despite the fact that)\\b",
+    "flags": "gi",
+    "fix": "although",
+    "msg": "Use \"although\" instead of \"despite the fact that\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in view of the fact that)\\b",
+    "flags": "gi",
+    "fix": "because",
+    "msg": "Use \"because\" or \"since\" instead of \"in view of the fact that\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "because",
+      "since"
+    ]
+  },
+  {
+    "pattern": "\\b(on the grounds that)\\b",
+    "flags": "gi",
+    "fix": "because",
+    "msg": "Use \"because\" instead of \"on the grounds that\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(ensure)\\b",
+    "flags": "gi",
+    "fix": "make sure",
+    "msg": "Use \"make sure\" instead of \"ensure\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(advise)\\b(?!\\s+(?:against|on\\s+(?:the|a|how|what|where|when|which)))",
+    "flags": "gi",
+    "fix": "tell",
+    "msg": "Use \"tell\" or \"let [someone] know\" instead of \"advise\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "tell",
+      "let know"
+    ]
+  },
+  {
+    "pattern": "\\b(notify)\\b",
+    "flags": "gi",
+    "fix": "tell",
+    "msg": "Use \"tell\" instead of \"notify\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(inform)\\b",
+    "flags": "gi",
+    "fix": "tell",
+    "msg": "Use \"tell\" instead of \"inform\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(request)\\b(?=\\s+(?:that|you|the|a|an|this|your))",
+    "flags": "gi",
+    "fix": "ask for",
+    "msg": "Use \"ask for\" instead of \"request\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(provide)\\b",
+    "flags": "gi",
+    "fix": "give",
+    "msg": "Use \"give\" instead of \"provide\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(receive)\\b",
+    "flags": "gi",
+    "fix": "get",
+    "msg": "Use \"get\" instead of \"receive\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(retain)\\b",
+    "flags": "gi",
+    "fix": "keep",
+    "msg": "Use \"keep\" instead of \"retain\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(permit)\\b(?=\\s+(?:you|the|a|an|this|them|us|him|her))",
+    "flags": "gi",
+    "fix": "let",
+    "msg": "Use \"let\" or \"allow\" instead of \"permit\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "let",
+      "allow"
+    ]
+  },
+  {
+    "pattern": "\\b(prohibit)\\b",
+    "flags": "gi",
+    "fix": "ban",
+    "msg": "Use \"ban\", \"stop\", or \"do not allow\" instead of \"prohibit\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "ban",
+      "stop",
+      "do not allow"
+    ]
+  },
+  {
+    "pattern": "\\b(cease)\\b",
+    "flags": "gi",
+    "fix": "stop",
+    "msg": "Use \"stop\" instead of \"cease\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(acquire)\\b",
+    "flags": "gi",
+    "fix": "get",
+    "msg": "Use \"get\" or \"buy\" instead of \"acquire\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "get",
+      "buy"
+    ]
+  },
+  {
+    "pattern": "\\b(reside)\\b",
+    "flags": "gi",
+    "fix": "live",
+    "msg": "Use \"live\" instead of \"reside\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(residence)\\b",
+    "flags": "gi",
+    "fix": "home",
+    "msg": "Use \"home\" or \"address\" instead of \"residence\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "home",
+      "address"
+    ]
+  },
+  {
+    "pattern": "\\b(dwelling)\\b",
+    "flags": "gi",
+    "fix": "home",
+    "msg": "Use \"home\" or \"property\" instead of \"dwelling\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "home",
+      "property"
+    ]
+  },
+  {
+    "pattern": "\\b(expedite)\\b",
+    "flags": "gi",
+    "fix": "speed up",
+    "msg": "Use \"speed up\" or \"hurry\" instead of \"expedite\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "speed up",
+      "hurry"
+    ]
+  },
+  {
+    "pattern": "\\b(numerous)\\b",
+    "flags": "gi",
+    "fix": "many",
+    "msg": "Use \"many\" instead of \"numerous\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(remainder)\\b",
+    "flags": "gi",
+    "fix": "rest",
+    "msg": "Use \"rest\" instead of \"remainder\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(substantial)\\b",
+    "flags": "gi",
+    "fix": "large",
+    "msg": "Use \"large\", \"big\", or \"a lot of\" instead of \"substantial\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "large",
+      "big",
+      "a lot of"
+    ]
+  },
+  {
+    "pattern": "\\b(adjacent to)\\b",
+    "flags": "gi",
+    "fix": "next to",
+    "msg": "Use \"next to\" or \"near\" instead of \"adjacent to\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "next to",
+      "near"
+    ]
+  },
+  {
+    "pattern": "\\b(forward(?:ed|ing|s)?)\\b(?=\\s+(?:the|this|a|an|your|their|our))",
+    "flags": "gi",
+    "fix": "send",
+    "msg": "Use \"send\" instead of \"forward\" where possible",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(determine)\\b",
+    "flags": "gi",
+    "fix": "find out",
+    "msg": "Use \"find out\" or \"decide\" instead of \"determine\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "find out",
+      "decide"
+    ]
+  },
+  {
+    "pattern": "\\b(comply)\\b",
+    "flags": "gi",
+    "fix": "keep to",
+    "msg": "Use \"keep to\" or \"follow\" instead of \"comply\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "keep to",
+      "follow"
+    ]
+  },
+  {
+    "pattern": "\\b(in the amount of)\\b",
+    "flags": "gi",
+    "fix": "for",
+    "msg": "Use \"for\" instead of \"in the amount of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on the basis of)\\b",
+    "flags": "gi",
+    "fix": "based on",
+    "msg": "Use \"based on\" or \"because of\" instead of \"on the basis of\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "based on",
+      "because of"
+    ]
+  },
+  {
+    "pattern": "\\b(with the exception of)\\b",
+    "flags": "gi",
+    "fix": "except",
+    "msg": "Use \"except\" or \"apart from\" instead of \"with the exception of\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "except",
+      "apart from"
+    ]
+  },
+  {
+    "pattern": "\\b(in the absence of)\\b",
+    "flags": "gi",
+    "fix": "without",
+    "msg": "Use \"without\" instead of \"in the absence of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the region of)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" or \"around\" instead of \"in the region of\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "about",
+      "around"
+    ]
+  },
+  {
+    "pattern": "\\b(as a means of)\\b",
+    "flags": "gi",
+    "fix": "to",
+    "msg": "Use \"to\" instead of \"as a means of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(for the duration of)\\b",
+    "flags": "gi",
+    "fix": "during",
+    "msg": "Use \"during\" instead of \"for the duration of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(at the conclusion of)\\b",
+    "flags": "gi",
+    "fix": "after",
+    "msg": "Use \"after\" instead of \"at the conclusion of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(has the ability to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"has the ability to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(have the ability to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"have the ability to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(until such time as)\\b",
+    "flags": "gi",
+    "fix": "until",
+    "msg": "Use \"until\" instead of \"until such time as\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(it should be borne in mind that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just state the point",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(as to whether)\\b",
+    "flags": "gi",
+    "fix": "whether",
+    "msg": "Use \"whether\" instead of \"as to whether\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in a position to)\\b",
+    "flags": "gi",
+    "fix": "can",
+    "msg": "Use \"can\" instead of \"in a position to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in light of)\\b",
+    "flags": "gi",
+    "fix": "because of",
+    "msg": "Use \"because of\" instead of \"in light of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in connection with)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" or \"for\" instead of \"in connection with\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "about",
+      "for"
+    ]
+  },
+  {
+    "pattern": "\\b(complete)\\b(?=\\s+(?:the|this|a|an|your|their|our)\\s+(?:form|application|questionnaire|survey|return))",
+    "flags": "gi",
+    "fix": "fill in",
+    "msg": "Use \"fill in\" instead of \"complete\" for forms",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(establish)\\b",
+    "flags": "gi",
+    "fix": "set up",
+    "msg": "Use \"set up\", \"find out\", or \"show\" instead of \"establish\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "set up",
+      "find out",
+      "show"
+    ]
+  },
+  {
+    "pattern": "\\b(constitute)\\b",
+    "flags": "gi",
+    "fix": "make up",
+    "msg": "Use \"make up\" or \"form\" instead of \"constitute\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "make up",
+      "form"
+    ]
+  },
+  {
+    "pattern": "\\b(anticipate)\\b",
+    "flags": "gi",
+    "fix": "expect",
+    "msg": "Use \"expect\" instead of \"anticipate\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(administer)\\b",
+    "flags": "gi",
+    "fix": "manage",
+    "msg": "Use \"manage\" or \"run\" instead of \"administer\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "manage",
+      "run"
+    ]
+  },
+  {
+    "pattern": "\\b(concerning)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"concerning\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(consider(?:able|ably))\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"big\", \"large\", \"much\", or \"a lot\" instead of \"considerable\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(currently)\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "Use \"now\" instead of \"currently\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(disclose)\\b",
+    "flags": "gi",
+    "fix": "tell",
+    "msg": "Use \"tell\" or \"show\" instead of \"disclose\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "tell",
+      "show"
+    ]
+  },
+  {
+    "pattern": "\\b(discontinue)\\b",
+    "flags": "gi",
+    "fix": "stop",
+    "msg": "Use \"stop\" or \"end\" instead of \"discontinue\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "stop",
+      "end"
+    ]
+  },
+  {
+    "pattern": "\\b(enclose)\\b",
+    "flags": "gi",
+    "fix": "put in",
+    "msg": "Use \"put in\" or \"include\" instead of \"enclose\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "put in",
+      "include"
+    ]
+  },
+  {
+    "pattern": "\\b(encounter)\\b",
+    "flags": "gi",
+    "fix": "meet",
+    "msg": "Use \"meet\" or \"find\" instead of \"encounter\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "meet",
+      "find"
+    ]
+  },
+  {
+    "pattern": "\\b(expenditure)\\b",
+    "flags": "gi",
+    "fix": "spending",
+    "msg": "Use \"spending\" or \"costs\" instead of \"expenditure\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "spending",
+      "costs"
+    ]
+  },
+  {
+    "pattern": "\\b(in excess of)\\b",
+    "flags": "gi",
+    "fix": "more than",
+    "msg": "Use \"more than\" instead of \"in excess of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(incur)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"pay\", \"lose\", or \"get\" instead of \"incur\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(mandatory)\\b",
+    "flags": "gi",
+    "fix": "you must",
+    "msg": "Use \"you must\" or \"required\" instead of \"mandatory\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "you must",
+      "required"
+    ]
+  },
+  {
+    "pattern": "\\b(methodology)\\b",
+    "flags": "gi",
+    "fix": "method",
+    "msg": "Use \"method\" instead of \"methodology\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(optimum)\\b",
+    "flags": "gi",
+    "fix": "best",
+    "msg": "Use \"best\" instead of \"optimum\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(particulars)\\b",
+    "flags": "gi",
+    "fix": "details",
+    "msg": "Use \"details\" instead of \"particulars\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(predominant(?:ly)?)\\b",
+    "flags": "gi",
+    "fix": "main",
+    "msg": "Use \"main\" or \"mostly\" instead of \"predominant\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "main",
+      "mostly"
+    ]
+  },
+  {
+    "pattern": "\\b(precisely)\\b",
+    "flags": "gi",
+    "fix": "exactly",
+    "msg": "Use \"exactly\" instead of \"precisely\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(procure)\\b",
+    "flags": "gi",
+    "fix": "buy",
+    "msg": "Use \"buy\" or \"get\" instead of \"procure\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "buy",
+      "get"
+    ]
+  },
+  {
+    "pattern": "\\b(reimburse)\\b",
+    "flags": "gi",
+    "fix": "pay back",
+    "msg": "Use \"pay back\" or \"repay\" instead of \"reimburse\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "pay back",
+      "repay"
+    ]
+  },
+  {
+    "pattern": "\\b(remuneration)\\b",
+    "flags": "gi",
+    "fix": "pay",
+    "msg": "Use \"pay\" or \"wages\" instead of \"remuneration\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "pay",
+      "wages"
+    ]
+  },
+  {
+    "pattern": "\\b(supplement(?:ary)?)\\b",
+    "flags": "gi",
+    "fix": "extra",
+    "msg": "Use \"extra\" or \"more\" instead of \"supplementary\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "extra",
+      "more"
+    ]
+  },
+  {
+    "pattern": "\\b(undertake)\\b",
+    "flags": "gi",
+    "fix": "do",
+    "msg": "Use \"do\" or \"carry out\" instead of \"undertake\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "do",
+      "carry out"
+    ]
+  },
+  {
+    "pattern": "\\b(verify)\\b",
+    "flags": "gi",
+    "fix": "check",
+    "msg": "Use \"check\" instead of \"verify\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(predominantly)\\b",
+    "flags": "gi",
+    "fix": "mostly",
+    "msg": "Use \"mostly\" or \"mainly\" instead of \"predominantly\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "mostly",
+      "mainly"
+    ]
+  },
+  {
+    "pattern": "\\b(allocate)\\b",
+    "flags": "gi",
+    "fix": "give",
+    "msg": "Use \"give\", \"share\", or \"set aside\" instead of \"allocate\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "give",
+      "share",
+      "set aside"
+    ]
+  },
+  {
+    "pattern": "\\b(necessitate)\\b",
+    "flags": "gi",
+    "fix": "need",
+    "msg": "Use \"need\" or \"must have\" instead of \"necessitate\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "need",
+      "must have"
+    ]
+  },
+  {
+    "pattern": "\\b(correspondence)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"letter\", \"email\", or \"message\" instead of \"correspondence\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(attain)\\b",
+    "flags": "gi",
+    "fix": "reach",
+    "msg": "Use \"reach\" or \"get\" instead of \"attain\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "reach",
+      "get"
+    ]
+  },
+  {
+    "pattern": "\\b(amalgamate)\\b",
+    "flags": "gi",
+    "fix": "join",
+    "msg": "Use \"join\", \"merge\", or \"combine\" instead of \"amalgamate\"",
+    "cat": "Plain English",
+    "title": "Use plain English",
+    "alts": [
+      "join",
+      "merge",
+      "combine"
+    ]
+  },
+  {
+    "pattern": "\\b(furnish)\\b",
+    "flags": "gi",
+    "fix": "give",
+    "msg": "Use \"give\" instead of \"furnish\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(as a consequence of)\\b",
+    "flags": "gi",
+    "fix": "because of",
+    "msg": "Use \"because of\" instead of \"as a consequence of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(as a result of)\\b",
+    "flags": "gi",
+    "fix": "because of",
+    "msg": "Use \"because of\" instead of \"as a result of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(at the time of writing)\\b",
+    "flags": "gi",
+    "fix": "now",
+    "msg": "Use \"now\" or give a specific date instead of \"at the time of writing\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(by means of)\\b",
+    "flags": "gi",
+    "fix": "by",
+    "msg": "Use \"by\" or \"with\" instead of \"by means of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(by virtue of)\\b",
+    "flags": "gi",
+    "fix": "because of",
+    "msg": "Use \"because of\" instead of \"by virtue of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(for the most part)\\b",
+    "flags": "gi",
+    "fix": "mostly",
+    "msg": "Use \"mostly\" or \"mainly\" instead of \"for the most part\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in advance of)\\b",
+    "flags": "gi",
+    "fix": "before",
+    "msg": "Use \"before\" instead of \"in advance of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in conjunction with)\\b",
+    "flags": "gi",
+    "fix": "with",
+    "msg": "Use \"with\" instead of \"in conjunction with\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the course of)\\b",
+    "flags": "gi",
+    "fix": "during",
+    "msg": "Use \"during\" instead of \"in the course of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the first instance)\\b",
+    "flags": "gi",
+    "fix": "first",
+    "msg": "Use \"first\" instead of \"in the first instance\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the interests of)\\b",
+    "flags": "gi",
+    "fix": "for",
+    "msg": "Use \"for\" or \"to\" instead of \"in the interests of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on a daily basis)\\b",
+    "flags": "gi",
+    "fix": "daily",
+    "msg": "Use \"daily\" or \"every day\" instead of \"on a daily basis\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on a weekly basis)\\b",
+    "flags": "gi",
+    "fix": "weekly",
+    "msg": "Use \"weekly\" or \"every week\" instead of \"on a weekly basis\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on a monthly basis)\\b",
+    "flags": "gi",
+    "fix": "monthly",
+    "msg": "Use \"monthly\" or \"every month\" instead of \"on a monthly basis\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on an annual basis)\\b",
+    "flags": "gi",
+    "fix": "yearly",
+    "msg": "Use \"yearly\" or \"every year\" instead of \"on an annual basis\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(to the effect that)\\b",
+    "flags": "gi",
+    "fix": "that",
+    "msg": "Use \"that\" instead of \"to the effect that\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(with effect from)\\b",
+    "flags": "gi",
+    "fix": "from",
+    "msg": "Use \"from\" instead of \"with effect from\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(with the aim of)\\b",
+    "flags": "gi",
+    "fix": "to",
+    "msg": "Use \"to\" instead of \"with the aim of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(at your earliest convenience)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be specific about timing — give a date or say \"as soon as you can\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(we would like to inform you that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just say the thing directly",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(please do not hesitate to)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just say \"contact us\" or \"get in touch\"",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(I am writing to)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just say what you need to say",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(please find attached)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"I have attached\" or \"here is\" instead of \"please find attached\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(please find enclosed)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"I have included\" or \"here is\" instead of \"please find enclosed\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(I would be grateful if)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Be direct — say \"please\" or just ask",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(the above(?:mentioned|[\\s-]mentioned)?)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Name the thing directly instead of saying \"the above\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(the undersigned)\\b",
+    "flags": "gi",
+    "fix": "I",
+    "msg": "Use \"I\" or \"we\" instead of \"the undersigned\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(we wish to advise you that)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Remove — just say the thing directly",
+    "cat": "Plain English",
+    "title": "Remove filler"
+  },
+  {
+    "pattern": "\\b(should you require)\\b",
+    "flags": "gi",
+    "fix": "if you need",
+    "msg": "Use \"if you need\" instead of \"should you require\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(prior to the commencement of)\\b",
+    "flags": "gi",
+    "fix": "before",
+    "msg": "Use \"before\" instead of \"prior to the commencement of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(on receipt of)\\b",
+    "flags": "gi",
+    "fix": "when we get",
+    "msg": "Use \"when we get\" or \"when you get\" instead of \"on receipt of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(in the event of non-compliance)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Say what will actually happen, for example \"if you do not...\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(failure to comply)\\b",
+    "flags": "gi",
+    "fix": null,
+    "msg": "Use \"if you do not\" instead of \"failure to comply\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(deemed to be)\\b",
+    "flags": "gi",
+    "fix": "treated as",
+    "msg": "Use \"treated as\" or \"counted as\" instead of \"deemed to be\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(irrespective of)\\b",
+    "flags": "gi",
+    "fix": "no matter",
+    "msg": "Use \"no matter\" or \"regardless of\" instead of \"irrespective of\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  },
+  {
+    "pattern": "\\b(with respect to)\\b",
+    "flags": "gi",
+    "fix": "about",
+    "msg": "Use \"about\" instead of \"with respect to\"",
+    "cat": "Plain English",
+    "title": "Use plain English"
+  }
+]
