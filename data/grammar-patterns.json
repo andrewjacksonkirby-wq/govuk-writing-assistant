@@ -1413,8 +1413,8 @@
     ]
   },
   {
-    "pattern": "\\b(he\\",
-    "flags": "she",
+    "pattern": "\\b(he\\/she)\\b",
+    "flags": "gi",
     "fix": "they",
     "msg": "Use \"they\" instead of \"he/she\" for gender-neutral language",
     "cat": "GOV.UK style",
@@ -1425,8 +1425,8 @@
     ]
   },
   {
-    "pattern": "\\b(his\\",
-    "flags": "her",
+    "pattern": "\\b(his\\/her)\\b",
+    "flags": "gi",
     "fix": "their",
     "msg": "Use \"their\" instead of \"his/her\" for gender-neutral language",
     "cat": "GOV.UK style",

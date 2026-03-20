@@ -269,7 +269,14 @@ const FullCheck = (function () {
     'upgraded', 'upheld', 'used', 'utilised', 'validated', 'valued',
     'verified', 'violated', 'visited', 'wanted', 'warned', 'wasted',
     'weakened', 'weighed', 'welcomed', 'widened', 'withdrawn', 'withheld',
-    'witnessed', 'won', 'worked', 'worn', 'worsened', 'wound', 'written'
+    'witnessed', 'won', 'worked', 'worn', 'worsened', 'wound', 'written',
+    // Adjectival participles (needed for passive voice detection with "by" agent)
+    'amazed', 'annoyed', 'astonished', 'bored', 'complicated', 'concerned',
+    'confused', 'crowded', 'dedicated', 'depressed', 'disappointed',
+    'embarrassed', 'excited', 'exhausted', 'experienced', 'fascinated',
+    'frightened', 'frustrated', 'interested', 'overwhelmed', 'pleased',
+    'qualified', 'relaxed', 'shocked', 'skilled', 'stressed', 'surprised',
+    'tired', 'united', 'worried'
   ]);
 
   var ACTIVE_FORMS = {
@@ -706,8 +713,8 @@ const FullCheck = (function () {
     var paragraphs = text.split(/\n\s*\n/);
     var searchFrom = 0;
 
-    var pastMarkers = /\b(was|were|had|did|went|came|got|said|told|took|made|gave|found|knew|thought|saw|became|left|brought|kept|began|showed|heard|played|ran|moved|lived|worked|called|tried|needed|started|turned|asked|used|wanted|looked)\b/gi;
-    var presentMarkers = /\b(is|are|has|does|goes|comes|gets|says|tells|takes|makes|gives|finds|knows|thinks|sees|becomes|leaves|brings|keeps|begins|shows|hears|plays|runs|moves|lives|works|calls|tries|needs|starts|turns|asks|uses|wants|looks)\b/gi;
+    var pastMarkers = /\b(was|were|had|did|went|came|got|said|told|took|made|gave|found|knew|thought|saw|became|left|brought|kept|began|showed|heard|played|ran|moved|lived|worked|called|tried|needed|started|turned|asked|used|wanted|looked|walked|talked|helped|stopped|opened|closed|returned|arrived|decided|agreed|seemed|appeared|remained|continued|happened|followed|included|received|expected|reported|described)\b/gi;
+    var presentMarkers = /\b(is|are|has|does|goes|comes|gets|says|tells|takes|makes|gives|finds|knows|thinks|sees|becomes|leaves|brings|keeps|begins|shows|hears|plays|runs|moves|lives|works|calls|tries|needs|starts|turns|asks|uses|wants|looks|speaks|walks|talks|helps|stops|opens|closes|returns|arrives|decides|agrees|seems|appears|remains|continues|happens|follows|includes|receives|expects|reports|describes|listens|provides|requires|offers|suggests|creates)\b/gi;
 
     paragraphs.forEach(function (para) {
       var trimmed = para.trim();
