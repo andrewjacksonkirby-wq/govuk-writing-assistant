@@ -1140,6 +1140,112 @@ const FullCheck = (function () {
     });
   }
 
+  function rewriteAlternatives(text, targetTone, count, callback) {
+    if (!hasValidConfig()) {
+      callback(null, 'no-api');
+      return;
+    }
+    var n = count || 3;
+    var prompt = 'Rewrite the following text in ' + n + ' different ways.\n\n' +
+      'Style: ' + (TONE_PROMPTS[targetTone] || TONE_PROMPTS.plain) + '\n\n' +
+      'Return a JSON array of ' + n + ' strings, each a complete rewrite. No preamble, no markdown fencing.\n' +
+      'Each version should be meaningfully different in structure or word choice while conveying the same meaning.\n\n' +
+      'Text:\n\n' + text;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
+        callback(null, error);
+        return;
+      }
+      var match = (responseText || '').match(/\[[\s\S]*\]/);
+      if (!match) {
+        // Fallback: treat whole response as a single alternative
+        var cleaned = (responseText || '').trim().replace(/^["']|["']$/g, '');
+        callback([cleaned], null);
+        return;
+      }
+      try {
+        var alts = JSON.parse(match[0]);
+        callback(alts, null);
+      } catch (e) {
+        var cleaned2 = (responseText || '').trim().replace(/^["']|["']$/g, '');
+        callback([cleaned2], null);
+      }
+    });
+  }
+
+  // ========== Writing Coach ==========
+
+  function coachAnalyse(text, mode, callback) {
+    if (!hasValidConfig()) {
+      callback(null, 'no-api');
+      return;
+    }
+
+    var modeContext = {
+      govuk: 'GOV.UK style guide: clear, direct, no jargon, active voice, short sentences (under 25 words), address the reader as "you", front-load important information.',
+      email: 'Professional email: clear, polite, concise, appropriate formality.',
+      chat: 'Slack/Teams message: brief, casual, get to the point.'
+    };
+
+    var prompt = 'You are a writing coach. Analyse the following text and return a JSON array of specific, actionable suggestions.\n\n' +
+      'Context: ' + (modeContext[mode] || modeContext.govuk) + '\n\n' +
+      'For each issue, return an object with:\n' +
+      '- "id": a short unique slug (e.g. "split-para-2")\n' +
+      '- "category": one of "clarity", "structure", "tone", "conciseness", "accessibility"\n' +
+      '- "suggestion": a short imperative description (e.g. "Split this paragraph into shorter sentences")\n' +
+      '- "detail": a brief explanation of why this would improve the writing\n' +
+      '- "location": quote the specific phrase, sentence, or heading this applies to (max 60 chars, use ellipsis if longer)\n\n' +
+      'Return ONLY a JSON array. No preamble, no markdown fencing, no explanation.\n' +
+      'Return between 1 and 10 suggestions, ordered by impact.\n' +
+      'If the text is already excellent, return an empty array [].\n\n' +
+      'Text:\n\n' + text;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
+        callback(null, error);
+        return;
+      }
+      var match = (responseText || '').match(/\[[\s\S]*\]/);
+      if (!match) {
+        callback([], null);
+        return;
+      }
+      try {
+        var suggestions = JSON.parse(match[0]);
+        callback(suggestions, null);
+      } catch (e) {
+        callback(null, 'Could not parse AI response');
+      }
+    });
+  }
+
+  function coachApply(text, selectedSuggestions, callback) {
+    if (!hasValidConfig()) {
+      callback(null, 'no-api');
+      return;
+    }
+
+    var bulletList = selectedSuggestions.map(function (s, i) {
+      return (i + 1) + '. ' + s.suggestion + (s.location ? ' (near: "' + s.location + '")' : '');
+    }).join('\n');
+
+    var prompt = 'Rewrite the following text, applying ONLY these specific changes:\n\n' +
+      bulletList + '\n\n' +
+      'Keep everything else exactly as it is. Do not make any changes beyond those listed.\n' +
+      'Return ONLY the rewritten text. No preamble, no explanation, no quotes.\n\n' +
+      'Original text:\n\n' + text;
+
+    callAPI(prompt, function (responseText, error) {
+      if (error) {
+        callback(null, error);
+        return;
+      }
+      var cleaned = (responseText || '').trim().replace(/^["']|["']$/g, '');
+      callback(cleaned, null);
+    });
+  }
+
   // ========== AI rule generation ==========
 
   function generateRule(description, existingPhrases, callback) {
@@ -1279,6 +1385,9 @@ const FullCheck = (function () {
     hasValidConfig: hasValidConfig,
     getProviders: function () { return PROVIDERS; },
     rewriteTone: rewriteTone,
+    rewriteAlternatives: rewriteAlternatives,
+    coachAnalyse: coachAnalyse,
+    coachApply: coachApply,
     generateRule: generateRule,
     callAPI: callAPI,
     cancel: function () {

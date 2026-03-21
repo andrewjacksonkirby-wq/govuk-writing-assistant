@@ -88,6 +88,8 @@
   var toneOriginalText = document.getElementById('toneOriginalText');
   var toneRewrittenText = document.getElementById('toneRewrittenText');
   var toneOptions = document.getElementById('toneOptions');
+  var toneAlternatives = document.getElementById('toneAlternatives');
+  var toneAlternativesList = document.getElementById('toneAlternativesList');
 
   // AI rule elements
   var aiRuleSection = document.getElementById('aiRuleSection');
@@ -95,8 +97,32 @@
   var ruleGenerateBtn = document.getElementById('ruleGenerateBtn');
   var ruleGenerateStatus = document.getElementById('ruleGenerateStatus');
 
+  // Coach elements
+  var coachBtn = document.getElementById('coachBtn');
+  var coachModal = document.getElementById('coachModal');
+  var closeCoachModal = document.getElementById('closeCoachModal');
+  var coachSourceInfo = document.getElementById('coachSourceInfo');
+  var coachLoading = document.getElementById('coachLoading');
+  var coachChecklist = document.getElementById('coachChecklist');
+  var coachSuggestionsList = document.getElementById('coachSuggestionsList');
+  var coachApplying = document.getElementById('coachApplying');
+  var coachPreview = document.getElementById('coachPreview');
+  var coachOriginalText = document.getElementById('coachOriginalText');
+  var coachRevisedText = document.getElementById('coachRevisedText');
+  var coachError = document.getElementById('coachError');
+  var coachApplySelectedBtn = document.getElementById('coachApplySelectedBtn');
+  var coachKeepBtn = document.getElementById('coachKeepBtn');
+  var coachKeepBelowBtn = document.getElementById('coachKeepBelowBtn');
+  var coachCancelBtn = document.getElementById('coachCancelBtn');
+  var coachSelectAll = document.getElementById('coachSelectAll');
+  var coachSelectNone = document.getElementById('coachSelectNone');
+  var coachCancelAnalyseBtn = document.getElementById('coachCancelAnalyseBtn');
+
   // Pending tone rewrite state
   var pendingToneRewrite = null;
+
+  // Pending coach state
+  var pendingCoach = null;
 
   // ========== Init ==========
 
@@ -249,6 +275,7 @@
       if (AI_ENABLED) updateAllowanceMeter();
       // Update tone button visibility based on sensitivity
       if (toneBtn) toneBtn.hidden = !AI_ENABLED || value !== 'safe';
+      if (coachBtn) coachBtn.hidden = !AI_ENABLED || value !== 'safe';
     });
 
     // Mode selector
@@ -300,6 +327,7 @@
         if (!dictionaryModal.hidden) { dictionaryModal.hidden = true; releaseFocus(); return; }
         if (!settingsModal.hidden) { settingsModal.hidden = true; releaseFocus(); return; }
         if (toneModal && !toneModal.hidden) { toneModal.hidden = true; releaseFocus(); return; }
+        if (coachModal && !coachModal.hidden) { coachModal.hidden = true; releaseFocus(); return; }
         if (!customRulesModal.hidden) { customRulesModal.hidden = true; releaseFocus(); cancelEditRule(); return; }
         if (shortcutsModal && !shortcutsModal.hidden) { shortcutsModal.hidden = true; releaseFocus(); return; }
         InlinePopup.hide();
@@ -489,6 +517,53 @@
         toneError.textContent = 'Rewrite cancelled.';
         toneError.hidden = false;
       });
+    }
+
+    // ========== Writing Coach modal ==========
+    if (coachBtn) {
+      coachBtn.addEventListener('click', openCoachModal);
+    }
+    if (closeCoachModal) {
+      closeCoachModal.addEventListener('click', function () { coachModal.hidden = true; releaseFocus(); });
+    }
+    if (coachModal) {
+      coachModal.addEventListener('click', function (e) {
+        if (e.target === coachModal) { coachModal.hidden = true; releaseFocus(); }
+      });
+    }
+    if (coachCancelBtn) {
+      coachCancelBtn.addEventListener('click', function () { coachModal.hidden = true; releaseFocus(); });
+    }
+    if (coachCancelAnalyseBtn) {
+      coachCancelAnalyseBtn.addEventListener('click', function () {
+        FullCheck.cancel();
+        coachLoading.hidden = true;
+        coachError.textContent = 'Analysis cancelled.';
+        coachError.hidden = false;
+      });
+    }
+    if (coachSelectAll) {
+      coachSelectAll.addEventListener('click', function () {
+        var boxes = coachSuggestionsList.querySelectorAll('input[type="checkbox"]');
+        boxes.forEach(function (cb) { cb.checked = true; });
+        updateCoachApplyBtn();
+      });
+    }
+    if (coachSelectNone) {
+      coachSelectNone.addEventListener('click', function () {
+        var boxes = coachSuggestionsList.querySelectorAll('input[type="checkbox"]');
+        boxes.forEach(function (cb) { cb.checked = false; });
+        updateCoachApplyBtn();
+      });
+    }
+    if (coachApplySelectedBtn) {
+      coachApplySelectedBtn.addEventListener('click', handleCoachApplySelected);
+    }
+    if (coachKeepBtn) {
+      coachKeepBtn.addEventListener('click', function () { handleCoachInsert('replace'); });
+    }
+    if (coachKeepBelowBtn) {
+      coachKeepBelowBtn.addEventListener('click', function () { handleCoachInsert('below'); });
     }
 
     // ========== AI rule generation ==========
@@ -1760,6 +1835,7 @@
         }
       }
       if (toneBtn) toneBtn.hidden = true;
+      if (coachBtn) coachBtn.hidden = true;
       if (aiRuleSection) aiRuleSection.hidden = true;
     } else {
       sensitivityToggle.parentElement.style.display = '';
@@ -1771,6 +1847,7 @@
         }
       }
       if (toneBtn) toneBtn.hidden = false;
+      if (coachBtn) coachBtn.hidden = false;
       if (aiRuleSection) aiRuleSection.hidden = false;
     }
   }
@@ -1881,6 +1958,7 @@
 
     // Reset UI
     tonePreview.hidden = true;
+    if (toneAlternatives) toneAlternatives.hidden = true;
     toneLoading.hidden = true;
     toneError.hidden = true;
     toneApplyBtn.hidden = true;
@@ -1904,32 +1982,112 @@
     toneRewriteBtn.hidden = true;
     toneLoading.hidden = false;
     tonePreview.hidden = true;
+    if (toneAlternatives) toneAlternatives.hidden = true;
     toneError.hidden = true;
 
-    FullCheck.rewriteTone(pendingToneRewrite.text, targetTone, function (result, error) {
+    function handleError(error) {
       toneLoading.hidden = true;
+      var friendlyError = error;
+      if (/401/i.test(error)) friendlyError = 'Invalid API key. Check your key in Settings.';
+      else if (/403/i.test(error)) friendlyError = 'Access denied. Check your API key and permissions.';
+      else if (/429/i.test(error)) friendlyError = 'Rate limited. Please wait a moment and try again.';
+      else if (/timeout/i.test(error)) friendlyError = 'Request timed out. Check your connection and try again.';
+      else if (/network|fetch|failed/i.test(error)) friendlyError = 'Connection failed. Check your internet and try again.';
+      else if (error === 'allowance-exhausted') friendlyError = 'Daily AI allowance used up. Try again tomorrow.';
+      toneError.textContent = 'Rewrite failed: ' + friendlyError;
+      toneError.hidden = false;
+      toneRewriteBtn.hidden = false;
+    }
 
-      if (error) {
-        var friendlyError = error;
-        if (/401/i.test(error)) friendlyError = 'Invalid API key. Check your key in Settings.';
-        else if (/403/i.test(error)) friendlyError = 'Access denied. Check your API key and permissions.';
-        else if (/429/i.test(error)) friendlyError = 'Rate limited. Please wait a moment and try again.';
-        else if (/timeout/i.test(error)) friendlyError = 'Request timed out. Check your connection and try again.';
-        else if (/network|fetch|failed/i.test(error)) friendlyError = 'Connection failed. Check your internet and try again.';
-        else if (error === 'allowance-exhausted') friendlyError = 'Daily AI allowance used up. Try again tomorrow.';
-        toneError.textContent = 'Rewrite failed: ' + friendlyError;
-        toneError.hidden = false;
-        toneRewriteBtn.hidden = false;
-        return;
-      }
+    // Use multi-alternative mode for short selections (under 200 words)
+    var wordCount = pendingToneRewrite.text.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
+    if (wordCount <= 200) {
+      FullCheck.rewriteAlternatives(pendingToneRewrite.text, targetTone, 3, function (alts, error) {
+        toneLoading.hidden = true;
+        if (error) { handleError(error); return; }
 
-      pendingToneRewrite.rewritten = result;
+        if (!alts || alts.length === 0) {
+          handleError('No alternatives generated.');
+          return;
+        }
 
-      // Show preview
-      toneOriginalText.textContent = pendingToneRewrite.text;
-      toneRewrittenText.textContent = result;
-      tonePreview.hidden = false;
-      toneApplyBtn.hidden = false;
+        // If only one alternative, fall back to single preview
+        if (alts.length === 1) {
+          pendingToneRewrite.rewritten = alts[0];
+          toneOriginalText.textContent = pendingToneRewrite.text;
+          toneRewrittenText.textContent = alts[0];
+          tonePreview.hidden = false;
+          toneApplyBtn.hidden = false;
+          return;
+        }
+
+        // Show alternatives picker
+        pendingToneRewrite.alternatives = alts;
+        renderToneAlternatives(alts);
+        toneAlternatives.hidden = false;
+      });
+    } else {
+      // Long text: single rewrite (faster, cheaper)
+      FullCheck.rewriteTone(pendingToneRewrite.text, targetTone, function (result, error) {
+        toneLoading.hidden = true;
+        if (error) { handleError(error); return; }
+
+        pendingToneRewrite.rewritten = result;
+        toneOriginalText.textContent = pendingToneRewrite.text;
+        toneRewrittenText.textContent = result;
+        tonePreview.hidden = false;
+        toneApplyBtn.hidden = false;
+      });
+    }
+  }
+
+  function renderToneAlternatives(alts) {
+    if (!toneAlternativesList) return;
+    toneAlternativesList.innerHTML = '';
+    alts.forEach(function (alt, i) {
+      var card = document.createElement('div');
+      card.className = 'tone-alt-card';
+
+      var header = document.createElement('div');
+      header.className = 'tone-alt-header';
+      header.textContent = 'Option ' + (i + 1);
+
+      var text = document.createElement('div');
+      text.className = 'tone-alt-text';
+      text.textContent = alt;
+
+      var actions = document.createElement('div');
+      actions.className = 'tone-alt-actions';
+
+      var useBtn = document.createElement('button');
+      useBtn.type = 'button';
+      useBtn.className = 'btn btn-primary btn-sm';
+      useBtn.textContent = 'Use this';
+      useBtn.addEventListener('click', function () {
+        pendingToneRewrite.rewritten = alt;
+        handleToneApply();
+      });
+
+      var dismissBtn = document.createElement('button');
+      dismissBtn.type = 'button';
+      dismissBtn.className = 'btn btn-secondary btn-sm';
+      dismissBtn.textContent = 'Dismiss';
+      dismissBtn.addEventListener('click', function () {
+        card.remove();
+        // If all dismissed, close modal
+        if (toneAlternativesList.children.length === 0) {
+          toneModal.hidden = true;
+          releaseFocus();
+          showToast('All alternatives dismissed.');
+        }
+      });
+
+      actions.appendChild(useBtn);
+      actions.appendChild(dismissBtn);
+      card.appendChild(header);
+      card.appendChild(text);
+      card.appendChild(actions);
+      toneAlternativesList.appendChild(card);
     });
   }
 
@@ -1952,6 +2110,222 @@
     pendingToneRewrite = null;
     recheckNow();
     showToast('Tone rewrite applied.');
+  }
+
+  // ========== Writing Coach ==========
+
+  function openCoachModal() {
+    var sel = Editor.getSelectionOffsets();
+    var fullText = Editor.getText();
+    var sourceText = '';
+    var isFullDoc = false;
+    var selOffsets = sel;
+
+    if (sel && sel.start !== sel.end) {
+      sourceText = fullText.substring(sel.start, sel.end);
+    } else {
+      sourceText = fullText;
+      isFullDoc = true;
+      selOffsets = { start: 0, end: fullText.length };
+    }
+
+    if (!sourceText || !sourceText.trim()) {
+      showToast('Nothing to analyse. Type or select some text first.');
+      return;
+    }
+
+    var wordCount = sourceText.split(/\s+/).filter(function (w) { return w.length > 0; }).length;
+    coachSourceInfo.textContent = isFullDoc
+      ? 'Analysing full document (' + wordCount + ' words)'
+      : 'Analysing selected text (' + wordCount + ' words)';
+
+    pendingCoach = {
+      text: sourceText,
+      startOffset: selOffsets.start,
+      endOffset: selOffsets.end,
+      isFullDoc: isFullDoc,
+      suggestions: [],
+      revised: null
+    };
+
+    // Reset UI
+    coachLoading.hidden = false;
+    coachChecklist.hidden = true;
+    coachApplying.hidden = true;
+    coachPreview.hidden = true;
+    coachError.hidden = true;
+    coachApplySelectedBtn.hidden = true;
+    coachKeepBtn.hidden = true;
+    coachKeepBelowBtn.hidden = true;
+    coachSuggestionsList.innerHTML = '';
+
+    coachModal.hidden = false;
+    trapFocus(coachModal);
+
+    // Start analysis
+    var currentMode = modeSelect ? modeSelect.value : 'govuk';
+    FullCheck.coachAnalyse(sourceText, currentMode, function (suggestions, error) {
+      coachLoading.hidden = true;
+
+      if (error) {
+        var friendlyError = error;
+        if (/401/i.test(error)) friendlyError = 'Invalid API key. Check your key in Settings.';
+        else if (/429/i.test(error)) friendlyError = 'Rate limited. Please wait a moment and try again.';
+        else if (/timeout/i.test(error)) friendlyError = 'Request timed out. Try again.';
+        else if (error === 'no-api') friendlyError = 'No API key configured. Set one in Settings.';
+        else if (error === 'allowance-exhausted') friendlyError = 'Daily AI allowance used up. Try again tomorrow.';
+        coachError.textContent = 'Analysis failed: ' + friendlyError;
+        coachError.hidden = false;
+        return;
+      }
+
+      if (!suggestions || suggestions.length === 0) {
+        coachError.textContent = 'No suggestions — your writing looks great!';
+        coachError.hidden = false;
+        return;
+      }
+
+      pendingCoach.suggestions = suggestions;
+      renderCoachChecklist(suggestions);
+      coachChecklist.hidden = false;
+      coachApplySelectedBtn.hidden = false;
+    });
+  }
+
+  var COACH_CATEGORY_ICONS = {
+    clarity: '\u{1F50D}',
+    structure: '\u{1F4D0}',
+    tone: '\u{1F3AF}',
+    conciseness: '\u2702\uFE0F',
+    accessibility: '\u267F'
+  };
+
+  function renderCoachChecklist(suggestions) {
+    coachSuggestionsList.innerHTML = '';
+    suggestions.forEach(function (s, i) {
+      var item = document.createElement('label');
+      item.className = 'coach-suggestion-item';
+      var cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = true;
+      cb.dataset.index = i;
+      cb.addEventListener('change', updateCoachApplyBtn);
+
+      var content = document.createElement('div');
+      content.className = 'coach-suggestion-content';
+
+      var badge = document.createElement('span');
+      badge.className = 'coach-category-badge coach-cat-' + (s.category || 'clarity');
+      badge.textContent = s.category || 'suggestion';
+
+      var text = document.createElement('span');
+      text.className = 'coach-suggestion-text';
+      text.textContent = s.suggestion;
+
+      var detail = document.createElement('span');
+      detail.className = 'coach-suggestion-detail';
+      detail.textContent = s.detail || '';
+
+      if (s.location) {
+        var loc = document.createElement('span');
+        loc.className = 'coach-suggestion-location';
+        loc.textContent = '\u201C' + s.location + '\u201D';
+        content.appendChild(badge);
+        content.appendChild(text);
+        content.appendChild(loc);
+        content.appendChild(detail);
+      } else {
+        content.appendChild(badge);
+        content.appendChild(text);
+        content.appendChild(detail);
+      }
+
+      item.appendChild(cb);
+      item.appendChild(content);
+      coachSuggestionsList.appendChild(item);
+    });
+  }
+
+  function updateCoachApplyBtn() {
+    var checked = coachSuggestionsList.querySelectorAll('input[type="checkbox"]:checked');
+    if (coachApplySelectedBtn) {
+      coachApplySelectedBtn.disabled = checked.length === 0;
+      coachApplySelectedBtn.textContent = checked.length === 0
+        ? 'Apply selected'
+        : 'Apply ' + checked.length + ' suggestion' + (checked.length === 1 ? '' : 's');
+    }
+  }
+
+  function handleCoachApplySelected() {
+    if (!pendingCoach) return;
+
+    var checked = coachSuggestionsList.querySelectorAll('input[type="checkbox"]:checked');
+    var selected = [];
+    checked.forEach(function (cb) {
+      var idx = parseInt(cb.dataset.index, 10);
+      if (pendingCoach.suggestions[idx]) {
+        selected.push(pendingCoach.suggestions[idx]);
+      }
+    });
+
+    if (selected.length === 0) return;
+
+    // Show applying state
+    coachChecklist.hidden = true;
+    coachApplySelectedBtn.hidden = true;
+    coachApplying.hidden = false;
+    coachError.hidden = true;
+
+    FullCheck.coachApply(pendingCoach.text, selected, function (revised, error) {
+      coachApplying.hidden = true;
+
+      if (error) {
+        var friendlyError = error;
+        if (/timeout/i.test(error)) friendlyError = 'Request timed out. Try again.';
+        else if (error === 'allowance-exhausted') friendlyError = 'Daily AI allowance used up.';
+        coachError.textContent = 'Revision failed: ' + friendlyError;
+        coachError.hidden = false;
+        // Bring back checklist so user can retry
+        coachChecklist.hidden = false;
+        coachApplySelectedBtn.hidden = false;
+        return;
+      }
+
+      pendingCoach.revised = revised;
+      coachOriginalText.textContent = pendingCoach.text;
+      coachRevisedText.textContent = revised;
+      coachPreview.hidden = false;
+      coachKeepBtn.hidden = false;
+      coachKeepBelowBtn.hidden = false;
+    });
+  }
+
+  function handleCoachInsert(mode) {
+    if (!pendingCoach || !pendingCoach.revised) return;
+
+    if (mode === 'replace') {
+      if (pendingCoach.isFullDoc) {
+        Editor.setText(pendingCoach.revised);
+      } else {
+        Editor.applyReplacement(
+          pendingCoach.startOffset,
+          pendingCoach.endOffset,
+          pendingCoach.revised,
+          pendingCoach.text
+        );
+      }
+      showToast('Revised text applied.');
+    } else {
+      // Insert below original
+      var insertPos = pendingCoach.endOffset;
+      Editor.applyReplacement(insertPos, insertPos, '\n\n' + pendingCoach.revised, '');
+      showToast('Revised text added below original.');
+    }
+
+    coachModal.hidden = true;
+    releaseFocus();
+    pendingCoach = null;
+    recheckNow();
   }
 
   // ========== AI rule generation ==========
