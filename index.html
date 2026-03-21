@@ -45,6 +45,10 @@
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 12l3-8h1.5l3 8M3.5 9h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M11 4v8M9.5 5.5c0-.8.7-1.5 1.5-1.5s1.5.7 1.5 1.5S11.8 7 11 7M12.5 10.5c0 .8-.7 1.5-1.5 1.5s-1.5-.7-1.5-1.5S10.2 9 11 9" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
             <span>Tone</span>
           </button>
+          <button type="button" class="toolbar-btn" id="coachBtn" title="Get writing suggestions for selected text" hidden>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a6 6 0 00-6 6c0 2.2 1.2 4.1 3 5.1V14a1 1 0 001 1h4a1 1 0 001-1v-1.9c1.8-1 3-2.9 3-5.1a6 6 0 00-6-6z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M6 15h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+            <span>Coach</span>
+          </button>
           <div class="toolbar-divider"></div>
           <label class="sensitivity-toggle" title="Toggle AI check availability">
             <input type="checkbox" id="sensitivityToggle" checked class="sr-only">
@@ -347,12 +351,74 @@
             </div>
           </div>
         </div>
+        <div id="toneAlternatives" hidden>
+          <h3 class="tone-preview-title">Choose an alternative</h3>
+          <div class="tone-alternatives-list" id="toneAlternativesList"></div>
+        </div>
         <div class="tone-error" id="toneError" hidden></div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-primary btn-sm" id="toneRewriteBtn" disabled>Rewrite</button>
         <button type="button" class="btn btn-primary btn-sm" id="toneApplyBtn" hidden>Apply</button>
         <button type="button" class="btn btn-secondary btn-sm" id="toneCancelBtn">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Writing Coach modal -->
+  <div class="modal-overlay" id="coachModal" hidden>
+    <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="coachModalTitle">
+      <div class="modal-header">
+        <h2 id="coachModalTitle">Writing suggestions</h2>
+        <button type="button" class="btn btn-close" id="closeCoachModal">Close</button>
+      </div>
+      <div class="modal-body">
+        <p class="tone-source-info" id="coachSourceInfo">Analysing selected text</p>
+
+        <!-- Step 1: Loading -->
+        <div class="coach-loading" id="coachLoading" hidden>
+          <span class="tone-spinner"></span>
+          <span>Analysing your writing&hellip;</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="coachCancelAnalyseBtn">Cancel</button>
+        </div>
+
+        <!-- Step 2: Checklist of suggestions -->
+        <div id="coachChecklist" hidden>
+          <p class="coach-instructions">Tick the suggestions you want to apply, then click &ldquo;Apply selected&rdquo;.</p>
+          <div class="coach-select-actions">
+            <button type="button" class="btn btn-sm btn-link" id="coachSelectAll">Select all</button>
+            <button type="button" class="btn btn-sm btn-link" id="coachSelectNone">Clear all</button>
+          </div>
+          <div class="coach-suggestions-list" id="coachSuggestionsList"></div>
+        </div>
+
+        <!-- Step 3: Generating revised text -->
+        <div class="coach-loading" id="coachApplying" hidden>
+          <span class="tone-spinner"></span>
+          <span>Generating revised text&hellip;</span>
+        </div>
+
+        <!-- Step 4: Preview revised text -->
+        <div id="coachPreview" hidden>
+          <div class="tone-diff">
+            <div class="tone-diff-panel">
+              <div class="tone-diff-label">Original</div>
+              <div class="tone-diff-text" id="coachOriginalText"></div>
+            </div>
+            <div class="tone-diff-panel tone-diff-new">
+              <div class="tone-diff-label">Revised</div>
+              <div class="tone-diff-text" id="coachRevisedText"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tone-error" id="coachError" hidden></div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary btn-sm" id="coachApplySelectedBtn" hidden>Apply selected</button>
+        <button type="button" class="btn btn-primary btn-sm" id="coachKeepBtn" hidden>Replace original</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="coachKeepBelowBtn" hidden>Keep below original</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="coachCancelBtn">Cancel</button>
       </div>
     </div>
   </div>
